@@ -531,10 +531,6 @@ parameter_value *load_parameters(char parameter_file[30])
 			sscanf(buf + next_eql, "%f", &p->gc_mplane_threshold);
 		}else if ((res_eql = strcmp(buf, "allocation")) == 0){
 			sscanf(buf + next_eql,"%d",&p->allocation_scheme); 
-		}else if((res_eql=strcmp(buf,"static_allocation")) ==0){
-			sscanf(buf + next_eql,"%d",&p->static_allocation); 
-		}else if((res_eql=strcmp(buf,"dynamic_allocation")) ==0){
-			sscanf(buf + next_eql,"%d",&p->dynamic_allocation); 
 		}else if((res_eql=strcmp(buf,"advanced command")) ==0){
 			sscanf(buf + next_eql,"%d",&p->advanced_commands); 
 		}else if((res_eql=strcmp(buf,"advanced command priority")) ==0){

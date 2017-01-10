@@ -144,8 +144,6 @@ public:
 	float gc_down_threshold; 
 	float gc_mplane_threshold;
 	int allocation_scheme;        
-	int static_allocation;          
-	int dynamic_allocation;       
 	int advanced_commands;  
 	int ad_priority;                //record the priority between two plane operation and interleave operation
 	int ad_priority2;               //record the priority of channel-level, 0 indicates that the priority order of channel-level is highest; 1 indicates the contrary
