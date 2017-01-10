@@ -3,6 +3,7 @@
 
 #include <sys/types.h>
 #include "initialize.hh"
+#include "ssd.hh"
 #include "flash.hh"
 #include "common.hh"
 
@@ -16,6 +17,7 @@
 // #define UTIL_LUN_STATE ssd->channel_head[channel].lun_head[lun].state_time[ssd->channel_head[channel].lun_head[lun].current_state - 100] += ssd->channel_head[channel].lun_head[lun].next_state_predict_time - ssd->channel_head[channel].lun_head[lun].current_time; 
  
 #define UTIL_PLANE_STATE ssd->channel_head[channel].lun_head[lun].plane_head[plane].state_time[plane_current_state] += ssd->channel_head[channel].lun_head[lun].next_state_predict_time - ssd->channel_head[channel].lun_head[lun].current_time; 
+
 
 void plane_erase_observation(ssd_info *ssd, const local * location);
 STATE find_victim_block( ssd_info *ssd,local * location); 

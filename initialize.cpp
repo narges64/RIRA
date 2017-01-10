@@ -3,191 +3,7 @@
 #include <string> 
  
 #include "initialize.hh"
-#include "common.hh"
-#define FALSE		0
-#define TRUE		1
 
-#define ACTIVE_FIXED 0
-#define ACTIVE_ADJUST 1
-
-local::local(unsigned int c, unsigned int w, unsigned int p){
-	channel = c; 
-	lun = w; 
-	plane = p; 
-}
-local::local (unsigned int c, unsigned int w,  unsigned int p, unsigned int b, unsigned int pg){
-	channel = c; lun = w; plane = p; block = b; page = pg; 
-}
-
-sub_request * SubQueue::get_subreq(int index){
-
-	if (index < 0) return NULL; 
-	int temp = 0; 
-	sub_request * qsub = queue_head; 
-
-	while (qsub != NULL) {
-		if (temp == index) return qsub; 
-		qsub = qsub->next_node;  
-		temp++; 
-	} 
-
-	return NULL; 
-
-}
-
-bool SubQueue::find_subreq(sub_request * sub){
-	// is there any request for the same location and same operation (read and write FIXME??? )
-	sub_request * qsub = queue_head; 
-	
-	while (qsub != NULL){
-		
-		if (qsub == sub) return true; 
-		
-		if (qsub->location->channel == sub->location->channel && qsub->location->lun == sub->location->lun && qsub->location->plane == sub->location->plane){
-			
-			if (qsub->location->block == sub->location->block && qsub->location->page == sub->location->page) {
-				// FIXME do we need to compare state?? 
-				return TRUE; 
-				
-			}
-			
-		}
-		
-		qsub = qsub->next_node; 
-	}
-	return FALSE; 
-}
-	
-void SubQueue::push_tail(sub_request * sub){
-	if (sub == NULL) return; 
-	
-	size++; 
-	
-	if (queue_tail == NULL){
-		queue_head = sub; 
-		queue_tail = sub; 
-		return; 
-	}
-	
-	queue_tail->next_node = sub; 
-	queue_tail = sub; 
-	sub->next_node = NULL; 
- 
-}
-
-void SubQueue::push_head(sub_request * sub){
-	if (sub == NULL) return; 
-	
-	size++; 
-	if (queue_tail == NULL){
-		queue_head = sub; 
-		queue_tail = sub; 
-		return; 
-	}
-	
-	sub->next_node = queue_head; 
-	queue_head = sub; 
-	
-}
-
-void SubQueue::remove_node(sub_request * sub){
-	if (sub == NULL) return; 
-	
-	size--; 
-	if (sub == queue_head) {
-		queue_head = queue_head->next_node; 
-		
-		if (queue_head == NULL) 
-			queue_tail = NULL; 
-		
-		return; 
-	}
-	sub_request * temp = queue_head; 
-	while (temp!= NULL && temp->next_node != sub){
-		temp = temp->next_node;			
-	}
-	
-	if (temp == NULL){
-		printf("ERROR couldn't find the sub request \n"); 
-		return; 
-	}
-	
-	if (temp->next_node == sub){
-		temp->next_node = sub->next_node; 
-		if (temp->next_node == NULL){
-			queue_tail = temp; 
-		}
-	}
-	
-	//delete sub; 
-}
-
-sub_request * SubQueue::target_request(unsigned int plane, unsigned int block, unsigned int page ){
-	
-	sub_request * sub = queue_head; 
-	
-	while (sub != NULL){
-		if (sub->location->plane == plane)
-			if (block == -1 || sub->location->block == block )
-				if (page == -1 || sub->location->page == page)
-					return sub; 
-		
-		
-		sub = sub->next_node; 
-		
-	}
-	
-	return sub; 
-}
-
-bool SubQueue::is_empty(){
-	if (queue_head == NULL) return true; 
-	return false; 
-}
-
-
-
-
-/************************************************************************
-* Compare function for AVL Tree                                        
-************************************************************************/
-extern int keyCompareFunc(TREE_NODE *p , TREE_NODE *p1)
-{
-	buffer_group *T1=NULL,*T2=NULL;
-
-	T1=(buffer_group*)p;
-	T2=(buffer_group*)p1;
-
-
-	if(T1->group< T2->group) return 1;
-	if(T1->group> T2->group) return -1;
-
-	return 0;
-}
-
-
-extern int freeFunc(TREE_NODE *pNode)
-{
-	
-	if(pNode!=NULL)
-	{
-		free((void *)pNode);
-		cout << "free pnode" << endl; 
-	}
-	
-	
-	pNode=NULL;
-	return 1;
-}
-
-
-/**********   initiation   ******************
-*modify by zhouwen
-*November 08,2011
-*initialize the ssd struct to simulate the ssd hardware
-*1.this function allocate memory for ssd structure 
-*2.set the infomation according to the parameter file
-*******************************************/
 ssd_info *initiation(ssd_info *ssd, char ** argv)
 {
 
@@ -199,7 +15,6 @@ ssd_info *initiation(ssd_info *ssd, char ** argv)
 	for (int i = 0; i < 10; i++)
 		ssd->tracefilename[i] = new char[40];  
 	ssd->statisticfilename = new char[40]; 	
-	
 	
 	parameter_value *parameters;
 	sprintf(ssd->parameterfilename, "%s", argv[1]);
@@ -393,9 +208,6 @@ dram_info * initialize_dram(ssd_info * ssd)
 
 	dram_info *dram=ssd->dram;
 	dram->dram_capacity = ssd->parameter->dram_capacity;		
-	dram->buffer = (tAVLTree *)avlTreeCreate((int*)keyCompareFunc , (int *)freeFunc);
-	dram->buffer->max_buffer_sector=ssd->parameter->dram_capacity/SECTOR; //512
-
 	dram->map = new map_info(); 
 
 	page_num = ssd->parameter->page_block*ssd->parameter->block_plane*ssd->parameter->plane_lun*ssd->parameter->lun_num;
@@ -454,7 +266,6 @@ plane_info * initialize_plane(plane_info * p_plane,parameter_value *parameter )
 	if (parameter->mplane_gc)
 		p_plane->second_active_block = 1; 
 
-	p_plane->erase_node = NULL; 
 	p_plane->erase_count = 0; 
 	p_plane->program_count = 0; 
 
@@ -514,8 +325,6 @@ ssd_info * initialize_channels(ssd_info * ssd )
 		p_channel->lun = ssd->parameter->lun_channel[i];
 		p_channel->current_state = CHANNEL_MODE_IDLE;
 		p_channel->next_state = CHANNEL_MODE_IDLE;
-		
-		p_channel->event = NULL; 
 		
 		p_channel->lun_head = new lun_info[ssd->parameter->lun_channel[i]]; 
 		

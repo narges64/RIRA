@@ -6,51 +6,33 @@ using namespace std;
 #define EPOCH_LENGTH (int64_t) 100000000000 // 00// 1 sec 
 
 int  main(int argc, char * argv[]){
-	unsigned  int i,j,k;
-	ssd_info *ssd;
-
-	ssd= new ssd_info(); 
-
-	if (argc >= 6) {	
-		ssd=initiation(ssd, argv);	
-	}
-	else{
-		printf("ERROR! usage: ./ssd parameter_name name lun_number scale trace(s)  \n");
-		return 1; 
-	} 
+	ssd_info *ssd= new ssd_info(); 
+	
+	if (argc < 10) return 0; 
+	ssd=initiation(ssd, argv);	
 	
 	full_sequential_write(ssd);
-
 	ssd=simulate(ssd);
-	
-	
+		
 	for (int cd = 0; cd < ssd->parameter->consolidation_degree; cd++){
 		collect_gc_statistics(ssd, cd);
 		print_epoch_statistics(ssd, cd);
 		print_statistics(ssd, cd);
 	}
 
-		
 	close_files(ssd); 
-
-	printf("\n");
-	printf("the simulation is completed!\n");
 	free_all_node(ssd);	
+	printf("\nthe simulation is completed!\n");
 	return 1;
 }
 ssd_info *simulate(ssd_info *ssd){
 
-	ssd->start = 0; 
-	int time_counter = 0; 
-	int flag=1,flag1=0;
-	double output_step=0;
+	int flag=0;
 	unsigned int a=0,b=0;
 
 	printf("\n");
 	printf("begin simulating.......................\n");
 	printf("\n");
-	printf("\n");
-	printf("   ^o^    OK, please wait a moment, and enjoy music and coffee   ^o^    \n");
 
 	int cd; 
 	for (cd = 0; cd < ssd->parameter->consolidation_degree; cd++){
@@ -65,21 +47,12 @@ ssd_info *simulate(ssd_info *ssd){
 	
 	int i = 0; 
 	while(flag!=100)      
-	{
-        
+	{ 
 		flag=get_requests_consolidation(ssd);
 		
 		if(flag == 1)
 		{   
-			if (ssd->parameter->dram_capacity!=0)
-			{
-				buffer_management(ssd);  
-				distribute(ssd); 				
-			} 
-			else
-			{				
-				no_buffer_distribute(ssd);
-			}		
+			no_buffer_distribute(ssd);
 		}
 		
 		process(ssd); 
@@ -103,7 +76,6 @@ ssd_info *simulate(ssd_info *ssd){
 	
 	return ssd;
 }
-
 
 int add_fetched_request(ssd_info * ssd, request * request1, uint64_t nearest_event_time) {
 	if (request1 == NULL){	// no request before nearest_event_time	
@@ -892,220 +864,4 @@ void close_files(ssd_info * ssd) {
 	
 	fflush(ssd->statisticfile);
 	fclose(ssd->statisticfile);
-}
-ssd_info *distribute(ssd_info *ssd) {
-	unsigned int start, end, first_lsn, last_lsn, lpn, flag = 0, flag_attached = 0; 
-	uint64_t full_page; 
-	unsigned int j, k, sub_size;
-	int i=0;
-	request *req;
-	sub_request *sub;
-	unsigned int* complt;
-
-	#ifdef DEBUG
-	printf("enter distribute,  current time:%lld\n",ssd->current_time);
-	#endif
-	full_page=~(0xffffffffffffffff<<ssd->parameter->subpage_page);
-
-	req = ssd->request_tail;
-	if(req->response_time != 0){
-		return ssd;
-	}
-	if (req->operation==WRITE)
-	{
-		return ssd;
-	}
-
-	
-	if(req != NULL)
-	{
-		if(req->distri_flag == 0)
-		{
-	
-			if(req->complete_lsn_count != ssd->request_tail->size)
-			{		
-				first_lsn = req->lsn;				
-				last_lsn = first_lsn + req->size;
-				complt = req->need_distr_flag; // which subpages need to be transfered 
-				start = first_lsn - first_lsn % ssd->parameter->subpage_page;
-				end = (last_lsn/ssd->parameter->subpage_page + 1) * ssd->parameter->subpage_page;
-				i = (end - start)/32;	
-	
-				while(i >= 0)
-				{	
-					for(j=0; j<32/ssd->parameter->subpage_page; j++)
-					{	
-					
-						
-						k = (complt[((end-start)/32-i)] >>(ssd->parameter->subpage_page*j)) & full_page;	  // k: which subpages need to be transfered 
-						
-						if (k !=0) 
-						{
-							lpn = start/ssd->parameter->subpage_page+ ((end-start)/32-i)*32/ssd->parameter->subpage_page + j;
-							sub_size=transfer_size(ssd,k,lpn,req);    
-							if (sub_size==0) 
-							{
-								continue;
-							}
-							else
-							{
-								sub=create_sub_request(ssd,lpn,sub_size,0,req,req->operation);
-							}	
-						}
-					}
-					i = i-1;
-				}
-
-			}
-			else
-			{
-				req->begin_time=ssd->current_time;
-				req->response_time=ssd->current_time+1000;   
-			}
-
-		}
-	}
-	return ssd;
-}
-ssd_info *buffer_management(ssd_info *ssd){   
-	unsigned int j, lsn, lpn, last_lpn, first_lpn, index, complete_flag = 0; 
-	uint64_t state, full_page;
-	unsigned int flag=0,need_distb_flag,lsn_flag,flag1=1,active_region_flag=0;           
-	request *new_request;
-	buffer_group *buffer_node,key;
-	uint64_t mask=0,offset1=0,offset2=0;
-
-	#ifdef DEBUG
-	printf("enter buffer_management,  current time:%lld\n",ssd->current_time);
-	#endif
-	ssd->dram->current_time=ssd->current_time;
-	full_page=~(0xffffffffffffffff<<ssd->parameter->subpage_page);
-	
-	new_request=ssd->request_tail;
-	lsn=new_request->lsn;
-	lpn=new_request->lsn/ssd->parameter->subpage_page;
-	
-	
-	last_lpn=(new_request->lsn+new_request->size-1)/ssd->parameter->subpage_page;
-	first_lpn=new_request->lsn/ssd->parameter->subpage_page;
-
-	new_request->need_distr_flag= new unsigned int [((last_lpn-first_lpn+1)*ssd->parameter->subpage_page/32+1)];
-	
-	//printf("-----------------------\n lsn %d, lpn %d, first_lpn %d, last_lpn %d, subpage_page %d \n---------------\n\n", lsn, lpn, first_lpn, last_lpn, ssd->parameter->subpage_page); 
-	
-	if(new_request->operation==READ) 
-	{		
-		while(lpn<=last_lpn)      		
-		{
-			need_distb_flag=full_page;   
-			key.group=lpn;
-			buffer_node= (struct buffer_group*)avlTreeFind(ssd->dram->buffer, (TREE_NODE *)&key);		// buffer node 
-			
-			while((buffer_node!=NULL)&&(lsn<(lpn+1)*ssd->parameter->subpage_page)&&(lsn<=(new_request->lsn+new_request->size-1)))             			
-			{             	
-				// stored shows which sectors are stored in the buffer 
-				
-				lsn_flag=full_page;
-				mask=1 << (lsn%ssd->parameter->subpage_page);
-				/*if(mask>31)
-				{
-					printf("the subpage number is larger than 32!add some cases %d", mask);
-					getchar(); 		   
-				}
-				else */if((buffer_node->stored & mask)==mask)
-				{
-					flag=1;
-					lsn_flag=lsn_flag&(~mask);
-				}
-
-				if(flag==1)				
-				{	
-					if(ssd->dram->buffer->buffer_head!=buffer_node)     
-					{		
-						if(ssd->dram->buffer->buffer_tail==buffer_node)								
-						{			
-							buffer_node->LRU_link_pre->LRU_link_next=NULL;					
-							ssd->dram->buffer->buffer_tail=buffer_node->LRU_link_pre;							
-						}				
-						else								
-						{				
-							buffer_node->LRU_link_pre->LRU_link_next=buffer_node->LRU_link_next;				
-							buffer_node->LRU_link_next->LRU_link_pre=buffer_node->LRU_link_pre;								
-						}								
-						buffer_node->LRU_link_next=ssd->dram->buffer->buffer_head;
-						ssd->dram->buffer->buffer_head->LRU_link_pre=buffer_node;
-						buffer_node->LRU_link_pre=NULL;			
-						ssd->dram->buffer->buffer_head=buffer_node;													
-					}						
-					ssd->dram->buffer->read_hit++;					
-					new_request->complete_lsn_count++;											
-				}		
-				else if(flag==0)
-				{
-					ssd->dram->buffer->read_miss_hit++;
-				}
-
-				need_distb_flag=need_distb_flag&lsn_flag;
-				flag=0;		
-				lsn++;						
-			}	
-				
-			index=(lpn-first_lpn)/(32/ssd->parameter->subpage_page); 			
-			
-			new_request->need_distr_flag[index]=new_request->need_distr_flag[index]|(need_distb_flag<<(((lpn-first_lpn)%(32/ssd->parameter->subpage_page))*ssd->parameter->subpage_page));	
-			// need distr flag specify in a subpage need to be transfered or not. Here, this code collect information of one, two, ... pages in one array element. 
-			// e.g. if pagesize is 16, this code collect information of two pages in one array element 
-			
-			lpn++;
-			
-		}
-	}  
-	else if(new_request->operation==WRITE)
-	{
-		while(lpn<=last_lpn)           	
-		{	
-			need_distb_flag=full_page;
-			mask=~(0xffffffffffffffff<<(ssd->parameter->subpage_page));
-			state=mask;
-
-			if(lpn==first_lpn)
-			{
-				offset1=ssd->parameter->subpage_page-((lpn+1)*ssd->parameter->subpage_page-new_request->lsn);
-				state=state&(0xffffffffffffffff<<offset1);
-			}
-			if(lpn==last_lpn)
-			{
-				offset2=ssd->parameter->subpage_page-((lpn+1)*ssd->parameter->subpage_page-(new_request->lsn+new_request->size));
-				state=state&(~(0xffffffffffffffff<<offset2));
-			}
-			// state is which lsn needs to be written 	
-			
-			//if (new_request->io_num == 197)
-			//	printf("TOE now we are inserting 197 into the buffer %lld \n", ssd->current_time); 
-			ssd=insert2buffer(ssd, lpn, state,NULL,new_request);
-			
-			lpn++;
-		}
-	}
-	complete_flag = 1;
-	for(j=0;j<=(last_lpn-first_lpn+1)*ssd->parameter->subpage_page/32;j++)
-	{
-		if(new_request->need_distr_flag[j] != 0)
-		{
-			complete_flag = 0;
-		}
-	}
-
-	// for writes the complete_flag is always 1 (I guess), it only depends on new_request->subs
-	if((complete_flag == 1)&&(new_request->subs==NULL))               
-	{
-
-		new_request->begin_time=ssd->current_time;
-		new_request->response_time=ssd->current_time+1000;            
-	}else{
-		//if (new_request->operation == WRITE)
-			//printf(" this write request created sub requests %d \n", new_request->io_num); 
-	}
-
-	return ssd;
 }

@@ -10,6 +10,7 @@
 
 #define MAX_INT64  0x7fffffffffffffffll
 
+
 ssd_info *simulate(ssd_info *);
 ssd_info *buffer_management(ssd_info *);
 ssd_info *distribute(ssd_info *);
