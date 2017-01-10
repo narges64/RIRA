@@ -443,6 +443,7 @@ public:
 	
 	int64_t * state_time; 
 	int GCMode; // GC, IO, MIX 
+	unsigned int plane_token; 
 }; 
 
 
@@ -452,7 +453,6 @@ public:
 	unsigned long read_count;
 	unsigned long program_count;
 	unsigned long erase_count;
-	unsigned int token;                  
 
 	unsigned long epoch_read_count;  
 	unsigned long epoch_program_count ; 
@@ -504,7 +504,7 @@ public:
 	int active_flag;                     
 	unsigned int page;
 
-	unsigned int token;                  
+	unsigned int lun_token;                  
 	unsigned int gc_request;            
 	unsigned int * read_request_count;
 	unsigned int * total_read_request_count;

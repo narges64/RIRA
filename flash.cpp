@@ -262,6 +262,7 @@ sub_request * create_sub_request( ssd_info * ssd,unsigned int lpn,int size,uint6
 
 		if (allocate_location(ssd ,sub)==ERROR)
 		{
+			cout << "Error in allocating location to the sub request! " << endl; 
 			delete sub; 
 			return NULL;
 		}
@@ -526,27 +527,34 @@ int find_lun_gc_requests(ssd_info * ssd, unsigned int channel, unsigned int lun,
 	return subs_count; 	
 }
 
-
-
+unsigned int get_target_lun(ssd_info * ssd){
+	unsigned int target_lun = ssd->lun_token; 
+	ssd->lun_token = (ssd->lun_token + 1) % ssd->parameter->lun_num; 
+	return target_lun; 
+}
+unsigned int get_target_plane(ssd_info * ssd, unsigned int channel, unsigned int lun) {
+	unsigned int target_plane = ssd->channel_head[channel].lun_head[lun].plane_token; 
+	ssd->channel_head[channel].lun_head[lun].plane_token = (ssd->channel_head[channel].lun_head[lun].plane_token + 1) % ssd->parameter->plane_lun; 
+	return target_plane; 
+}  
 
 STATE allocate_location( ssd_info * ssd , sub_request *sub_req){
-	 sub_request * update=NULL;
-	 unsigned int channel_num=0,lun_num=0,plane_num=0;
-	 local *location= new local(0,0,0); 
+	sub_request * update=NULL;
+	unsigned int channel_num=0,lun_num=0,plane_num=0;
+	local *location= new local(0,0,0); 
 	
 	channel_num = ssd->parameter->channel_number; 
 	lun_num=ssd->parameter->lun_channel[0];
 	plane_num=ssd->parameter->plane_lun;
- 
-	sub_req->location->channel=sub_req->lpn%channel_num;
-	lun_num=ssd->parameter->lun_channel[sub_req->location->channel];
-	sub_req->location->lun=(sub_req->lpn/channel_num)%(lun_num);
-	sub_req->location->plane=(sub_req->lpn/(lun_num*channel_num))%plane_num;
-		
+
+	unsigned int target_lun = get_target_lun(ssd); 
+
+	sub_req->location->channel=target_lun / channel_num;
+	sub_req->location->lun= target_lun % channel_num; 
+	sub_req->location->plane= get_target_plane(ssd, sub_req->location->channel, sub_req->location->lun); 
 	
 	if (ssd->dram->map->map_entry[sub_req->lpn].state!=0)
 	{            
-
 		if ((sub_req->state&ssd->dram->map->map_entry[sub_req->lpn].state)!=ssd->dram->map->map_entry[sub_req->lpn].state)  
 		{
 		

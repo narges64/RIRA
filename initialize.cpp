@@ -185,7 +185,8 @@ ssd_info *initiation(ssd_info *ssd, char ** argv)
 	ssd->read_worst_case_rt = 0; 
 	
 	ssd->gc_moved_page = 0; 
-	
+
+	ssd->lun_token = 0; 	
 	ssd->subreq_state_time = new int64_t[SR_MODE_NUM]; 
 	for (unsigned int i = 0; i < SR_MODE_NUM; i++){
 		ssd->subreq_state_time[i] = 0; 	
@@ -252,7 +253,6 @@ plane_info * initialize_plane(plane_info * p_plane,parameter_value *parameter )
 	blk_info * p_block;
 	p_plane->add_reg_ppn = -1;  
 	p_plane->free_page=parameter->block_plane*parameter->page_block;
-
 	p_plane->blk_head = new blk_info[parameter->block_plane]; 
 
 	for(i = 0; i<parameter->block_plane; i++)
@@ -262,15 +262,18 @@ plane_info * initialize_plane(plane_info * p_plane,parameter_value *parameter )
 	}
 
 	p_plane->active_block = 0; 
-	
-	if (parameter->mplane_gc)
-		p_plane->second_active_block = 1; 
+		
+	p_plane->second_active_block = 1; 
 
 	p_plane->erase_count = 0; 
 	p_plane->program_count = 0; 
 
 	p_plane->GCMode = PLANE_MODE_IO; 
-	
+		
+	p_plane->current_state = PLANE_MODE_IDLE; 
+	p_plane->next_state = PLANE_MODE_IDLE; 
+	p_plane->current_time = 0; 
+	p_plane->next_state_predict_time = 0; 
 	p_plane->state_time = new int64_t[PLANE_MODE_NUM]; 
 	for (int i = 0; i < PLANE_MODE_NUM; i++){
 		p_plane->state_time[i] = 0; 

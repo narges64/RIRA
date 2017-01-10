@@ -4,8 +4,8 @@ EXEC = ssd
 
 OBJ_FILES = \
 	common.o initialize.o \
-	avlTree.o pagemap.o \
-	flash.o garbage_collection.o ssd.o\
+	flash.o pagemap.o \
+	garbage_collection.o ssd.o\
 
 OBJ_DIR = obj
 OBJS = $(patsubst %.o,$(OBJ_DIR)/%.o,$(OBJ_FILES))
