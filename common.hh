@@ -119,13 +119,6 @@ public:
 	int alloc_pool;                 //allocation pool 
 	float overprovide;
 	float gc_threshold;             
-	double operating_current;      
-	double supply_voltage;	
-	double dram_active_current;     //cpu sdram work current   uA
-	double dram_standby_current;    //cpu sdram work current   uA
-	double dram_refresh_current;    //cpu sdram work current   uA
-	double dram_voltage;            //cpu sdram work voltage  V
-
 	int buffer_management;          //indicates that there are buffer management or not
 	int scheduling_algorithm;       
 	float quick_radio;

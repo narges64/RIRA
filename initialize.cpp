@@ -409,82 +409,14 @@ parameter_value *load_parameters(char parameter_file[30])
 			sscanf(buf + next_eql,"%d",&p->time_characteristics.tDBSY); 
 		}else if((res_eql=strcmp(buf,"t_BERS")) ==0){
 			sscanf(buf + next_eql,"%d",&p->time_characteristics.tBERS); 
-//		}else if((res_eql=strcmp(buf,"t_CLS")) ==0){
-//			sscanf(buf + next_eql,"%d",&p->time_characteristics.tCLS); 
-//		}else if((res_eql=strcmp(buf,"t_CLH")) ==0){
-//			sscanf(buf + next_eql,"%d",&p->time_characteristics.tCLH); 
-//		}else if((res_eql=strcmp(buf,"t_CS")) ==0){
-//			sscanf(buf + next_eql,"%d",&p->time_characteristics.tCS); 
-//		}else if((res_eql=strcmp(buf,"t_CH")) ==0){
-//			sscanf(buf + next_eql,"%d",&p->time_characteristics.tCH); 
-//		}else if((res_eql=strcmp(buf,"t_WP")) ==0){
-//			sscanf(buf + next_eql,"%d",&p->time_characteristics.tWP); 
-//		}else if((res_eql=strcmp(buf,"t_ALS")) ==0){
-//			sscanf(buf + next_eql,"%d",&p->time_characteristics.tALS); 
-//		}else if((res_eql=strcmp(buf,"t_ALH")) ==0){
-//			sscanf(buf + next_eql,"%d",&p->time_characteristics.tALH); 
-//		}else if((res_eql=strcmp(buf,"t_DS")) ==0){
-//			sscanf(buf + next_eql,"%d",&p->time_characteristics.tDS); 
-//		}else if((res_eql=strcmp(buf,"t_DH")) ==0){
-//			sscanf(buf + next_eql,"%d",&p->time_characteristics.tDH); 
 		}else if((res_eql=strcmp(buf,"t_WC")) ==0){
 			sscanf(buf + next_eql,"%d",&p->time_characteristics.tWC); 
-//		}else if((res_eql=strcmp(buf,"t_WH")) ==0){
-//			sscanf(buf + next_eql,"%d",&p->time_characteristics.tWH); 
-//		}else if((res_eql=strcmp(buf,"t_ADL")) ==0){
-//			sscanf(buf + next_eql,"%d",&p->time_characteristics.tADL); 
 		}else if((res_eql=strcmp(buf,"t_R")) ==0){
 			sscanf(buf + next_eql,"%d",&p->time_characteristics.tR); 
-//		}else if((res_eql=strcmp(buf,"t_AR")) ==0){
-//			sscanf(buf + next_eql,"%d",&p->time_characteristics.tAR); 
-//		}else if((res_eql=strcmp(buf,"t_CLR")) ==0){
-//			sscanf(buf + next_eql,"%d",&p->time_characteristics.tCLR); 
-//		}else if((res_eql=strcmp(buf,"t_RR")) ==0){
-//			sscanf(buf + next_eql,"%d",&p->time_characteristics.tRR); 
-//		}else if((res_eql=strcmp(buf,"t_RP")) ==0){
-//			sscanf(buf + next_eql,"%d",&p->time_characteristics.tRP); 
-//		}else if((res_eql=strcmp(buf,"t_WB")) ==0){
-//			sscanf(buf + next_eql,"%d",&p->time_characteristics.tWB); 
 		}else if((res_eql=strcmp(buf,"t_RC")) ==0){
 			sscanf(buf + next_eql,"%d",&p->time_characteristics.tRC); 
-//		}else if((res_eql=strcmp(buf,"t_REA")) ==0){
-//			sscanf(buf + next_eql,"%d",&p->time_characteristics.tREA); 
-//		}else if((res_eql=strcmp(buf,"t_CEA")) ==0){
-//			sscanf(buf + next_eql,"%d",&p->time_characteristics.tCEA); 
-//		}else if((res_eql=strcmp(buf,"t_RHZ")) ==0){
-//			sscanf(buf + next_eql,"%d",&p->time_characteristics.tRHZ); 
-//		}else if((res_eql=strcmp(buf,"t_CHZ")) ==0){
-//			sscanf(buf + next_eql,"%d",&p->time_characteristics.tCHZ); 
-//		}else if((res_eql=strcmp(buf,"t_RHOH")) ==0){
-//			sscanf(buf + next_eql,"%d",&p->time_characteristics.tRHOH); 
-//		}else if((res_eql=strcmp(buf,"t_RLOH")) ==0){
-//			sscanf(buf + next_eql,"%d",&p->time_characteristics.tRLOH); 
-//		}else if((res_eql=strcmp(buf,"t_COH")) ==0){
-//			sscanf(buf + next_eql,"%d",&p->time_characteristics.tCOH); 
-//		}else if((res_eql=strcmp(buf,"t_REH")) ==0){
-//			sscanf(buf + next_eql,"%d",&p->time_characteristics.tREH); 
-//		}else if((res_eql=strcmp(buf,"t_IR")) ==0){
-//			sscanf(buf + next_eql,"%d",&p->time_characteristics.tIR); 
-//		}else if((res_eql=strcmp(buf,"t_RHW")) ==0){
-//			sscanf(buf + next_eql,"%d",&p->time_characteristics.tRHW); 
-//		}else if((res_eql=strcmp(buf,"t_WHR")) ==0){
-//			sscanf(buf + next_eql,"%d",&p->time_characteristics.tWHR); 
-//		}else if((res_eql=strcmp(buf,"t_RST")) ==0){
-//			sscanf(buf + next_eql,"%d",&p->time_characteristics.tRST); 
 		}else if((res_eql=strcmp(buf,"erase limit")) ==0){
 			sscanf(buf + next_eql,"%d",&p->ers_limit); 
-		}else if((res_eql=strcmp(buf,"flash operating current")) ==0){
-			sscanf(buf + next_eql,"%lf",&p->operating_current); 
-		}else if((res_eql=strcmp(buf,"flash supply voltage")) ==0){
-			sscanf(buf + next_eql,"%lf",&p->supply_voltage); 
-		}else if((res_eql=strcmp(buf,"dram active current")) ==0){
-			sscanf(buf + next_eql,"%lf",&p->dram_active_current); 
-		}else if((res_eql=strcmp(buf,"dram standby current")) ==0){
-			sscanf(buf + next_eql,"%lf",&p->dram_standby_current); 
-		}else if((res_eql=strcmp(buf,"dram refresh current")) ==0){
-			sscanf(buf + next_eql,"%lf",&p->dram_refresh_current); 
-		}else if((res_eql=strcmp(buf,"dram voltage")) ==0){
-			sscanf(buf + next_eql,"%lf",&p->dram_voltage); 
 		}else if((res_eql=strcmp(buf,"address mapping")) ==0){
 			sscanf(buf + next_eql,"%d",&p->address_mapping); 
 		}else if((res_eql=strcmp(buf,"wear leveling")) ==0){
