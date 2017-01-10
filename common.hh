@@ -328,7 +328,7 @@ public:
 	unsigned int app_id; 
 	unsigned int io_num; 
 
-	long long int  time;
+	int64_t  time;
 	unsigned int lsn;
 	unsigned int size;
 	unsigned int operation;
@@ -492,7 +492,6 @@ public:
 			delete  channel_head[i].lun_head; 
 		}
 		delete channel_head; 
-		//avlTreeDestroy( dram->buffer);
 	
 		//delete dram; 
 		delete parameter; 

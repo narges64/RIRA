@@ -13,7 +13,7 @@ void trace_assert(int64_t time_t,int device,unsigned int lsn,int size,int ope)
 {
 	if(time_t <0 || device < 0  || size < 0 || ope < 0)
 	{
-		printf("trace error:%lld %d %d %d %d\n",time_t,device,lsn,size,ope);
+		printf("trace error:%lu %d %d %d %d\n",time_t,device,lsn,size,ope);
 		getchar();
 		exit(-1);
 	}

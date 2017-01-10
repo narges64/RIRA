@@ -227,18 +227,16 @@ int select_trace_file(ssd_info * ssd){
 		//if (feof(ssd->tracefile[cd])) {continue; }
 		time_tt = MAX_INT64; 
 		filepoint = ftell(ssd->tracefile[cd]);		
-		sprintf(buffer, ""); 
 		fgets(buffer, 200, ssd->tracefile[cd]); 
-		sscanf(buffer,"%d %lld %d %d %s %d %d %d",&io_num,&time_tt,&device,&file_desc,type,&lsn,&size,&app_id); 
+		sscanf(buffer,"%d %lu %d %d %s %d %d %d",&io_num,&time_tt,&device,&file_desc,type,&lsn,&size,&app_id); 
 		
 		if ((feof(ssd->tracefile[cd]) || time_tt == MAX_INT64) && (ssd->repeat_times[cd] < ssd->parameter->repeat_trace )){
 			
 			restart_trace_files(ssd);
 			
 			filepoint = ftell(ssd->tracefile[cd]);		
-			sprintf(buffer, ""); 
 			fgets(buffer, 200, ssd->tracefile[cd]); 
-			sscanf(buffer,"%d %lld %d %d %s %d %d %d",&io_num,&time_tt,&device,&file_desc,type,&lsn,&size,&app_id); 
+			sscanf(buffer,"%d %lu %d %d %s %d %d %d",&io_num,&time_tt,&device,&file_desc,type,&lsn,&size,&app_id); 
 
 		}
 		
@@ -302,9 +300,8 @@ request * read_request_from_file(ssd_info * ssd, int selected, int64_t nearest_e
 	
 	time_tt = MAX_INT64; lsn=0; 
 	filepoint= ftell(ssd->tracefile[selected]);		
-	sprintf(buffer, ""); 
 	fgets(buffer, 200, ssd->tracefile[selected]); 
-	sscanf(buffer,"%d %lld %d %d %s %d %ld %d",&io_num,&time_tt,&device,&file_desc,type,&lsn,&size,&app_id); 
+	sscanf(buffer,"%d %lu %d %d %s %d %ld %d",&io_num,&time_tt,&device,&file_desc,type,&lsn,&size,&app_id); 
 	if (time_tt != MAX_INT64){
 		time_tt = time_tt * ssd->parameter->time_scale; 
 		time_tt = time_tt + ssd->last_times[selected];
@@ -399,7 +396,7 @@ void collect_statistics(ssd_info * ssd, request * req){
 	
 	if(req->response_time-req->time==0)
 	{
-		printf("1. the response time is 0?? %lld %lld \n", req->response_time, req->time);
+		printf("1. the response time is 0?? %lu %lu \n", req->response_time, req->time);
 		getchar();
 	}
 
@@ -444,15 +441,15 @@ void print_epoch_statistics(ssd_info * ssd, int app_id){
 	ssd->total_read_RT[app_id] = ((ssd->total_read_RT[app_id] * (double)prev_total_r ) + ssd->read_avg[app_id]) / next_total_r;  	
 	ssd->total_write_RT[app_id] = ((ssd->total_write_RT[app_id] * (double)prev_total_w ) + ssd->write_avg[app_id]) / next_total_w;  	
 
-	fprintf(ssd->statisticfile, "LATENCY %d %d RT %lld , count  %ld\n", epoch_num, app_id, RT, rw_count);
-	fprintf(ssd->statisticfile, "LATENCY %d %d read RT %lld , count %d\n", epoch_num, app_id, read_RT, ssd->read_request_count[app_id]);
-	fprintf(ssd->statisticfile, "LATENCY %d %d write RT %lld , count %d\n", epoch_num, app_id, write_RT, ssd->write_request_count[app_id]);
-	fprintf(ssd->statisticfile, "LATENCY %d %d read worst case %lld \n", epoch_num, app_id, ssd->read_worst_case_rt);
-	fprintf(ssd->statisticfile, "LATENCY %d %d write worst case %lld \n", epoch_num, app_id, ssd->write_worst_case_rt);
+	fprintf(ssd->statisticfile, "LATENCY %d %d RT %lu , count  %ld\n", epoch_num, app_id, RT, rw_count);
+	fprintf(ssd->statisticfile, "LATENCY %d %d read RT %lu , count %d\n", epoch_num, app_id, read_RT, ssd->read_request_count[app_id]);
+	fprintf(ssd->statisticfile, "LATENCY %d %d write RT %lu , count %d\n", epoch_num, app_id, write_RT, ssd->write_request_count[app_id]);
+	fprintf(ssd->statisticfile, "LATENCY %d %d read worst case %lu \n", epoch_num, app_id, ssd->read_worst_case_rt);
+	fprintf(ssd->statisticfile, "LATENCY %d %d write worst case %lu \n", epoch_num, app_id, ssd->write_worst_case_rt);
 	fprintf(ssd->statisticfile, "LATENCY %d %d erase(gc) count %d , total %d\n", epoch_num, app_id, ssd->flash_erase_count, ssd->total_flash_erase_count);
-	fprintf(ssd->statisticfile, "LATENCY %d %d Total RT %lld , count %ld \n", epoch_num, app_id, ssd->total_RT[app_id], next_total_rw);
-	fprintf(ssd->statisticfile, "LATENCY %d %d Total read RT %lld , count %ld \n", epoch_num, app_id, ssd->total_read_RT[app_id], next_total_r);
-	fprintf(ssd->statisticfile, "LATENCY %d %d Total write RT %lld , count %ld \n", epoch_num, app_id, ssd->total_write_RT[app_id], next_total_w);
+	fprintf(ssd->statisticfile, "LATENCY %d %d Total RT %lu , count %ld \n", epoch_num, app_id, ssd->total_RT[app_id], next_total_rw);
+	fprintf(ssd->statisticfile, "LATENCY %d %d Total read RT %lu , count %ld \n", epoch_num, app_id, ssd->total_read_RT[app_id], next_total_r);
+	fprintf(ssd->statisticfile, "LATENCY %d %d Total write RT %lu , count %ld \n", epoch_num, app_id, ssd->total_write_RT[app_id], next_total_w);
 
 	ssd->read_request_count[app_id] = 0;
 	ssd->write_request_count[app_id] = 0;
@@ -467,7 +464,7 @@ void print_epoch_statistics(ssd_info * ssd, int app_id){
 	fprintf(ssd->statisticfile, "SUBREQ %d \t", epoch_num); 
 	
 	for (int i = 0; i < SR_MODE_NUM; i++){
-		fprintf(ssd->statisticfile, "%lld\t",ssd->subreq_state_time[i]); 
+		fprintf(ssd->statisticfile, "%lu\t",ssd->subreq_state_time[i]); 
 		ssd->subreq_state_time[i] = 0; 
 	}
 	fprintf(ssd->statisticfile, "\n"); 
@@ -481,7 +478,7 @@ void print_epoch_statistics(ssd_info * ssd, int app_id){
 
 		fprintf(ssd->statisticfile, "LUN STAT (%d,%d) ",  channel_num, lun_num); 
 		for (int i = 0; i < LUN_MODE_NUM; i++){
-			fprintf(ssd->statisticfile, "%lld\t", the_lun->state_time[i]); 
+			fprintf(ssd->statisticfile, "%lu\t", the_lun->state_time[i]); 
 			the_lun->state_time[i] = 0; 
 		}
 		fprintf(ssd->statisticfile, "\n");
@@ -492,7 +489,7 @@ void print_epoch_statistics(ssd_info * ssd, int app_id){
 			fprintf(ssd->statisticfile, "PLANE STAT (%d,%d,%d) ", channel_num, lun_num, plane_num);
 			
 			for (int i = 0; i < PLANE_MODE_NUM; i++){
-				fprintf(ssd->statisticfile, "%lld\t",the_plane->state_time[i]); 
+				fprintf(ssd->statisticfile, "%lu\t",the_plane->state_time[i]); 
 				the_plane->state_time[i] = 0; 
 			}
 			fprintf(ssd->statisticfile, "\n");
@@ -512,15 +509,15 @@ void print_statistics(ssd_info *ssd, int app){
 	//ssd->total_flash_erase_count += ssd->flash_erase_count; 
 	
 	
-	fprintf(ssd->statisticfile, "======== Round %d for application %d , time %lld ============ \n", ssd->repeat_times[app], app, ssd->total_execution_time); 
+	fprintf(ssd->statisticfile, "======== Round %d for application %d , time %lu ============ \n", ssd->repeat_times[app], app, ssd->total_execution_time); 
 	
 	long int rw_count = ssd->total_read_request_count[app] + ssd->total_write_request_count[app]; 
 	long int r_count = ssd->total_read_request_count[app];
 	long int w_count = ssd->total_write_request_count[app]; 
 	
-	fprintf(ssd->statisticfile, "request average response time[%d]: ( %lld ) , count %ld \n", app, ssd->total_RT[app] ,rw_count);
-	fprintf(ssd->statisticfile, "request average read response time[%d]: ( %lld ) , count %ld \n", app, ssd->total_read_RT[app] ,r_count);
-	fprintf(ssd->statisticfile, "request average write response time[%d]: ( %lld ) , count %ld \n", app, ssd->total_write_RT[app] ,w_count);
+	fprintf(ssd->statisticfile, "request average response time[%d]: ( %lu ) , count %ld \n", app, ssd->total_RT[app] ,rw_count);
+	fprintf(ssd->statisticfile, "request average read response time[%d]: ( %lu ) , count %ld \n", app, ssd->total_read_RT[app] ,r_count);
+	fprintf(ssd->statisticfile, "request average write response time[%d]: ( %lu ) , count %ld \n", app, ssd->total_write_RT[app] ,w_count);
 
 	fprintf(ssd->statisticfile,"erase: ( %13d )\n", ssd->total_flash_erase_count);
 	fprintf(ssd->statisticfile,"total gc move count: %d \n", ssd->gc_moved_page);
@@ -843,7 +840,7 @@ ssd_info *no_buffer_distribute(ssd_info *ssd){
 
 			sub_size=size(state);
 			if (sub_size > 32){
-				printf("%lld ************** \n", state);
+				printf("%lu ************** \n", state);
 			}
 			sub=create_sub_request(ssd,lpn,sub_size,state,req,req->operation);
 			lpn++;

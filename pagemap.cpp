@@ -218,7 +218,7 @@ request * get_next_write_request(ssd_info * ssd, int cd){
 		// UMASS format: IO # , Arrival Time (ns) , Device # , File Descriptor # , Access Type , Offset , Length , Application ID 
 		int io_num, file_desc, app_id; 
 		char * type = new char[5]; 
-		sscanf(buffer_request,"%d %lld %d %d %s %d %d %d",&io_num,&time,&device,&file_desc,type,&lsn,&size,&app_id); 
+		sscanf(buffer_request,"%d %lu %d %d %s %d %d %d",&io_num,&time,&device,&file_desc,type,&lsn,&size,&app_id); 
 		if (strcasecmp(type, "Read") == 0)
 			ope = 1; 
 		else 

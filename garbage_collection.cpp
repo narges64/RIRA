@@ -425,7 +425,7 @@ STATE fifo_algorithm(ssd_info * ssd,  local * location){
 			block = i; 			
 		}		
 	}
-	printf("block %d , %lld \n", block, ssd->channel_head[location->channel].lun_head[location->lun].plane_head[location->plane].blk_head[block].last_write_time );
+	printf("block %d , %lu \n", block, ssd->channel_head[location->channel].lun_head[location->lun].plane_head[location->plane].blk_head[block].last_write_time );
 	location->block = block; 
 	return SUCCESS; 
 }
