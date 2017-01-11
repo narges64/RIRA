@@ -119,7 +119,6 @@ public:
 	int alloc_pool;                 //allocation pool 
 	float overprovide;
 	float gc_threshold;             
-	int buffer_management;          //indicates that there are buffer management or not
 	int scheduling_algorithm;       
 	float quick_radio;
 	int related_mapping;
@@ -130,23 +129,13 @@ public:
 	int striping;                 
 	int interleaving;
 	int pipelining;
-	//int threshold_fixed_adjust;
-	//int threshold_value;
 	int active_write;               //yes;0,no
 	float gc_up_threshold;        
 	float gc_down_threshold; 
 	float gc_mplane_threshold;
-	int allocation_scheme;        
 	int advanced_commands;  
-	int ad_priority;                //record the priority between two plane operation and interleave operation
-	int ad_priority2;               //record the priority of channel-level, 0 indicates that the priority order of channel-level is highest; 1 indicates the contrary
-	int greed_CB_ad;                //0 don't use copyback advanced commands greedily; 1 use copyback advanced commands greedily
-	int greed_MPW_ad;               //0 don't use multi-plane write advanced commands greedily; 1 use multi-plane write advanced commands greedily
-	int aged;                    
-	float aged_ratio; 
 	int queue_length;
 	int pargc_approach; 
-	float pargc_cost_threshold; 
 
 	ac_time_characteristics time_characteristics;
 	

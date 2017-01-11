@@ -429,8 +429,6 @@ parameter_value *load_parameters(char parameter_file[30])
 			sscanf(buf + next_eql,"%f",&p->overprovide); 
 		}else if((res_eql=strcmp(buf,"gc threshold")) ==0){
 			sscanf(buf + next_eql,"%f",&p->gc_threshold); 
-		}else if((res_eql=strcmp(buf,"buffer management")) ==0){
-			sscanf(buf + next_eql,"%d",&p->buffer_management); 
 		}else if((res_eql=strcmp(buf,"scheduling algorithm")) ==0){
 			sscanf(buf + next_eql,"%d",&p->scheduling_algorithm); 
 		}else if((res_eql=strcmp(buf,"quick table radio")) ==0){
@@ -461,22 +459,8 @@ parameter_value *load_parameters(char parameter_file[30])
 			sscanf(buf + next_eql, "%f", &p->gc_up_threshold);
 		}else if ((res_eql = strcmp(buf, "gc mplane threshold")) == 0){
 			sscanf(buf + next_eql, "%f", &p->gc_mplane_threshold);
-		}else if ((res_eql = strcmp(buf, "allocation")) == 0){
-			sscanf(buf + next_eql,"%d",&p->allocation_scheme); 
 		}else if((res_eql=strcmp(buf,"advanced command")) ==0){
 			sscanf(buf + next_eql,"%d",&p->advanced_commands); 
-		}else if((res_eql=strcmp(buf,"advanced command priority")) ==0){
-			sscanf(buf + next_eql,"%d",&p->ad_priority); 
-		}else if((res_eql=strcmp(buf,"advanced command priority2")) ==0){
-			sscanf(buf + next_eql,"%d",&p->ad_priority2); 
-		}else if((res_eql=strcmp(buf,"greed CB command")) ==0){
-			sscanf(buf + next_eql,"%d",&p->greed_CB_ad); 
-		}else if((res_eql=strcmp(buf,"greed MPW command")) ==0){
-			sscanf(buf + next_eql,"%d",&p->greed_MPW_ad); 
-		}else if((res_eql=strcmp(buf,"aged")) ==0){
-			sscanf(buf + next_eql,"%d",&p->aged); 
-		}else if((res_eql=strcmp(buf,"aged ratio")) ==0){
-			sscanf(buf + next_eql,"%f",&p->aged_ratio); 
 		}else if((res_eql=strcmp(buf,"queue_length")) ==0){
 			sscanf(buf + next_eql,"%d",&p->queue_length); 
 		}else if((res_eql=strcmp(buf,"consolidation degree")) == 0) {
@@ -489,8 +473,6 @@ parameter_value *load_parameters(char parameter_file[30])
 			sscanf(buf + next_eql,"%d",&p->mplane_gc); 
 		}else if ((res_eql = strcmp(buf, "pargc approach")) == 0) {
 			sscanf(buf + next_eql, "%d", &p->pargc_approach);
-		}else if ((res_eql = strcmp(buf, "pargc cost threshold")) == 0){
-			sscanf(buf + next_eql, "%f", &p->pargc_cost_threshold);
 		}else if ((res_eql = strcmp(buf, "gc algorithm")) == 0) {
 			sscanf(buf + next_eql,"%d",&p->gc_algorithm); 
 		}else if((res_eql=strncmp(buf,"lun number",11)) ==0)
