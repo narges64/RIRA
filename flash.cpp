@@ -552,7 +552,6 @@ STATE allocate_location( ssd_info * ssd , sub_request *sub_req){
 	sub_req->location->channel=target_lun / channel_num;
 	sub_req->location->lun= target_lun % channel_num; 
 	sub_req->location->plane= get_target_plane(ssd, sub_req->location->channel, sub_req->location->lun); 
-	
 	if (ssd->dram->map->map_entry[sub_req->lpn].state!=0)
 	{            
 		if ((sub_req->state&ssd->dram->map->map_entry[sub_req->lpn].state)!=ssd->dram->map->map_entry[sub_req->lpn].state)  

@@ -274,6 +274,7 @@ plane_info * initialize_plane(plane_info * p_plane,parameter_value *parameter )
 	p_plane->next_state = PLANE_MODE_IDLE; 
 	p_plane->current_time = 0; 
 	p_plane->next_state_predict_time = 0; 
+
 	p_plane->state_time = new int64_t[PLANE_MODE_NUM]; 
 	for (int i = 0; i < PLANE_MODE_NUM; i++){
 		p_plane->state_time[i] = 0; 
@@ -295,7 +296,7 @@ lun_info * initialize_lun(lun_info * p_lun,parameter_value *parameter,long long 
 	p_lun->read_avg = 0; 
 	p_lun->program_avg = 0; 
 	p_lun->gc_avg = 0; 
-	
+	p_lun->plane_token = 0; 	
 	p_lun->plane_head = new plane_info[parameter->plane_lun];
 
 	p_lun->GCMode = LUN_MODE_IO; 
