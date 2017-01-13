@@ -6,7 +6,6 @@
 #include <string.h>
 #include <sys/types.h>
 #include "flash.hh"
-#include "initialize.hh"
 
 #define MAX_INT64  0x7fffffffffffffffll
 

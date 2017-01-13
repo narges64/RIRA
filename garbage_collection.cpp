@@ -1,5 +1,4 @@
 #include "garbage_collection.hh"
-#include "pagemap.hh"
 
 void launch_gc_for_plane(ssd_info * ssd, gc_operation * gc_node){	
 	if (gc_node == NULL) return; 
@@ -139,7 +138,6 @@ STATE find_victim_block(ssd_info * ssd, local * location){
 	return SUCCESS; 
 }
 sub_request * create_gc_sub_request( ssd_info * ssd,const local * location, int operation, gc_operation * gc_node){
-	static int seq_number = 0; 
 	sub_request * sub = new sub_request(ssd->current_time); 
 		
 	sub->gc_node = gc_node;
@@ -149,7 +147,7 @@ sub_request * create_gc_sub_request( ssd_info * ssd,const local * location, int 
 			cout << "Error in location and gc_node incompatible! " << endl; 
 	}
 
-	sub->seq_num = seq_number++; 
+	sub->seq_num = ssd->subrequest_sequence_number++; 
 	if (operation != ERASE){
 		sub->lpn = ssd->channel_head[location->channel].lun_head[location->lun].plane_head[location->plane].blk_head[location->block].page_head[location->page].lpn;
 		sub->size= ssd->parameter->subpage_page;  
@@ -318,7 +316,7 @@ bool Schedule_GC(ssd_info * ssd, local * location){
 	if (free_page > (all_page * ssd->parameter->gc_up_threshold)){
 		return false; 
 	}
-	gc_node = new gc_operation(location); 
+	gc_node = new gc_operation(location, ssd->gc_sequence_number++); 
 	
 	if (free_page  < (all_page *ssd->parameter->gc_down_threshold)) gc_node->priority=GC_ONDEMAND;
 	else if (free_page < (all_page * ssd->parameter->gc_up_threshold)) gc_node->priority=GC_EARLY;

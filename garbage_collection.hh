@@ -2,7 +2,6 @@
 #define GARBAGE_COLLECTION_H 10000
 
 #include <sys/types.h>
-#include "initialize.hh"
 #include "ssd.hh"
 #include "flash.hh"
 #include "common.hh"

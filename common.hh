@@ -4,7 +4,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <inttypes.h>
-
+#include <string.h>
+#include <iostream>
+using namespace std; 
 
 #define QUEUE_LENGTH 32
 #define ADDRESS_CHUNK 536870912
@@ -205,13 +207,12 @@ public:
 };
 class gc_operation{   
 public:      
-	gc_operation(local * loc){
-		static int sn = 0;  
+	gc_operation(local * loc, int gc_seq_num){
 		next_node = NULL; 
 		state = GC_WAIT; 
 		if (loc == NULL) return; 
 		location = new local(loc->channel, loc->lun, loc->plane, 0, 0); 
-		seq_number = sn++;
+		seq_number = gc_seq_num; 
 	}
 	~gc_operation(){
 	//	if (location) delete location; 
@@ -483,7 +484,9 @@ public:
 	int flag;
 	int active_flag;                     
 	unsigned int page;
-
+	unsigned int request_sequence_number;
+	unsigned int subrequest_sequence_number;  
+	unsigned int gc_sequence_number; 
 	unsigned int lun_token;                  
 	unsigned int gc_request;            
 	unsigned int * read_request_count;
@@ -559,5 +562,14 @@ void file_assert(int error,const char *s);
 void alloc_assert(void *p,const char *s);
 void trace_assert(int64_t time_t,int device,unsigned int lsn,int size,int ope);
 unsigned int size(uint64_t stored);
+ssd_info *initiation(ssd_info *, char **);
+parameter_value *load_parameters(char parameter_file[30]);
+page_info * initialize_page(page_info * p_page);
+blk_info * initialize_block(blk_info * p_block,parameter_value *parameter);
+plane_info * initialize_plane(plane_info * p_plane,parameter_value *parameter );
+lun_info * initialize_lun(lun_info * p_lun,parameter_value *parameter,long long current_time );
+ssd_info * initialize_channels(ssd_info * ssd );
+dram_info * initialize_dram(ssd_info * ssd);
+
 
 #endif

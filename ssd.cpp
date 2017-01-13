@@ -122,7 +122,6 @@ request * generate_next_request(ssd_info * ssd, int64_t nearest_event_time){
 		return NULL; 
 	}
 	
-	static int seq_number = 0; 
 	static uint64_t previous_time = 0; 
 	double rd_ratio = ssd->parameter->syn_rd_ratio; 
 	int lun_number = ssd->parameter->lun_num; 
@@ -147,7 +146,7 @@ request * generate_next_request(ssd_info * ssd, int64_t nearest_event_time){
  	previous_time = new_time;
 	request * request1 = new request();
 	request1->app_id = 0; 
-	request1->io_num = seq_number;  
+	request1->io_num = ssd->request_sequence_number;  
 	request1->time = new_time; 
 	request1->begin_time = new_time;  
  	
@@ -170,11 +169,8 @@ request * generate_next_request(ssd_info * ssd, int64_t nearest_event_time){
 	if (request1->io_num > event_count) {
 		request1->time = MAX_INT64; 
 	}else {
-		seq_number++; 
+		ssd->request_sequence_number++; 
 	}
-	if (seq_number %10000 == 0) {
-		cout << "seq number: " << seq_number << "  erase count: " << ssd->flash_erase_count << " wq size: " << ssd->channel_head[0].lun_head[0].wsubs_queue.size << "  q length: " << ssd->parameter->queue_length << endl; 
-	} 
 	return request1; 
 
 }
