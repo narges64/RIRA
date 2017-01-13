@@ -6,18 +6,6 @@
 #include "flash.hh"
 #include "common.hh"
 
-
-//#define UTIL_CHAN_CURRENT  //fprintf(ssd->statisticfile2, "channel %d , state %d , time %lld\n", channel, ssd->channel_head[channel].current_state, ssd->channel_head[channel].current_time); 
-//#define UTIL_CHAN_NEXT //fprintf(ssd->statisticfile2, "channel %d , state %d , time %lld\n", channel, ssd->channel_head[channel].next_state, ssd->channel_head[channel].next_state_predict_time);
-//#define UTIL_CHAN_STATE  ssd->channel_head[channel].state_time[ssd->channel_head[channel].current_state] += ssd->channel_head[channel].next_state_predict_time - ssd->channel_head[channel].current_time; 
-
-//#define UTIL_LUN_CURRENT  //fprintf(ssd->statisticfile2, "channel %d , lun %d , state %d , time %lld\n", channel, lun, ssd->channel_head[channel].lun_head[lun].current_state, ssd->channel_head[channel].lun_head[lun].current_time); 
-//#define UTIL_LUN_NEXT fprintf(ssd->statisticfile2, "channel %d , lun %d , state %d , time %lld\n", channel, lun, ssd->channel_head[channel].lun_head[lun].next_state, ssd->channel_head[channel].lun_head[lun].next_state_predict_time); 
-// #define UTIL_LUN_STATE ssd->channel_head[channel].lun_head[lun].state_time[ssd->channel_head[channel].lun_head[lun].current_state - 100] += ssd->channel_head[channel].lun_head[lun].next_state_predict_time - ssd->channel_head[channel].lun_head[lun].current_time; 
- 
-#define UTIL_PLANE_STATE ssd->channel_head[channel].lun_head[lun].plane_head[plane].state_time[plane_current_state] += ssd->channel_head[channel].lun_head[lun].next_state_predict_time - ssd->channel_head[channel].lun_head[lun].current_time; 
-
-
 void plane_erase_observation(ssd_info *ssd, const local * location);
 STATE find_victim_block( ssd_info *ssd,local * location); 
 STATE greedy_algorithm(ssd_info * ssd, local * location);
