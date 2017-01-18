@@ -1,15 +1,9 @@
 #ifndef GARBAGE_COLLECTION_H
 #define GARBAGE_COLLECTION_H 10000
-
 #include <sys/types.h>
-#include "initialize.hh"
 #include "ssd.hh"
 #include "flash.hh"
 #include "common.hh"
-
-
-
-
 void plane_erase_observation(ssd_info *ssd, const local * location);
 STATE find_victim_block( ssd_info *ssd,local * location); 
 STATE greedy_algorithm(ssd_info * ssd, local * location);

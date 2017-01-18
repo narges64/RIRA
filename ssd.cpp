@@ -6,13 +6,13 @@ using namespace std;
 #define EPOCH_LENGTH (int64_t) 100000000000 // 00// 1 sec 
 
 int  main(int argc, char * argv[]){
-	ssd_info *ssd= new ssd_info(); 
 	
-	if (argc < 10) return 0; 
-	ssd=initiation(ssd, argv);	
+	if (argc < 10) return 0;
+	parameter_value * parameters = new parameter_value(argc, argv);  
+	ssd_info * ssd = new ssd_info(parameters, argv[2], argv[5]); 
 	
 	full_sequential_write(ssd);
-	ssd=simulate(ssd);
+	simulate(ssd);
 		
 	for (int cd = 0; cd < ssd->parameter->consolidation_degree; cd++){
 		collect_gc_statistics(ssd, cd);
@@ -33,16 +33,6 @@ ssd_info *simulate(ssd_info *ssd){
 	printf("\n");
 	printf("begin simulating.......................\n");
 	printf("\n");
-
-	int cd; 
-	for (cd = 0; cd < ssd->parameter->consolidation_degree; cd++){
-		ssd->tracefile[cd] = fopen(ssd->tracefilename[cd],"r");
-		if(ssd->tracefile[cd] == NULL)
-		{  
-			printf("the trace file can't open\n");
-			return NULL;
-		}
-	}
 
 	
 	int i = 0; 
@@ -122,7 +112,6 @@ request * generate_next_request(ssd_info * ssd, int64_t nearest_event_time){
 		return NULL; 
 	}
 	
-	static int seq_number = 0; 
 	static uint64_t previous_time = 0; 
 	double rd_ratio = ssd->parameter->syn_rd_ratio; 
 	int lun_number = ssd->parameter->lun_num; 
@@ -147,7 +136,7 @@ request * generate_next_request(ssd_info * ssd, int64_t nearest_event_time){
  	previous_time = new_time;
 	request * request1 = new request();
 	request1->app_id = 0; 
-	request1->io_num = seq_number;  
+	request1->io_num = ssd->request_sequence_number;  
 	request1->time = new_time; 
 	request1->begin_time = new_time;  
  	
@@ -170,11 +159,8 @@ request * generate_next_request(ssd_info * ssd, int64_t nearest_event_time){
 	if (request1->io_num > event_count) {
 		request1->time = MAX_INT64; 
 	}else {
-		seq_number++; 
+		ssd->request_sequence_number++; 
 	}
-	if (seq_number %10000 == 0) {
-		cout << "seq number: " << seq_number << "  erase count: " << ssd->flash_erase_count << " wq size: " << ssd->channel_head[0].lun_head[0].wsubs_queue.size << "  q length: " << ssd->parameter->queue_length << endl; 
-	} 
 	return request1; 
 
 }
@@ -474,7 +460,7 @@ void print_epoch_statistics(ssd_info * ssd, int app_id){
 	for (int i = 0; i < ssd->parameter->lun_num; i++){
 		int channel_num = i % ssd->parameter->channel_number;
 		int lun_num = (i / ssd->parameter->channel_number) % ssd->parameter->lun_channel[channel_num];
-		lun_info * the_lun = &ssd->channel_head[channel_num].lun_head[lun_num];
+		lun_info * the_lun = ssd->channel_head[channel_num]->lun_head[lun_num];
 
 		fprintf(ssd->statisticfile, "LUN STAT (%d,%d) ",  channel_num, lun_num); 
 		for (int i = 0; i < LUN_MODE_NUM; i++){
@@ -485,7 +471,7 @@ void print_epoch_statistics(ssd_info * ssd, int app_id){
 		for (int j = 0; j < ssd->parameter->plane_lun; j++){
 			int plane_num = j; 
 		
-			plane_info * the_plane = &ssd->channel_head[channel_num].lun_head[lun_num].plane_head[plane_num];
+			plane_info * the_plane = ssd->channel_head[channel_num]->lun_head[lun_num]->plane_head[plane_num];
 			fprintf(ssd->statisticfile, "PLANE STAT (%d,%d,%d) ", channel_num, lun_num, plane_num);
 			
 			for (int i = 0; i < PLANE_MODE_NUM; i++){
@@ -540,8 +526,8 @@ void print_statistics(ssd_info *ssd, int app){
 	
 	fprintf(ssd->statisticfile, "lun read count \n"); 
 	for (chan = 0; chan < ssd->parameter->channel_number; chan++){
-		for (lun = 0; lun < ssd->channel_head[chan].lun; lun++){
-			fprintf(ssd->statisticfile, "%d\t", ssd->channel_head[chan].lun_head[lun].read_count); 
+		for (lun = 0; lun < ssd->channel_head[chan]->lun_num; lun++){
+			fprintf(ssd->statisticfile, "%d\t", ssd->channel_head[chan]->lun_head[lun]->read_count); 
 		}
 		fprintf(ssd->statisticfile, "\n"); 
 	}
@@ -549,8 +535,8 @@ void print_statistics(ssd_info *ssd, int app){
 	fprintf(ssd->statisticfile, "\n\nlun write count \n"); 
 	
 	for (chan = 0; chan < ssd->parameter->channel_number; chan++){
-		for (lun = 0; lun < ssd->channel_head[chan].lun; lun++){
-			fprintf(ssd->statisticfile, "%d\t", ssd->channel_head[chan].lun_head[lun].program_count); 
+		for (lun = 0; lun < ssd->channel_head[chan]->lun_num; lun++){
+			fprintf(ssd->statisticfile, "%d\t", ssd->channel_head[chan]->lun_head[lun]->program_count); 
 		}
 		fprintf(ssd->statisticfile, "\n"); 
 	}
@@ -558,8 +544,8 @@ void print_statistics(ssd_info *ssd, int app){
 	fprintf(ssd->statisticfile, "\n\nlun erase count \n"); 
 	
 	for (chan = 0; chan < ssd->parameter->channel_number; chan++){
-		for (lun = 0; lun < ssd->channel_head[chan].lun; lun++){
-			fprintf(ssd->statisticfile, "%d\t", ssd->channel_head[chan].lun_head[lun].erase_count); 
+		for (lun = 0; lun < ssd->channel_head[chan]->lun_num; lun++){
+			fprintf(ssd->statisticfile, "%d\t", ssd->channel_head[chan]->lun_head[lun]->erase_count); 
 		}
 		fprintf(ssd->statisticfile, "\n"); 
 	}
@@ -567,20 +553,20 @@ void print_statistics(ssd_info *ssd, int app){
 
 	int plane = 0; 
 	for (chan = 0; chan < ssd->parameter->channel_number; chan++){
-		for (lun = 0; lun < ssd->channel_head[chan].lun; lun++){
+		for (lun = 0; lun < ssd->channel_head[chan]->lun_num; lun++){
 			for (plane = 0; plane < ssd->parameter->plane_lun; plane++){
 				int block = 0;
 				double sum = 0; 
 				double avg = 0;  
 				for (block = 0; block < ssd->parameter->block_plane; block++){
-					sum += ssd->channel_head[chan].lun_head[lun].plane_head[plane].blk_head[block].erase_count; 
+					sum += ssd->channel_head[chan]->lun_head[lun]->plane_head[plane]->blk_head[block]->erase_count; 
 				}
 				avg = sum / ssd->parameter->block_plane; 
 
 				fprintf(ssd->statisticfile, "(cwdp %d%d%d avg: %f )\t ", chan, lun, plane, avg);
 				sum = 0; 
 				for (block = 0; block < ssd->parameter->block_plane; block++){
-					double temp= ssd->channel_head[chan].lun_head[lun].plane_head[plane].blk_head[block].erase_count - avg; 
+					double temp= ssd->channel_head[chan]->lun_head[lun]->plane_head[plane]->blk_head[block]->erase_count - avg; 
 					temp = temp * temp; 
 					sum += temp; 
 				}
@@ -603,7 +589,7 @@ void print_statistics(ssd_info *ssd, int app){
 		{
 			for(l=0;l<ssd->parameter->plane_lun;l++)
 			{
-				int plane_erase = ssd->channel_head[i].lun_head[j].plane_head[l].erase_count; 
+				int plane_erase = ssd->channel_head[i]->lun_head[j]->plane_head[l]->erase_count; 
 
 				fprintf(ssd->statisticfile,"erase (%d,%d,%d):%13d\n",i,j,l, plane_erase);
 				
@@ -763,17 +749,16 @@ int64_t find_nearest_event(ssd_info *ssd) {
 	
 	for (i=0;i<ssd->parameter->channel_number;i++)
 	{
-		if (ssd->channel_head[i].next_state==CHANNEL_MODE_IDLE)
-			if(time1>ssd->channel_head[i].next_state_predict_time)
-				if (ssd->channel_head[i].next_state_predict_time>ssd->current_time)    
-					time1=ssd->channel_head[i].next_state_predict_time;
+		if (ssd->channel_head[i]->next_state==CHANNEL_MODE_IDLE)
+			if(time1>ssd->channel_head[i]->next_state_predict_time)
+				if (ssd->channel_head[i]->next_state_predict_time > ssd->current_time)    
+					time1=ssd->channel_head[i]->next_state_predict_time;
 		for (j=0;j<ssd->parameter->lun_channel[i];j++)
 		{
-	
-			if (ssd->channel_head[i].lun_head[j].next_state==LUN_MODE_IDLE)
-				if(time2>ssd->channel_head[i].lun_head[j].next_state_predict_time)
-					if (ssd->channel_head[i].lun_head[j].next_state_predict_time>ssd->current_time)    
-						time2=ssd->channel_head[i].lun_head[j].next_state_predict_time;	
+			if (ssd->channel_head[i]->lun_head[j]->next_state==LUN_MODE_IDLE)
+				if(time2>ssd->channel_head[i]->lun_head[j]->next_state_predict_time)
+					if (ssd->channel_head[i]->lun_head[j]->next_state_predict_time>ssd->current_time)    
+						time2=ssd->channel_head[i]->lun_head[j]->next_state_predict_time;	
 		
 		}   
 	} 
@@ -807,10 +792,8 @@ ssd_info *no_buffer_distribute(ssd_info *ssd){
 	last_lpn=(req->lsn+req->size-1)/ssd->parameter->subpage_page;
 	first_lpn=req->lsn/ssd->parameter->subpage_page;
 
-	
 	if(req->operation==READ)        
 	{		
-	
 		while(lpn<=last_lpn) 		
 		{
 			sub_state=(ssd->dram->map->map_entry[lpn].state&0x7fffffffffffffff);

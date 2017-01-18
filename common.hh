@@ -4,7 +4,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <inttypes.h>
-
+#include <string.h>
+#include <iostream>
+using namespace std; 
 
 #define QUEUE_LENGTH 32
 #define ADDRESS_CHUNK 536870912
@@ -87,15 +89,17 @@ public:
 
 class parameter_value{
 public: 
-
+	parameter_value(int argc, char ** argv);
+	void load_parameters(char * parameter_filename);  
+	void print_all_parameters(FILE * stat_file); 
+	char filename[100]; 
 	unsigned int consolidation_degree; 
-	float time_scale; 
 	int MP_address_check; 
 	int repeat_trace; 
 	int mplane_gc; 
 	int gc_algorithm; 
-	int checkpoint; 
 
+	double time_scale; 
 	unsigned int lun_num;          
 	unsigned int dram_capacity;    
 	unsigned int cpu_sdram;        
@@ -193,25 +197,23 @@ public:
 
 class dram_info{
 public:
-
+	dram_info(parameter_value * parameter); 
 	~dram_info(){
 		delete map; 
 	}
 	unsigned int dram_capacity;     
 	int64_t current_time;
-      
 	map_info *map;
 
 };
 class gc_operation{   
 public:      
-	gc_operation(local * loc){
-		static int sn = 0;  
+	gc_operation(local * loc, int gc_seq_num){
 		next_node = NULL; 
 		state = GC_WAIT; 
 		if (loc == NULL) return; 
 		location = new local(loc->channel, loc->lun, loc->plane, 0, 0); 
-		seq_number = sn++;
+		seq_number = gc_seq_num; 
 	}
 	~gc_operation(){
 	//	if (location) delete location; 
@@ -352,6 +354,7 @@ public:
 
 class page_info{    
 public:                  
+	page_info(); 
 	uint64_t valid_state;                
 	uint64_t free_state;                    //each bit indicates the subpage is free or occupted. 1 indicates that the bit is free and 0 indicates that the bit is used
 	unsigned int lpn;                 
@@ -361,25 +364,41 @@ public:
 
 class blk_info{
 public: 
+	blk_info(parameter_value *); 
+	~blk_info(){
+		for (int  i= 0; i < page_num; i++){
+			delete page_head[i]; 
+		}
+		delete page_head; 
+	}
 	unsigned int erase_count;          
 	unsigned int free_page_num;       
-	unsigned int invalid_page_num;     
+	unsigned int invalid_page_num; 
+	unsigned int page_num;     
 	int last_write_page;
 	int64_t last_write_time; 
-	page_info *page_head;       
+	page_info **page_head;       
 };
 
 
 class plane_info{
 public: 
-	
+	plane_info(parameter_value *); 
+	~plane_info(){
+		for (int i = 0; i < block_num; i++){
+			delete blk_head[i]; 
+		}
+		delete blk_head; 
+		delete state_time; 
+	}	
 	int add_reg_ppn;                   
 	unsigned int free_page;            
 	unsigned int ers_invalid;          
 	unsigned int active_block;     
 	unsigned int second_active_block; 
 	int can_erase_block;              
-	blk_info *blk_head;
+	blk_info **blk_head;
+	unsigned int block_num; 
 	unsigned int erase_count;
 	unsigned int read_count; 
 	unsigned int program_count; 
@@ -390,21 +409,26 @@ public:
 	int64_t next_state_predict_time; 
 	
 	int64_t * state_time; 
-	int GCMode; // GC, IO 
-	
+	bool GCMode; 	
+	gc_operation *scheduled_gc; // list of scheduled GCs 
 };
 
 class lun_info{
 public: 
-           
-	plane_info *plane_head;
+      	lun_info(parameter_value *); 
+	~lun_info(){
+		for (int i = 0; i < plane_num; i++){
+			delete plane_head[i]; 
+		}
+		delete plane_head; 
+		delete state_time; 
+	}     
+	unsigned int plane_num; 
+	plane_info **plane_head;
 	unsigned int erase_count;  
 	unsigned int program_count; 
 	unsigned int read_count; 
-	unsigned int plane_num; 
 
-	gc_operation **scheduled_gc; // is GC scheduled for any of the planes 
-	
 	int current_state; 
 	int64_t current_time; 
 	int next_state;
@@ -420,14 +444,22 @@ public:
 	SubQueue wsubs_queue; 
 	
 	int64_t * state_time; 
-	int GCMode; // GC, IO, MIX 
+	bool GCMode; 
 	unsigned int plane_token; 
 }; 
 
 
 class channel_info{
 public:           
-	unsigned int lun; 
+	channel_info(int channel_number, parameter_value*); 
+	~channel_info(){
+		for (int i = 0; i < lun_num; i++){
+			delete lun_head[i]; 
+		}
+		delete lun_head; 
+		delete state_time; 
+	}
+	unsigned int lun_num; 
 	unsigned long read_count;
 	unsigned long program_count;
 	unsigned long erase_count;
@@ -441,37 +473,21 @@ public:
 	int64_t current_time;               
 	int64_t next_state_predict_time;     //the predict time of next state, used to decide the sate at the moment
 
-	lun_info *lun_head;     
+	lun_info **lun_head;     
 	int64_t * state_time; 
 };
 
 class ssd_info{ 
 
 public:
-	
+	ssd_info(parameter_value *, char * statistics_filename, char * trace_filename); 	
 	~ssd_info(){
-
 		for (int i=0;i<parameter->channel_number;i++)
 		{
-			for (int j=0;j<parameter->lun_channel[i];j++)
-			{
-				for (int l=0;l<parameter->plane_lun;l++)
-				{
-					for (int n=0;n<parameter->block_plane;n++)
-					{
-						delete channel_head[i].lun_head[j].plane_head[l].blk_head[n].page_head; 
-					}
-					
-					delete channel_head[i].lun_head[j].plane_head[l].blk_head; 
-				}
-				delete channel_head[i].lun_head[j].plane_head; 
-				 
-			}
-			delete  channel_head[i].lun_head; 
+			delete channel_head[i]; 
 		}
 		delete channel_head; 
-	
-		//delete dram; 
+		delete dram; 
 		delete parameter; 
 	}
 	double ssd_energy;                  
@@ -480,8 +496,10 @@ public:
 	unsigned int real_time_subreq;       
 	int flag;
 	int active_flag;                     
-	unsigned int page;
-
+	unsigned int total_page_number;
+	unsigned int request_sequence_number;
+	unsigned int subrequest_sequence_number;  
+	unsigned int gc_sequence_number; 
 	unsigned int lun_token;                  
 	unsigned int gc_request;            
 	unsigned int * read_request_count;
@@ -536,10 +554,6 @@ public:
 	unsigned int min_lsn;
 	unsigned int max_lsn;
 	
-	char * parameterfilename;
-	char *tracefilename[10];
-	char *statisticfilename;
-	
 	FILE * tracefile[10];
 	FILE * statisticfile;
 	parameter_value *parameter;   
@@ -548,7 +562,7 @@ public:
 	request *request_tail;	 
 
 	SubQueue ssd_wsubs;    
-	channel_info *channel_head; 
+	channel_info **channel_head; 
 
 	int64_t * subreq_state_time; 	
 };
@@ -557,5 +571,7 @@ void file_assert(int error,const char *s);
 void alloc_assert(void *p,const char *s);
 void trace_assert(int64_t time_t,int device,unsigned int lsn,int size,int ope);
 unsigned int size(uint64_t stored);
+parameter_value *load_parameters(char parameter_file[30]);
+
 
 #endif

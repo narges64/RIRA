@@ -1,10 +1,8 @@
 #include "flash.hh"
-unsigned int find_subrequest_state(ssd_info * ssd, sub_request * sub){
-	
+unsigned int find_subrequest_state(ssd_info * ssd, sub_request * sub){	
 	if (sub->next_state_predict_time <= ssd->current_time)
 		return sub->next_state; 
-	return sub->current_state; 
-	
+	return sub->current_state; 	
 }
 unsigned int find_lun_state (ssd_info * ssd, unsigned int channel, unsigned int lun){
 	lun_info * the_lun = &ssd->channel_head[channel].lun_head[lun]; 
@@ -12,8 +10,20 @@ unsigned int find_lun_state (ssd_info * ssd, unsigned int channel, unsigned int 
 		return the_lun->next_state; 
 	return the_lun->current_state; 
 }
-void change_lun_state (ssd_info * ssd, unsigned int channel, unsigned int lun, unsigned int current_state, int64_t current_time, unsigned int next_state, int64_t next_time){
+unsigned int find_plane_state(ssd_info * ssd , unsigned int channel, unsigned int lun, unsigned int plane){
+	plane_info * the_plane = &ssd->channel_head[channel].lun_head[lun].plane_head[plane]; 
+	if (the_plane->next_state_predict_time <= ssd->current_time) 
+		return the_plane->next_state; 
+	return the_plane->current_state; 	
+}
+unsigned int find_channel_state(ssd_info * ssd, unsigned int channel){
+	channel_info * the_channel = &ssd->channel_head[channel]; 
+	if (the_channel->next_state_predict_time <= ssd->current_time) 
+		return the_channel->next_state; 
+	return the_channel->current_state; 	
+}
 
+void change_lun_state (ssd_info * ssd, unsigned int channel, unsigned int lun, unsigned int current_state, int64_t current_time, unsigned int next_state, int64_t next_time){
 	// have been in the next state for some time 
 	int state1 = ssd->channel_head[channel].lun_head[lun].current_state; 
 	int state2 = ssd->channel_head[channel].lun_head[lun].next_state; 
@@ -23,31 +33,13 @@ void change_lun_state (ssd_info * ssd, unsigned int channel, unsigned int lun, u
 	ssd->channel_head[channel].lun_head[lun].state_time[state1] += ((state2_time - state1_time) > 0)? state2_time - state1_time: 0; 
 	ssd->channel_head[channel].lun_head[lun].state_time[state2] += ((current_time - state2_time) > 0)? (current_time - state2_time): 0; 
 	
-	
 	ssd->channel_head[channel].lun_head[lun].current_state=current_state;	
 	ssd->channel_head[channel].lun_head[lun].current_time=current_time;
 	
 	ssd->channel_head[channel].lun_head[lun].next_state=next_state; 	
 	ssd->channel_head[channel].lun_head[lun].next_state_predict_time=next_time;
-	 
-	
-	
-}
-void change_lun_state(ssd_info * ssd, local * location, unsigned int current_state, int64_t current_time, unsigned int next_state, int64_t next_time){
-	change_lun_state (ssd, location->channel, location->lun, current_state, current_time, next_state, next_time); 
-}
-unsigned int find_plane_state(ssd_info * ssd , unsigned int channel, unsigned int lun, unsigned int plane){
-	plane_info * the_plane = &ssd->channel_head[channel].lun_head[lun].plane_head[plane]; 
-	if (the_plane->next_state_predict_time <= ssd->current_time) 
-		return the_plane->next_state; 
-	return the_plane->current_state; 	
-}
-unsigned int find_plane_state(ssd_info * ssd, local * location){
-	return find_plane_state(ssd, location->channel, location->lun, location->plane); 
-	
 }
 void change_plane_state (ssd_info * ssd, unsigned int channel, unsigned int lun, unsigned int plane, unsigned int current_state, int64_t current_time, unsigned int next_state, int64_t next_time){
-
 	int state1 = ssd->channel_head[channel].lun_head[lun].plane_head[plane].current_state; 
 	int state2 = ssd->channel_head[channel].lun_head[lun].plane_head[plane].next_state; 
 	int64_t state1_time = ssd->channel_head[channel].lun_head[lun].plane_head[plane].current_time; 
@@ -114,19 +106,8 @@ void change_plane_state (ssd_info * ssd, unsigned int channel, unsigned int lun,
 		}
 		gchead = gchead->next_node; 
 	}	
-
 }
-void change_plane_state (ssd_info * ssd, local * location, unsigned int current_state, int64_t current_time, unsigned int next_state, int64_t next_time){
-	change_plane_state (ssd, location->channel, location->lun, location->plane, current_state, current_time, next_state, next_time); 
-}
-unsigned int find_channel_state(ssd_info * ssd, unsigned int channel){
-	channel_info * the_channel = &ssd->channel_head[channel]; 
-	if (the_channel->next_state_predict_time <= ssd->current_time) 
-		return the_channel->next_state; 
-	return the_channel->current_state; 	
-}
-void change_channel_state(ssd_info * ssd, unsigned int channel, unsigned int current_state, int64_t current_time, unsigned int next_state, int64_t next_time){
-	
+void change_channel_state(ssd_info * ssd, unsigned int channel, unsigned int current_state, int64_t current_time, unsigned int next_state, int64_t next_time){	
 	int state1 = ssd->channel_head[channel].current_state; 
 	int state2 = ssd->channel_head[channel].next_state; 
 	int64_t state1_time = ssd->channel_head[channel].current_time; 
@@ -135,20 +116,14 @@ void change_channel_state(ssd_info * ssd, unsigned int channel, unsigned int cur
 	ssd->channel_head[channel].state_time[state1] += (state2_time - state1_time)>0? state2_time - state1_time : 0; 
 	ssd->channel_head[channel].state_time[state2] += (current_time - state2_time)>0? current_time - state2_time : 0;  
 	
-
 	int prev_state = ssd->channel_head[channel].current_state;  
 	ssd->channel_head[channel].state_time[prev_state] += current_time - ssd->channel_head[channel].current_time; 
-	
 	
 	ssd->channel_head[channel].current_state=current_state;	
 	ssd->channel_head[channel].current_time=current_time;
 	
 	ssd->channel_head[channel].next_state=next_state; 	
 	ssd->channel_head[channel].next_state_predict_time=next_time; 
-	
-}
-void change_channel_state (ssd_info * ssd, local * location, unsigned int current_state, int64_t current_time, unsigned int next_state, int64_t next_time){
-	change_channel_state (ssd, location->channel, current_state, current_time, next_state, next_time); 
 }
 void change_subrequest_state(ssd_info * ssd, sub_request * sub, unsigned int current_state, int64_t current_time, unsigned int next_state , int64_t next_time){
 	int state1 = sub->current_state; 
@@ -158,17 +133,13 @@ void change_subrequest_state(ssd_info * ssd, sub_request * sub, unsigned int cur
 	
 	sub->state_time[state1] += (state2_time - state1_time)>0? state2_time - state1_time : 0; 
 	sub->state_time[state2] += (current_time - state2_time)>0? current_time - state2_time : 0;  
-
 	
 	sub->current_state = current_state; 
 	sub->current_time = current_time; 
 	sub->next_state = next_state; 
 	sub->next_state_predict_time = next_time; 
 }
-
 sub_request * create_sub_request( ssd_info * ssd,unsigned int lpn,int size,uint64_t state, request * req,unsigned int operation){
-
-	static int seq_number = 0; 
 
 	sub_request* sub=NULL,* sub_r=NULL;
 	channel_info * p_ch=NULL;
@@ -184,7 +155,7 @@ sub_request * create_sub_request( ssd_info * ssd,unsigned int lpn,int size,uint6
 	}
 	
 	// NRAGES
-	sub->seq_num = seq_number++; 
+	sub->seq_num = ssd->subrequest_sequence_number++; 
 	
 	if (operation == READ)
 	{
@@ -363,7 +334,7 @@ void services_2_io(ssd_info * ssd, unsigned int channel, unsigned int * channel_
 				if (subs[i] == NULL) continue; 
 				subs[i]->complete_time = ssd->current_time + lun_busy_time; 
 				change_subrequest_state (ssd, subs[i], SR_MODE_ST_S, ssd->current_time, SR_MODE_COMPLETE , subs[i]->complete_time); 
-				change_plane_state(ssd, subs[i]->location, PLANE_MODE_IO, ssd->current_time, PLANE_MODE_IDLE, subs[i]->complete_time); 
+				change_plane_state(ssd, subs[i]->location->channel, subs[i]->location->lun, subs[i]->location->plane, PLANE_MODE_IO, ssd->current_time, PLANE_MODE_IDLE, subs[i]->complete_time); 
 			}
 			
 			if (subs_count > 0){
@@ -481,7 +452,7 @@ void services_2_gc(ssd_info * ssd, unsigned int channel, unsigned int * channel_
 			if (subs[i] == NULL) continue; 
 			subs[i]->complete_time = ssd->current_time + lun_busy_time; 
 			change_subrequest_state(ssd, subs[i], SR_MODE_ST_S, ssd->current_time, SR_MODE_COMPLETE , ssd->current_time + lun_busy_time); 
-			change_plane_state (ssd, subs[i]->location, PLANE_MODE_GC, ssd->current_time, PLANE_MODE_IDLE, ssd->current_time + lun_busy_time); 
+			change_plane_state (ssd, subs[i]->location->channel, subs[i]->location->lun, subs[i]->location->plane, PLANE_MODE_GC, ssd->current_time, PLANE_MODE_IDLE, ssd->current_time + lun_busy_time); 
 			if (operation == ERASE){
 				delete_gc_node(ssd, subs[i]->gc_node);
 				erase_operation(ssd,subs[i]->location); 
@@ -764,7 +735,7 @@ void find_location(ssd_info *ssd,int ppn, local * location )
 		}else {
 			location->channel++; 
 		}		
-	}			
+	}		
 	location->lun = page/page_lun;
 	location->plane = (page%page_lun)/page_plane;
 	location->block = ((page%page_lun)%page_plane)/ssd->parameter->page_block;
@@ -822,21 +793,25 @@ uint64_t set_entry_state(ssd_info *ssd,unsigned int lsn,unsigned int size)
 int get_ppn_for_pre_process(ssd_info *ssd,unsigned int lsn,int app_id)     
 {
 	unsigned int channel=0,lun=0,plane=0; 
-	int ppn;
+	int ppn,lpn;
 	unsigned int active_block;
 	unsigned int channel_num=0,lun_num=0,plane_num=0;
+
+#ifdef DEBUG
+	printf("enter get_psn_for_pre_process\n");
+#endif
 
 	for (int i = 0; i < ssd->parameter->channel_number; i++){
 		if (ssd->parameter->lun_channel[i] != 0)
 			channel_num++;
 	}
-	
-	plane_num=ssd->parameter->plane_lun;
- 
-	int lpn = lsn / ssd->parameter->subpage_page;
+	//channel_num=ssd->parameter->channel_number;
+	lun_num=ssd->parameter->lun_channel[0];
+	plane_num=ssd->parameter->plane_lun; 
+	lpn=lsn/ssd->parameter->subpage_page;
 
-	channel = lpn % channel_num;
-	lun_num = ssd->parameter->lun_channel[channel];
+	channel=lpn%channel_num;
+	lun_num=ssd->parameter->lun_channel[channel];
 	lun=(lpn/channel_num)%(lun_num);
 	plane=(lpn/(lun_num*channel_num))%plane_num;
 	
@@ -850,7 +825,6 @@ int get_ppn_for_pre_process(ssd_info *ssd,unsigned int lsn,int app_id)
 	}
 	
 	active_block=ssd->channel_head[channel].lun_head[lun].plane_head[plane].active_block;
-		
 	location->block = active_block; 
 
 	if(write_page(ssd,location,&ppn)==ERROR)
@@ -863,7 +837,6 @@ int get_ppn_for_pre_process(ssd_info *ssd,unsigned int lsn,int app_id)
 	delete location; 
 	return ppn;
 }
-
 
 void add_write_to_table(ssd_info * ssd, request * request1){
 	unsigned int size, add_size = 0;
@@ -932,7 +905,6 @@ void add_write_to_table(ssd_info * ssd, request * request1){
 	}
 }
 
-
 int write_page( ssd_info *ssd, local * location, int *ppn)
 {
 	unsigned int channel = location->channel; 
@@ -942,7 +914,6 @@ int write_page( ssd_info *ssd, local * location, int *ppn)
 
 	int last_write_page=0;
 	last_write_page=++(ssd->channel_head[channel].lun_head[lun].plane_head[plane].blk_head[active_block].last_write_page);	
-	location->page = last_write_page; 
 	if(last_write_page>=(int)(ssd->parameter->page_block))
 	{
 		ssd->channel_head[channel].lun_head[lun].plane_head[plane].blk_head[active_block].last_write_page=0;
@@ -954,7 +925,7 @@ int write_page( ssd_info *ssd, local * location, int *ppn)
 	ssd->channel_head[channel].lun_head[lun].plane_head[plane].free_page--;
 	ssd->channel_head[channel].lun_head[lun].plane_head[plane].blk_head[active_block].page_head[last_write_page].written_count++;
 	ssd->flash_prog_count++; 
-
+	location->page = last_write_page; 
 	*ppn=find_ppn(ssd,location);
 
 	return SUCCESS;
@@ -966,8 +937,7 @@ void full_sequential_write(ssd_info * ssd){
 	unsigned int total_size = ssd->parameter->lun_num * ssd->parameter->plane_lun * ssd->parameter->block_plane * ssd->parameter->page_block * ssd->parameter->subpage_page; 
 	total_size = total_size * (1-ssd->parameter->overprovide); 
 	printf("full sequential write for total size %d \n", total_size );
-
-	// make a big write request 	
+	// create a write request 
 	request * request1 = new request();
 	request1->time = 0; 
 	request1->lsn = 0; 
@@ -982,11 +952,8 @@ void full_sequential_write(ssd_info * ssd){
 	request1->subs = NULL;
 	request1->need_distr_flag = NULL;
 	request1->complete_lsn_count = 0;         //record the count of lsn served by buffer
-
 	// add write to table 
 	add_write_to_table(ssd, request1); 
-
 	printf("\n");
 	printf("pre_process is complete!\n");
-
 }
