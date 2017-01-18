@@ -221,7 +221,7 @@ lun_info::lun_info(parameter_value * parameter)
 {		
 	current_state = LUN_MODE_IDLE;
 	next_state = LUN_MODE_IDLE;
-	current_time = current_time;
+	current_time = 0;
 	next_state_predict_time = 0;		
 	plane_num = parameter->plane_lun; 	
 	read_count = 0;
@@ -416,15 +416,15 @@ void file_assert(int error,const char *s){
 }
 
 
-void trace_assert(int64_t time_t,int device,unsigned int lsn,int size,int ope)
+void trace_assert(int64_t time,int device,unsigned int lsn,int size,int ope)
 {
-	if(time_t <0 || device < 0  || size < 0 || ope < 0)
+	if(time <0 || device < 0  || size < 0 || ope < 0)
 	{
-		printf("trace error:%lu %d %d %d %d\n",time_t,device,lsn,size,ope);
+		printf("trace error:%lld %d %d %d %d\n",time,device,lsn,size,ope);
 		getchar();
 		exit(-1);
 	}
-	if(time_t == 0 && device == 0 && lsn == 0 && size == 0 && ope == 0)
+	if(time == 0 && device == 0 && lsn == 0 && size == 0 && ope == 0)
 	{
 		printf("probable read a blank line\n");
 		getchar();

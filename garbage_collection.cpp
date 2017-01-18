@@ -39,7 +39,7 @@ STATE gc_for_lun(ssd_info *ssd, unsigned int channel, unsigned int lun){
 		if (gc_node == NULL) continue; 
 		if (launch_all_planes || (gc_node->priority == GC_ONDEMAND)) {
 			launch_gc_for_plane(ssd, gc_node); 
-			ssd->channel_head[channel]->lun_head[lun]->plane_head[plane]->GCMode = PLANE_MODE_GC; 
+			ssd->channel_head[channel]->lun_head[lun]->plane_head[plane]->GCMode = true; 
 		}
 	}
 
@@ -52,12 +52,12 @@ void ProcessGC(ssd_info *ssd){ // send LUNs to GC mode, or return back to IO mod
 		for (unsigned int lun = 0; lun < ssd->parameter->lun_channel[channel]; lun++){
 			bool on_demand = update_priority (ssd, channel, lun );  
 			 
-			if ( (ssd->channel_head[channel]->lun_head[lun]->GCMode == LUN_MODE_IO) && 
+			if ( (ssd->channel_head[channel]->lun_head[lun]->GCMode == false) && 
 				( on_demand ||  
 					(ssd->channel_head[channel]->lun_head[lun]->rsubs_queue.is_empty() && 
 					ssd->channel_head[channel]->lun_head[lun]->wsubs_queue.is_empty()))) {
  
-				ssd->channel_head[channel]->lun_head[lun]->GCMode = LUN_MODE_GC; 
+				ssd->channel_head[channel]->lun_head[lun]->GCMode = true;  
 				gc_for_lun(ssd, channel, lun); 
 			}
 		}
@@ -65,11 +65,11 @@ void ProcessGC(ssd_info *ssd){ // send LUNs to GC mode, or return back to IO mod
 	
 	for (unsigned int channel = 0; channel < ssd->parameter->channel_number; channel++){
 		for (unsigned int lun = 0; lun < ssd->channel_head[channel]->lun_num; lun++){
-			if (ssd->channel_head[channel]->lun_head[lun]->GCMode == LUN_MODE_GC && 
+			if (ssd->channel_head[channel]->lun_head[lun]->GCMode == true && 
 				ssd->channel_head[channel]->lun_head[lun]->GCSubs.is_empty()){
-				ssd->channel_head[channel]->lun_head[lun]->GCMode = LUN_MODE_IO;
+				ssd->channel_head[channel]->lun_head[lun]->GCMode = false;
 				for (unsigned int plane = 0; plane < ssd->parameter->plane_lun; plane++)
-					ssd->channel_head[channel]->lun_head[lun]->plane_head[plane]->GCMode = PLANE_MODE_IO; 
+					ssd->channel_head[channel]->lun_head[lun]->plane_head[plane]->GCMode = false; 
 			}
 		}
 	}
@@ -412,7 +412,7 @@ STATE fifo_algorithm(ssd_info * ssd,  local * location){
 			block = i; 			
 		}		
 	}
-	printf("block %d , %lu \n", block, ssd->channel_head[location->channel]->lun_head[location->lun]->plane_head[location->plane]->blk_head[block]->last_write_time );
+	printf("block %d , %lld \n", block, ssd->channel_head[location->channel]->lun_head[location->lun]->plane_head[location->plane]->blk_head[block]->last_write_time );
 	location->block = block; 
 	return SUCCESS; 
 }
