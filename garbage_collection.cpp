@@ -1,5 +1,4 @@
 #include "garbage_collection.hh"
-#include "pagemap.hh"
 
 void launch_gc_for_plane(ssd_info * ssd, gc_operation * gc_node){	
 	if (gc_node == NULL) return; 

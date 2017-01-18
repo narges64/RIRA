@@ -40,12 +40,12 @@ enum CHANNEL_MODE {CHANNEL_MODE_IDLE, CHANNEL_MODE_GC, CHANNEL_MODE_IO, CHANNEL_
 enum LUN_MODE {LUN_MODE_IDLE, LUN_MODE_GC, LUN_MODE_IO, LUN_MODE_NUM}; 
 enum PLANE_MODE {PLANE_MODE_IDLE, PLANE_MODE_GC, PLANE_MODE_IO, PLANE_MODE_NUM}; 
 enum SUBREQ_MODE {SR_MODE_WAIT, SR_MODE_ST_S, SR_MODE_ST_M, SR_MODE_IOC_S, SR_MODE_IOC_O, SR_MODE_IOC_M, SR_MODE_GCC_S, SR_MODE_GCC_O, SR_MODE_GCC_M, SR_MODE_COMPLETE, SR_MODE_NUM}; 
-
 enum PARGC_APPROACH{BLIND = 0, PATTERN, COST_AWARE, DYN_COST_AWARE, PREEMPTIVE, CACHE_INVOLVED, PRE_MOVE, NO_PGC};
-
-
 enum STATE {ERROR = -1, FAIL, SUCCESS};
 enum GC_ALG{GREEDY, FIFO, WINDOWED, RGA, RANDOM, RANDOMP, RANDOMPP, SIMILAR};
+
+enum LUN_STATE {LUN_STATE_IDLE, LUN_STATE_HIO, LUN_STATE_FIO, LUN_STATE_HGC, LUN_STATE_FGC, LUN_STATE_IOGC, LUN_STATE_NUM}; // to keep track of utilization 
+
 
 class ac_time_characteristics{
 public: 
@@ -288,7 +288,6 @@ public:
 		critical_sub = NULL; 
 		
 		energy_consumption = 0; 
-		distri_flag = 0; 
 		subs = NULL; 
 		need_distr_flag = NULL; 
 		complete_lsn_count = 0; 
@@ -314,7 +313,6 @@ public:
 	unsigned int operation;
 	unsigned int* need_distr_flag;
 	unsigned int complete_lsn_count;   //record the count of lsn served by buffer
-	int distri_flag;		           // indicate whether this request has been distributed already
 	int64_t begin_time;
 	int64_t response_time;
 	double energy_consumption;         

@@ -3,7 +3,6 @@
 
 #include <stdlib.h>
 #include "garbage_collection.hh"
-#include "pagemap.hh"
 #include "initialize.hh"
 
 #define MAX(A,B) (A>B)?A:B;  
@@ -33,6 +32,14 @@ void services_2_gc(ssd_info * ssd, unsigned int channel, unsigned int * channel_
 void services_2_io(ssd_info * ssd, unsigned int channel, unsigned int * channel_busy_flag); 
 int find_lun_io_requests(ssd_info * ssd, unsigned int channel, unsigned int lun, sub_request ** subs, int * operation); 
 int find_lun_gc_requests(ssd_info * ssd, unsigned int channel, unsigned int lun, sub_request ** subs, int * operation); 
+
+void find_location(ssd_info *ssd,int ppn, local * location);
+int find_ppn(ssd_info * ssd, const local * location); 
+int get_ppn_for_pre_process(ssd_info *ssd,unsigned int lsn, int app_id);
+uint64_t set_entry_state(ssd_info *ssd,unsigned int lsn,unsigned int size);
+void add_write_to_table(ssd_info * ssd, request * request1); 
+int write_page( ssd_info *ssd,local * location, int *ppn);
+void full_sequential_write(ssd_info * ssd);
 
 #endif
 
