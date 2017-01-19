@@ -10,7 +10,7 @@ OBJ_DIR = obj
 OBJS = $(patsubst %.o,$(OBJ_DIR)/%.o,$(OBJ_FILES))
 
 CC = g++
-CFLAGS = -ggdb -I. 
+CFLAGS = -ggdb -I. -std=c++11 
 
 $(EXEC): $(OBJS)
 	$(CC) -o $@ $^ $(CFLAGS)
