@@ -20,8 +20,7 @@ parameter_value::parameter_value(int argc, char ** argv){
 		if (lun_channel[i] != 0){
 			channel++;			
 		}		
-	}
-	
+	}	
 	channel_number = channel; 
 	syn_rd_ratio = atof(argv[6]); 
 	syn_req_size = atoi(argv[7]); 
@@ -202,7 +201,6 @@ plane_info::plane_info(parameter_value  * parameters)
 	}
 	block_num = parameters->block_plane; 
 	active_block = 0; 
-	second_active_block = 1; 
 	erase_count = 0; 
 	program_count = 0; 
 	GCMode = false; 
@@ -472,7 +470,7 @@ bool SubQueue::find_subreq(sub_request * sub){
 			
 			if (qsub->location->block == sub->location->block && qsub->location->page == sub->location->page) {
 				// FIXME do we need to compare state?? 
-				return TRUE; 
+				return true; 
 				
 			}
 			
@@ -480,7 +478,7 @@ bool SubQueue::find_subreq(sub_request * sub){
 		
 		qsub = qsub->next_node; 
 	}
-	return FALSE; 
+	return false; 
 }
 	
 void SubQueue::push_tail(sub_request * sub){

@@ -347,7 +347,7 @@ STATE delete_gc_node(ssd_info * ssd, gc_operation * gc_node){
 	return SUCCESS; 
 }
 // =============== GC ALGORITHMS ================================ 
-unsigned int best_cost(ssd_info * ssd, plane_info * the_plane, int * block_numbers, int number, int order /*which best, first best, second best, etc. */, int active_block /*not this one*/, int second_active_block){
+unsigned int best_cost(ssd_info * ssd, plane_info * the_plane, int * block_numbers, int number, int order /*which best, first best, second best, etc. */, int active_block /*not this one*/){
 	int i, j; 
 	if (block_numbers == NULL) // means all block in the plane 
 	{
@@ -371,7 +371,7 @@ unsigned int best_cost(ssd_info * ssd, plane_info * the_plane, int * block_numbe
 		}
 	}
 
-	while (block_numbers[order] == active_block || block_numbers[order] == second_active_block) // don't return the active block as the victim
+	while (block_numbers[order] == active_block) 
 		order++;
 	if (order < 3){
 		return block_numbers[order];
@@ -381,15 +381,14 @@ unsigned int best_cost(ssd_info * ssd, plane_info * the_plane, int * block_numbe
 STATE greedy_algorithm(ssd_info * ssd,  local * location){
 
 	unsigned int block = -1; 
-	unsigned int active_block = 0, second_active_block = 0; 
+	unsigned int active_block = 0; 
 	if(find_active_block(ssd,location)!=SUCCESS)                                 
 	{
 		printf("\n\n Error in greedy algorithm, plane active block\n");
 		return ERROR;
 	}
 	active_block=ssd->channel_head[location->channel]->lun_head[location->lun]->plane_head[location->plane]->active_block;
-	second_active_block=ssd->channel_head[location->channel]->lun_head[location->lun]->plane_head[location->plane]->second_active_block;
-	location->block = best_cost(ssd, ssd->channel_head[location->channel]->lun_head[location->lun]->plane_head[location->plane], NULL , ssd->parameter->block_plane, 0/* first best option*/, active_block, second_active_block); 
+	location->block = best_cost(ssd, ssd->channel_head[location->channel]->lun_head[location->lun]->plane_head[location->plane], NULL , ssd->parameter->block_plane, 0/* first best option*/, active_block); 
 	return SUCCESS; 
 }
 STATE fifo_algorithm(ssd_info * ssd,  local * location){
@@ -425,7 +424,7 @@ STATE windowed_algorithm(ssd_info * ssd, local * location){
 		blocks[i] = -1; 
 	
 	
-	unsigned int active_block = 0, second_active_block = 0; 
+	unsigned int active_block = 0; 
 
 	plane_info *the_plane = ssd->channel_head[location->channel]->lun_head[location->lun]->plane_head[location->plane]; 
 	
@@ -435,7 +434,6 @@ STATE windowed_algorithm(ssd_info * ssd, local * location){
 		return ERROR;
 	}
 	active_block=the_plane->active_block;
-	second_active_block = the_plane->second_active_block; 
 
 	for (int i = 0; i < ssd->parameter->block_plane; i++){
 		if (i == active_block) continue; 
@@ -462,7 +460,7 @@ STATE windowed_algorithm(ssd_info * ssd, local * location){
 	
 	unsigned int block = -1; 
 	
-	block= best_cost(ssd, the_plane, blocks, temp+1, 0 /*which best, first best, second best, etc. */, active_block /*not this one*/, second_active_block); 
+	block= best_cost(ssd, the_plane, blocks, temp+1, 0 /*which best, first best, second best, etc. */, active_block); 
 	
 	location->block = block;
 
@@ -478,7 +476,7 @@ STATE RGA_algorithm(ssd_info * ssd, local * location, int valid_number){
 		blocks[i] = i; 
 	}
 
-	unsigned int active_block = 0, second_active_block = 0;
+	unsigned int active_block = 0;
 	if (find_active_block(ssd, location) != SUCCESS)
 	{
 		printf("\n\n Error in rga algorithm, plane active block\n");
@@ -486,12 +484,9 @@ STATE RGA_algorithm(ssd_info * ssd, local * location, int valid_number){
 	}
 	plane_info * p = ssd->channel_head[location->channel]->lun_head[location->lun]->plane_head[location->plane];
 	active_block = p->active_block;
-	second_active_block = p->second_active_block;
 
 	blocks[active_block] = blocks[total_size - 1]; 
 	total_size--;
-	blocks[second_active_block] = blocks[total_size - 1];
-	total_size--; 
 
 	for (int i = 0; i < window_size; i++){
 		int j = rand() % (total_size - i);
@@ -519,7 +514,7 @@ STATE RGA_algorithm(ssd_info * ssd, local * location, int valid_number){
 		location->block = blocks[selected];
 	} else {
 		unsigned int block = -1;
-		block = best_cost(ssd, p, blocks, window_size, 0, active_block, second_active_block); // which best, first best, second best, etc. 
+		block = best_cost(ssd, p, blocks, window_size, 0, active_block); // which best, first best, second best, etc. 
 		location->block = block;
 	}
 	delete blocks; 

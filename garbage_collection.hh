@@ -14,7 +14,7 @@ STATE RANDOM_algorithm(ssd_info * ssd, local * location);
 STATE RANDOM_p_algorithm(ssd_info * ssd, local * location);
 STATE RANDOM_pp_algorithm(ssd_info * ssd, local * location);
 
-unsigned int best_cost( ssd_info * ssd,  plane_info * the_plane, int * block_numbers, int number, int order /*which best, first best, second best, etc. */, int active_block /*not this one*/, int second_active_block);
+unsigned int best_cost( ssd_info * ssd,  plane_info * the_plane, int * block_numbers, int number, int order /*which best, first best, second best, etc. */, int active_block /*not this one*/);
 STATE uninterrupt_gc( ssd_info *ssd, gc_operation * gc_node);
 
 int64_t compute_moving_cost(ssd_info * ssd, const local * location, const local * twin_location, int approach); 

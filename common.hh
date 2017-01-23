@@ -9,34 +9,13 @@
 using namespace std; 
 
 #define QUEUE_LENGTH 32
-#define ADDRESS_CHUNK 536870912
-
-#define SECTOR 512
 #define BUFSIZE 200
-
-#define READ 1
-#define WRITE 0
-#define ERASE 2
-
-#define REQUEST_IN 300        
-#define OUTPUT 301            
-
-#define GC_WAIT 400
-#define GC_ERASE_C_A 401
-#define GC_COPY_BACK 402
-#define GC_COMPLETE 403
-#define GC_EARLY 0
-#define GC_ONDEMAND 1
-
-#define PLANE_STATE_IDLE 500
-#define PLANE_STATE_BUSY 501 
-
 #define PG_SUB 0xffffffffffffffff			
+#define EPOCH_LENGTH (int64_t) 100000000000 
 
-#define TRUE		1
-#define FALSE		0
-#define INFEASIBLE	-2
-
+enum GC_PRIORITY {GC_EARLY, GC_ONDEMAND}; 
+enum GC_STATES {GC_WAIT, GC_ERASE_C_A, GC_COPY_BACK, GC_COMPLETE}; 
+enum OPERATIONS {WRITE = 0, READ, ERASE}; 
 enum PLANE_LEVEL_PARALLEL {BASE, GCIO, IOGC, GCGC}; 
 enum CHANNEL_MODE {CHANNEL_MODE_IDLE, CHANNEL_MODE_GC, CHANNEL_MODE_IO, CHANNEL_MODE_NUM}; 
 enum LUN_MODE {LUN_MODE_IDLE, LUN_MODE_GC, LUN_MODE_IO, LUN_MODE_NUM}; 
@@ -395,7 +374,6 @@ public:
 	unsigned int free_page;            
 	unsigned int ers_invalid;          
 	unsigned int active_block;     
-	unsigned int second_active_block; 
 	int can_erase_block;              
 	blk_info **blk_head;
 	unsigned int block_num; 
