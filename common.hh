@@ -12,6 +12,7 @@ using namespace std;
 #define BUFSIZE 200
 #define PG_SUB 0xffffffffffffffff			
 #define EPOCH_LENGTH (int64_t) 100000000000 
+#define MAX(A,B) (A>B)?A:B;  
 
 enum GC_PRIORITY {GC_EARLY, GC_ONDEMAND}; 
 enum GC_STATES {GC_WAIT, GC_ERASE_C_A, GC_COPY_BACK, GC_COMPLETE}; 

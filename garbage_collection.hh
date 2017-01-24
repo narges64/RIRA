@@ -2,7 +2,7 @@
 #define GARBAGE_COLLECTION_H 10000
 #include <sys/types.h>
 #include "ssd.hh"
-#include "flash.hh"
+#include "ftl.hh"
 #include "common.hh"
 void plane_erase_observation(ssd_info *ssd, const local * location);
 STATE find_victim_block( ssd_info *ssd,local * location); 

@@ -3,7 +3,7 @@
 EXEC = ssd
 
 OBJ_FILES = \
-	common.o flash.o \
+	common.o ftl.o flash.o\
 	garbage_collection.o ssd.o\
 
 OBJ_DIR = obj

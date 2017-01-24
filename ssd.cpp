@@ -1,6 +1,3 @@
-#include <fstream>
-#include <math.h>
-#include <iostream>
 #include "ssd.hh"
 using namespace std;
 
@@ -10,7 +7,10 @@ int  main(int argc, char * argv[]){
 	parameter_value * parameters = new parameter_value(argc, argv);  
 	ssd_info * ssd = new ssd_info(parameters, argv[2], argv[5]); 
 	
-	full_sequential_write(ssd);
+//	full_sequential_write(ssd);
+	full_random_write(ssd); 
+//	full_random_write(ssd); 
+//	full_random_write(ssd); 
 	simulate(ssd);
 		
 	for (int cd = 0; cd < ssd->parameter->consolidation_degree; cd++){

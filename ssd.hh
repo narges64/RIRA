@@ -1,11 +1,13 @@
-
+#include <fstream>
+#include <math.h>
+#include <iostream>
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
 #include <time.h>
 #include <string.h>
 #include <sys/types.h>
-#include "flash.hh"
+#include "ftl.hh"
 
 #define MAX_INT64  0x7fffffffffffffffll
 
