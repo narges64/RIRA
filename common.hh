@@ -13,10 +13,11 @@ using namespace std;
 #define PG_SUB 0xffffffffffffffff			
 #define EPOCH_LENGTH (int64_t) 100000000000 
 #define MAX(A,B) (A>B)?A:B;  
+#define NSEC 1000000000
 
 enum GC_PRIORITY {GC_EARLY, GC_ONDEMAND}; 
 enum GC_STATES {GC_WAIT, GC_ERASE_C_A, GC_COPY_BACK, GC_COMPLETE}; 
-enum OPERATIONS {WRITE = 0, READ, ERASE}; 
+enum OPERATIONS {WRITE = 0, READ, ERASE, NO_OP, OP_NUM}; 
 enum PLANE_LEVEL_PARALLEL {BASE, GCIO, IOGC, GCGC}; 
 enum CHANNEL_MODE {CHANNEL_MODE_IDLE, CHANNEL_MODE_GC, CHANNEL_MODE_IO, CHANNEL_MODE_NUM}; 
 enum LUN_MODE {LUN_MODE_IDLE, LUN_MODE_GC, LUN_MODE_IO, LUN_MODE_NUM}; 
@@ -66,6 +67,37 @@ public:
 	int tWHR;      //WE high to RE low
 	int tRST;      //device resetting time
 };
+
+
+class Tuple {
+public: 
+	int64_t active_time; 
+	int64_t total_capacity; 
+	int64_t total_count; 
+
+	int64_t total_noop_capacity; 
+	int64_t total_noop_count; 
+	
+	void add_time(int64_t t) { active_time += t; }
+	void add_capacity(int cap) {total_capacity += cap;}
+	void add_count (int count){ total_count += count; }
+	void add_noop_capacity(int cap) {total_noop_capacity += cap; }
+	void add_noop_count(int count) { total_noop_count += count; } 
+
+	double get_IOPS(){ // per second 
+		return (double)total_count * NSEC / active_time; 
+	}	
+	double get_noop_IOPS(){
+		return (double)total_noop_count * NSEC / active_time; 
+	}
+	double get_noop_BW(){
+		return (double)total_noop_capacity * NSEC / active_time; 
+	}
+	double get_BW(){
+		return (double)total_capacity * NSEC / (active_time * 2); 
+	}
+
+}; 
 
 class parameter_value{
 public: 
@@ -134,12 +166,12 @@ public:
 
 class local{        
 public: 
-	local(unsigned int c, unsigned int w, unsigned int p){
+	local(int c, int w, int p){
 		channel = c; 
 		lun = w; 
 		plane = p; 
 	}
-	local(unsigned int c, unsigned int w, unsigned int p, unsigned int b, unsigned int pg ) {
+	local(int c, int w, int p, int b, int pg ) {
 		channel = c; 
 		lun = w; 
 		plane = p; 
@@ -148,12 +180,15 @@ public:
 	} 
 	
 	~local(){}
-	unsigned int channel;
-	unsigned int lun;
-	unsigned int plane;
-	unsigned int block;
-	unsigned int page;
-	unsigned int sub_page;
+	void print(){
+		cout << "channel: " << channel << " lun: " << lun << " plane: "<< plane << " block:"<< block << " page: " << page << endl; 
+	}
+	int channel;
+	int lun;
+	int plane;
+	int block;
+	int page;
+	int sub_page;
 };
 
 /********************************************************
@@ -325,7 +360,7 @@ public:
 	void push_head(sub_request * sub);
 	
 	void remove_node(sub_request * sub);
-	sub_request * target_request(unsigned int plane, unsigned int block, unsigned int page); 
+	sub_request * target_request(int plane, int block, int page); 
 	bool is_empty();
 	
 	
@@ -351,10 +386,10 @@ public:
 		}
 		delete page_head; 
 	}
-	unsigned int erase_count;          
-	unsigned int free_page_num;       
-	unsigned int invalid_page_num; 
-	unsigned int page_num;     
+	int erase_count;          
+	int free_page_num;       
+	int invalid_page_num; 
+	int page_num;     
 	int last_write_page;
 	int64_t last_write_time; 
 	page_info **page_head;       
@@ -371,16 +406,16 @@ public:
 		delete blk_head; 
 		delete state_time; 
 	}	
-	int add_reg_ppn;                   
-	unsigned int free_page;            
-	unsigned int ers_invalid;          
-	unsigned int active_block;     
-	int can_erase_block;              
+	int64_t add_reg_ppn;                   
+	int64_t free_page;            
+	int64_t ers_invalid;          
+	int64_t active_block;     
+	int64_t can_erase_block;              
 	blk_info **blk_head;
-	unsigned int block_num; 
-	unsigned int erase_count;
-	unsigned int read_count; 
-	unsigned int program_count; 
+	int64_t block_num; 
+	int64_t erase_count;
+	int64_t read_count; 
+	int64_t program_count; 
 	
 	int current_state; 
 	int next_state; 
@@ -402,11 +437,11 @@ public:
 		delete plane_head; 
 		delete state_time; 
 	}     
-	unsigned int plane_num; 
+	int plane_num; 
 	plane_info **plane_head;
-	unsigned int erase_count;  
-	unsigned int program_count; 
-	unsigned int read_count; 
+	int erase_count;  
+	int program_count; 
+	int read_count; 
 
 	int current_state; 
 	int64_t current_time; 
@@ -424,7 +459,46 @@ public:
 	
 	int64_t * state_time; 
 	bool GCMode; 
-	unsigned int plane_token; 
+	int plane_token; 
+
+	void update_stat(int64_t duration, int type, int count, int page_size) {
+		switch (type) {
+			case READ: 
+				stat_read_throughput.add_time(duration); 
+				stat_write_throughput.add_time(duration); 
+				stat_rw_throughput.add_time(duration); 
+			
+				stat_read_throughput.add_capacity(page_size * count); 
+				stat_read_throughput.add_count(count); 
+				stat_rw_throughput.add_capacity(page_size * count); 
+				stat_rw_throughput.add_count(count); 
+				break; 
+			case WRITE: 
+				stat_write_throughput.add_time(duration); 
+				stat_read_throughput.add_time(duration); 
+				stat_rw_throughput.add_time(duration); 
+					
+				stat_write_throughput.add_capacity(page_size * count); 
+				stat_write_throughput.add_count(count); 
+				stat_rw_throughput.add_capacity(page_size * count); 
+				stat_rw_throughput.add_count(count); 
+				break; 
+			case NO_OP: 
+				stat_read_throughput.add_time(duration); 
+				stat_write_throughput.add_time(duration); 
+				stat_rw_throughput.add_time(duration); 
+				break; 
+			default: 
+				cout << "lun stat update: type not known! " << endl; 
+				
+		}
+	}
+		
+
+	Tuple stat_read_throughput; 
+	Tuple stat_write_throughput; 
+	Tuple stat_rw_throughput; 
+
 }; 
 
 
@@ -438,14 +512,14 @@ public:
 		delete lun_head; 
 		delete state_time; 
 	}
-	unsigned int lun_num; 
-	unsigned long read_count;
-	unsigned long program_count;
-	unsigned long erase_count;
+	int lun_num; 
+	int64_t read_count;
+	int64_t program_count;
+	int64_t erase_count;
 
-	unsigned long epoch_read_count;  
-	unsigned long epoch_program_count ; 
-	unsigned long epoch_erase_count; 
+	int64_t epoch_read_count;  
+	int64_t epoch_program_count ; 
+	int64_t epoch_erase_count; 
 
 	int current_state;                   //channel has serveral states, including idle, command/address transfer,data transfer,unknown
 	int next_state;
@@ -475,50 +549,50 @@ public:
 	unsigned int real_time_subreq;       
 	int flag;
 	int active_flag;                     
-	unsigned int total_page_number;
-	unsigned int request_sequence_number;
-	unsigned int subrequest_sequence_number;  
-	unsigned int gc_sequence_number; 
-	unsigned int lun_token;                  
-	unsigned int gc_request;            
-	unsigned int * read_request_count;
-	unsigned int * total_read_request_count;
-	unsigned int * write_request_count;
-	unsigned int * total_write_request_count;
+	int total_page_number;
+	int request_sequence_number;
+	int subrequest_sequence_number;  
+	int gc_sequence_number; 
+	int lun_token;                  
+	int gc_request;            
+	int64_t * read_request_count;
+	int64_t * total_read_request_count;
+	int64_t * write_request_count;
+	int64_t * total_write_request_count;
 	int64_t * write_avg;
 	int64_t * read_avg;
 	int64_t * total_RT; 
 	int64_t * total_read_RT; 
 	int64_t * total_write_RT; 
-	unsigned int * read_request_size; 
-	unsigned int * total_read_request_size;
-	unsigned int * write_request_size;
-	unsigned int * total_write_request_size;
+	int64_t * read_request_size; 
+	int64_t * total_read_request_size;
+	int64_t * write_request_size;
+	int64_t * total_write_request_size;
 
-	unsigned int flash_read_count, total_flash_read_count; 
-	unsigned int flash_prog_count, total_flash_prog_count; 
-	unsigned int flash_erase_count, total_flash_erase_count; 
-	
-	unsigned int direct_erase_count, total_direct_erase_count; 
-	
-	unsigned int copy_back_count, total_copy_back_count; 
+	int64_t flash_read_count, total_flash_read_count; 
+	int64_t flash_prog_count, total_flash_prog_count; 
+	int64_t flash_erase_count, total_flash_erase_count; 
 
-	unsigned int read_multiplane_count, write_multiplane_count, erase_multiplane_count; 
+	int64_t queue_prog_count, queue_read_count; 	
+	int64_t direct_erase_count, total_direct_erase_count; 
+	
+	int64_t copy_back_count, total_copy_back_count; 
 
-		
-	unsigned int m_plane_read_count, total_m_plane_read_count; 
-	unsigned int m_plane_prog_count, total_m_plane_prog_count; 
-	unsigned int m_plane_erase_count, total_m_plane_erase_count; 
+	int64_t read_multiplane_count, write_multiplane_count, erase_multiplane_count; 
+
+	int64_t m_plane_read_count, total_m_plane_read_count; 
+	int64_t m_plane_prog_count, total_m_plane_prog_count; 
+	int64_t m_plane_erase_count, total_m_plane_erase_count; 
 	
-	unsigned int interleave_read_count, total_interleave_read_count; 
-	unsigned int interleave_prog_count, total_interleave_prog_count; 
-	unsigned int interleave_erase_count, total_interleave_erase_count; 
+	int64_t interleave_read_count, total_interleave_read_count; 
+	int64_t interleave_prog_count, total_interleave_prog_count; 
+	int64_t interleave_erase_count, total_interleave_erase_count; 
 	
-	unsigned int gc_copy_back, total_gc_copy_back; 
-	unsigned int waste_page_count, total_waste_page_count;
-	unsigned int update_read_count, total_update_read_count; 
+	int64_t gc_copy_back, total_gc_copy_back; 
+	int64_t waste_page_count, total_waste_page_count;
+	int64_t update_read_count, total_update_read_count; 
 	
-	unsigned int request_queue_length; 
+	int64_t request_queue_length; 
 	int64_t write_worst_case_rt;
 	int64_t read_worst_case_rt; 
 		
@@ -530,8 +604,8 @@ public:
 	int steady_state; 
 	
 	int gc_moved_page; 
-	unsigned int min_lsn;
-	unsigned int max_lsn;
+	int64_t min_lsn;
+	int64_t max_lsn;
 	
 	FILE * tracefile[10];
 	FILE * statisticfile;
@@ -548,7 +622,7 @@ public:
 
 void file_assert(int error,const char *s);
 void alloc_assert(void *p,const char *s);
-void trace_assert(int64_t time_t,int device,unsigned int lsn,int size,int ope);
+void trace_assert(int64_t time_t,int device,int64_t lsn,int size,int ope);
 unsigned int size(uint64_t stored);
 parameter_value *load_parameters(char parameter_file[30]);
 

@@ -13,17 +13,18 @@ int find_lun_io_requests(ssd_info * ssd, unsigned int channel, unsigned int lun,
 int find_lun_gc_requests(ssd_info * ssd, unsigned int channel, unsigned int lun, sub_request ** subs, int * operation); 
 void find_location(ssd_info *ssd,int ppn, local * location);
 int find_ppn(ssd_info * ssd, const local * location); 
-void add_write_to_table(ssd_info * ssd, request * request1); 
 void full_sequential_write(ssd_info * ssd);
-STATE get_ppn(ssd_info *ssd, local * location, int lpn, int & ppn);
-STATE allocate_location( ssd_info * ssd , local * location);
+int get_new_ppn(ssd_info *ssd, int lpn, const local * location = NULL);
+STATE allocate_plane( ssd_info * ssd , local * location);
 uint64_t set_entry_state(ssd_info *ssd, int lsn,unsigned int size);
-STATE  find_active_block( ssd_info *ssd,const local * location);
-unsigned int get_target_lun(ssd_info * ssd); 
-unsigned int get_target_plane(ssd_info * ssd, unsigned int channel, unsigned int lun); 
-int write_page( ssd_info *ssd,local * location, int *ppn);
-void full_sequential_write(ssd_info * ssd);
-void full_random_write(ssd_info * ssd);
-
+STATE  allocate_page_in_plane( ssd_info *ssd, local * location);
+int get_target_lun(ssd_info * ssd); 
+int get_target_plane(ssd_info * ssd, unsigned int channel, unsigned int lun); 
+void update_map_entry(ssd_info * ssd, int lpn, int ppn, int state); 
+bool check_need_gc(ssd_info * ssd, int ppn); 
+void full_write_preoccupation(ssd_info * ssd, bool seq);
+STATE invalid_old_page(ssd_info * ssd, const int lpn); 
+STATE write_page(ssd_info * ssd, const int lpn, const int  ppn); 
+int get_active_block(ssd_info * ssd, local * location);                             
 #endif
 

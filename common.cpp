@@ -74,10 +74,10 @@ ssd_info::ssd_info(parameter_value * parameters, char * statistics_filename, cha
 	fprintf(statisticfile,"-----------------------simulation output----------------------\n");
 	fflush(statisticfile);
 
-	read_request_count = new unsigned int[parameters->consolidation_degree];
-	total_read_request_count = new unsigned int[parameters->consolidation_degree];
-	write_request_count = new unsigned int[parameters->consolidation_degree];
-	total_write_request_count = new unsigned int[parameters->consolidation_degree];
+	read_request_count = new int64_t[parameters->consolidation_degree];
+	total_read_request_count = new int64_t[parameters->consolidation_degree];
+	write_request_count = new int64_t[parameters->consolidation_degree];
+	total_write_request_count = new int64_t[parameters->consolidation_degree];
 
 	read_avg = new int64_t[parameters->consolidation_degree];
 	write_avg = new int64_t[parameters->consolidation_degree];
@@ -85,10 +85,10 @@ ssd_info::ssd_info(parameter_value * parameters, char * statistics_filename, cha
 	total_read_RT = new int64_t[parameters->consolidation_degree];
 	total_write_RT = new int64_t[parameters->consolidation_degree];
 
-	read_request_size = new unsigned int[parameters->consolidation_degree];
-	total_read_request_size = new unsigned int[parameters->consolidation_degree];
-	write_request_size = new unsigned int[parameters->consolidation_degree];
-	total_write_request_size = new unsigned int[parameters->consolidation_degree];
+	read_request_size = new int64_t[parameters->consolidation_degree];
+	total_read_request_size = new int64_t[parameters->consolidation_degree];
+	write_request_size = new int64_t[parameters->consolidation_degree];
+	total_write_request_size = new int64_t[parameters->consolidation_degree];
 
 	for (int i = 0; i < parameters->consolidation_degree; i++){
 		read_request_count[i] = 0;
@@ -113,7 +113,9 @@ ssd_info::ssd_info(parameter_value * parameters, char * statistics_filename, cha
 	total_flash_prog_count = 0; 
 	flash_erase_count = 0; 
 	total_flash_erase_count = 0; 
-	
+
+	queue_read_count = 0; 
+	queue_prog_count = 0; 	
 	direct_erase_count = 0; 
 	total_direct_erase_count = 0; 
 	
@@ -149,7 +151,7 @@ ssd_info::ssd_info(parameter_value * parameters, char * statistics_filename, cha
 	gc_sequence_number = 0; 
 	lun_token = 0; 	
 	subreq_state_time = new int64_t[SR_MODE_NUM]; 
-	for (unsigned int i = 0; i < SR_MODE_NUM; i++){
+	for (int i = 0; i < SR_MODE_NUM; i++){
 		subreq_state_time[i] = 0; 	
 	}
 
@@ -232,13 +234,13 @@ lun_info::lun_info(parameter_value * parameter)
 
 	GCMode = false; 
 	plane_head = new plane_info*[parameter->plane_lun];
-	for (unsigned int i = 0; i<parameter->plane_lun; i++)
+	for (int i = 0; i<parameter->plane_lun; i++)
 	{
 		plane_head[i] = new plane_info(parameter); 
 	}
 	
 	state_time = new int64_t [LUN_MODE_NUM]; 
-	for (unsigned int i = 0; i < LUN_MODE_NUM; i++)
+	for (int i = 0; i < LUN_MODE_NUM; i++)
 		state_time[i] = 0; 
 	
 }
@@ -465,7 +467,7 @@ bool SubQueue::find_subreq(sub_request * sub){
 	while (qsub != NULL){
 		
 		if (qsub == sub) return true; 
-		
+		if (qsub->lpn == sub->lpn) return true; 
 		if (qsub->location->channel == sub->location->channel && qsub->location->lun == sub->location->lun && qsub->location->plane == sub->location->plane){
 			
 			if (qsub->location->block == sub->location->block && qsub->location->page == sub->location->page) {
@@ -545,7 +547,7 @@ void SubQueue::remove_node(sub_request * sub){
 	//delete sub; 
 }
 
-sub_request * SubQueue::target_request(unsigned int plane, unsigned int block, unsigned int page ){
+sub_request * SubQueue::target_request(int plane, int block, int page ){
 	
 	sub_request * sub = queue_head; 
 	

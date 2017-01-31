@@ -120,21 +120,11 @@ STATE find_victim_block(ssd_info * ssd, local * location){
 	}
 
 	if (ssd->channel_head[location->channel]->lun_head[location->lun]->plane_head[location->plane]->blk_head[location->block]->free_page_num >= ssd->parameter->page_block){
-		printf("Error: too much free page in selected victim \n");
+		cout << "Error: too much free page in selected victim \n";
+		cout << ssd->channel_head[location->channel]->lun_head[location->lun]->plane_head[location->plane]->blk_head[location->block]->free_page_num << endl; 
 		return FAIL; 
 	}
-	
-	int free_page = 0; 
-	for(int i=0;i<ssd->parameter->page_block;i++)
-	{		
-		if ((ssd->channel_head[location->channel]->lun_head[location->lun]->plane_head[location->plane]->blk_head[location->block]->page_head[i]->free_state&PG_SUB)==0x00000000000f)
-			free_page++;
-	}
-	if(free_page!=0){
-		printf("Error: too much free page.\t%d\t%d\t%d\t%d\t\n",free_page,location->channel,location->lun,location->plane);
-		return FAIL; 
-	}	
-	
+
 	return SUCCESS; 
 }
 sub_request * create_gc_sub_request( ssd_info * ssd,const local * location, int operation, gc_operation * gc_node){
@@ -171,12 +161,10 @@ sub_request * create_gc_sub_request( ssd_info * ssd,const local * location, int 
 	{
 		sub->operation = WRITE;
 		sub->location = new local(location->channel, location->lun, location->plane); 
-	
-		sub->ppn= get_ppn_for_gc(ssd, location); 
-		find_location(ssd, sub->ppn, sub->location); // fill the rest of location ??? need this? 
-	
-		ssd->dram->map->map_entry[sub->lpn].pn= sub->ppn;
-        ssd->dram->map->map_entry[sub->lpn].state=(ssd->dram->map->map_entry[sub->lpn].state|sub->state);
+		invalid_old_page(ssd, sub->lpn); 
+		sub->ppn = get_new_ppn(ssd, sub->lpn, location);
+		find_location(ssd, sub->ppn, sub->location); 
+		write_page(ssd, sub->lpn, sub->ppn);  
 	}
 	else if (operation == ERASE)
 	{
@@ -202,57 +190,8 @@ STATE move_page(ssd_info * ssd,  const local * location, gc_operation * gc_node)
 	
 	return SUCCESS;
 }
-int get_ppn_for_gc(ssd_info *ssd,const local *old_location){
-	int ppn;
-	unsigned int active_block,block,page;
 
-	if(find_active_block(ssd,old_location)!=SUCCESS)
-	{
-		printf("\n\n Error in get_ppn_for_gc().\n");
-		return -1; 
-	}
-    
-	active_block=ssd->channel_head[old_location->channel]->lun_head[old_location->lun]->plane_head[old_location->plane]->active_block;
-	unsigned int last_write_page = ssd->channel_head[old_location->channel]->lun_head[old_location->lun]->plane_head[old_location->plane]->blk_head[active_block]->last_write_page+1; 
-	
-	if(last_write_page>=ssd->parameter->page_block )
-	{
-		printf("error! the last write page larger than %d!!!!!\n", ssd->parameter->page_block);
-		return -1; 
-	}
-	int lpn = ssd->channel_head[old_location->channel]->lun_head[old_location->lun]->plane_head[old_location->plane]->blk_head[old_location->block]->page_head[old_location->page]->lpn; 
-	int valid_state = ssd->channel_head[old_location->channel]->lun_head[old_location->lun]->plane_head[old_location->plane]->blk_head[old_location->block]->page_head[old_location->page]->valid_state; 
-	int free_state  = ssd->channel_head[old_location->channel]->lun_head[old_location->lun]->plane_head[old_location->plane]->blk_head[old_location->block]->page_head[old_location->page]->free_state; 
-	
-	ssd->channel_head[old_location->channel]->lun_head[old_location->lun]->plane_head[old_location->plane]->blk_head[old_location->block]->page_head[old_location->page]->lpn = -1;	
-	ssd->channel_head[old_location->channel]->lun_head[old_location->lun]->plane_head[old_location->plane]->blk_head[old_location->block]->page_head[old_location->page]->valid_state = 0; 	
-	ssd->channel_head[old_location->channel]->lun_head[old_location->lun]->plane_head[old_location->plane]->blk_head[old_location->block]->page_head[old_location->page]->free_state = PG_SUB; 
-	
-	local * new_location = new local(old_location->channel, old_location->lun, old_location->plane); 
-	
-	new_location->block=active_block;	
-	new_location->page=last_write_page;	
-
-	ssd->channel_head[new_location->channel]->lun_head[new_location->lun]->plane_head[new_location->plane]->blk_head[new_location->block]->page_head[new_location->page]->lpn = lpn; 
-	ssd->channel_head[new_location->channel]->lun_head[new_location->lun]->plane_head[new_location->plane]->blk_head[new_location->block]->page_head[new_location->page]->valid_state = valid_state; 	
-	ssd->channel_head[new_location->channel]->lun_head[new_location->lun]->plane_head[new_location->plane]->blk_head[new_location->block]->page_head[new_location->page]->free_state = free_state; 
-	
-	ppn=find_ppn(ssd,new_location);
-	ssd->channel_head[new_location->channel]->lun_head[new_location->lun]->plane_head[new_location->plane]->blk_head[new_location->block]->last_write_page++; 
-	ssd->channel_head[new_location->channel]->lun_head[new_location->lun]->plane_head[new_location->plane]->blk_head[new_location->block]->free_page_num--;
-	ssd->channel_head[new_location->channel]->lun_head[new_location->lun]->plane_head[new_location->plane]->free_page--;
-
-	ssd->flash_prog_count++;
-	ssd->channel_head[new_location->channel]->program_count++;
-	ssd->channel_head[new_location->channel]->lun_head[new_location->lun]->program_count++;
-	ssd->channel_head[new_location->channel]->lun_head[new_location->lun]->plane_head[new_location->plane]->program_count++; 
-	ssd->channel_head[new_location->channel]->lun_head[new_location->lun]->plane_head[new_location->plane]->blk_head[new_location->block]->page_head[new_location->page]->written_count++;
-
-	delete new_location; 
-	return ppn;
-
-}
-int erase_operation(ssd_info * ssd,const local * location){
+int erase_block(ssd_info * ssd,const local * location){
 	
 	unsigned int channel = location->channel; 
 	unsigned int lun = location->lun; 
@@ -329,6 +268,30 @@ bool Schedule_GC(ssd_info * ssd, local * location){
 	
 	return true; 
 }
+
+void pre_process_gc(ssd_info * ssd, const local * location){
+	int pre_process_move = 0; 
+	local * gc_location = new local(location->channel, location->lun, location->plane);  	
+	if (find_victim_block(ssd, gc_location) != SUCCESS) {
+		printf("Error: invalid block selected for gc \n");
+		return; 
+	}
+	for(unsigned int i=0;i<ssd->parameter->page_block;i++)
+	{
+		if(ssd->channel_head[gc_location->channel]->lun_head[gc_location->lun]->plane_head[gc_location->plane]->blk_head[gc_location->block]->page_head[i]->valid_state>0) 		
+		{
+			gc_location->page=i;
+			
+			int lpn = ssd->channel_head[gc_location->channel]->lun_head[gc_location->lun]->plane_head[gc_location->plane]->blk_head[gc_location->block]->page_head[gc_location->page]->lpn;  
+			invalid_old_page(ssd, lpn); 	
+			int ppn = get_new_ppn(ssd, lpn, gc_location); 
+			write_page(ssd, lpn, ppn); 
+			pre_process_move++; 
+		}
+	}
+	erase_block(ssd, gc_location);  
+}
+
 STATE add_gc_node(ssd_info * ssd, gc_operation * gc_node){
 	if (gc_node == NULL) return FAIL; 
 	gc_operation * gc = ssd->channel_head[gc_node->location->channel]->lun_head[gc_node->location->lun]->plane_head[gc_node->location->plane]->scheduled_gc; 
@@ -379,29 +342,15 @@ unsigned int best_cost(ssd_info * ssd, plane_info * the_plane, int * block_numbe
 	return -1; 
 }
 STATE greedy_algorithm(ssd_info * ssd,  local * location){
-
-	unsigned int block = -1; 
-	unsigned int active_block = 0; 
-	if(find_active_block(ssd,location)!=SUCCESS)                                 
-	{
-		printf("\n\n Error in greedy algorithm, plane active block\n");
-		return ERROR;
-	}
-	active_block=ssd->channel_head[location->channel]->lun_head[location->lun]->plane_head[location->plane]->active_block;
+	int active_block = get_active_block(ssd,location);                             
 	location->block = best_cost(ssd, ssd->channel_head[location->channel]->lun_head[location->lun]->plane_head[location->plane], NULL , ssd->parameter->block_plane, 0/* first best option*/, active_block); 
 	return SUCCESS; 
 }
 STATE fifo_algorithm(ssd_info * ssd,  local * location){
 	int block = -1; 
 	int64_t min_time = 0; 
-	int active_block = 0; 
 
-	if(find_active_block(ssd,location)!=SUCCESS)                                 
-	{
-		printf("\n\n Error in greedy algorithm, plane active block\n");
-		return ERROR;
-	}
-	active_block=ssd->channel_head[location->channel]->lun_head[location->lun]->plane_head[location->plane]->active_block;
+	int active_block = get_active_block(ssd,location); 
 
 	for (int i = 0; i < ssd->parameter->block_plane; i++){
 		if (i == active_block) continue; 
@@ -411,7 +360,6 @@ STATE fifo_algorithm(ssd_info * ssd,  local * location){
 			block = i; 			
 		}		
 	}
-	printf("block %d , %lld \n", block, ssd->channel_head[location->channel]->lun_head[location->lun]->plane_head[location->plane]->blk_head[block]->last_write_time );
 	location->block = block; 
 	return SUCCESS; 
 }
@@ -424,16 +372,9 @@ STATE windowed_algorithm(ssd_info * ssd, local * location){
 		blocks[i] = -1; 
 	
 	
-	unsigned int active_block = 0; 
-
 	plane_info *the_plane = ssd->channel_head[location->channel]->lun_head[location->lun]->plane_head[location->plane]; 
 	
-	if(find_active_block(ssd,location)!=SUCCESS)                                 
-	{
-		printf("\n\n Error in greedy algorithm, plane active block\n");
-		return ERROR;
-	}
-	active_block=the_plane->active_block;
+	int active_block = get_active_block(ssd,location);                                 
 
 	for (int i = 0; i < ssd->parameter->block_plane; i++){
 		if (i == active_block) continue; 
@@ -476,14 +417,8 @@ STATE RGA_algorithm(ssd_info * ssd, local * location, int valid_number){
 		blocks[i] = i; 
 	}
 
-	unsigned int active_block = 0;
-	if (find_active_block(ssd, location) != SUCCESS)
-	{
-		printf("\n\n Error in rga algorithm, plane active block\n");
-		return ERROR;
-	}
+	int active_block = get_active_block(ssd, location); 
 	plane_info * p = ssd->channel_head[location->channel]->lun_head[location->lun]->plane_head[location->plane];
-	active_block = p->active_block;
 
 	blocks[active_block] = blocks[total_size - 1]; 
 	total_size--;
@@ -513,7 +448,8 @@ STATE RGA_algorithm(ssd_info * ssd, local * location, int valid_number){
 		}
 		location->block = blocks[selected];
 	} else {
-		unsigned int block = -1;
+		int block = -1;
+	
 		block = best_cost(ssd, p, blocks, window_size, 0, active_block); // which best, first best, second best, etc. 
 		location->block = block;
 	}
@@ -523,13 +459,7 @@ STATE RGA_algorithm(ssd_info * ssd, local * location, int valid_number){
 }
 STATE RANDOM_algorithm(ssd_info * ssd, local * location){
 	unsigned int block = -1; 
-	unsigned int active_block = 0; 
-	if(find_active_block(ssd,location)!=SUCCESS)                                 
-	{
-		printf("\n\n Error in greedy algorithm, plane active block\n");
-		return ERROR;
-	}
-	active_block=ssd->channel_head[location->channel]->lun_head[location->lun]->plane_head[location->plane]->active_block;
+	int active_block = get_active_block(ssd,location);  
 	
 	unsigned int rand_block = rand() % ssd->parameter->block_plane; 
 	while (rand_block == active_block)
@@ -540,13 +470,7 @@ STATE RANDOM_algorithm(ssd_info * ssd, local * location){
 }
 STATE RANDOM_p_algorithm(ssd_info * ssd, local * location){
 	unsigned int block = -1; 
-	unsigned int active_block = 0; 
-	if(find_active_block(ssd,location)!=SUCCESS)                                 
-	{
-		printf("\n\n Error in greedy algorithm, plane active block\n");
-		return ERROR;
-	}
-	active_block=ssd->channel_head[location->channel]->lun_head[location->lun]->plane_head[location->plane]->active_block;
+	int active_block = get_active_block(ssd,location);  
 	
 	unsigned int rand_block = rand() % ssd->parameter->block_plane; 
 	while (rand_block == active_block || ssd->channel_head[location->channel]->lun_head[location->lun]->plane_head[location->plane]->blk_head[rand_block]->invalid_page_num == 0)
@@ -560,13 +484,7 @@ STATE RANDOM_pp_algorithm(ssd_info * ssd, local * location){
 	unsigned int least_invalid = ssd->parameter->overprovide * ssd->parameter->block_plane; 
 	
 	unsigned int block = -1; 
-	unsigned int active_block = 0; 
-	if(find_active_block(ssd,location)!=SUCCESS)                                 
-	{
-		printf("\n\n Error in greedy algorithm, plane active block\n");
-		return ERROR;
-	}
-	active_block=ssd->channel_head[location->channel]->lun_head[location->lun]->plane_head[location->plane]->active_block;
+	int active_block = get_active_block(ssd,location);
 	
 	unsigned int rand_block = rand() % ssd->parameter->block_plane; 
 	int counter = 0; 
