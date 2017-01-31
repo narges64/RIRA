@@ -72,28 +72,44 @@ public:
 class Tuple {
 public: 
 	int64_t active_time; 
-	int64_t total_capacity; 
-	int64_t total_count; 
+	int total_capacity; 
+	int total_count; 
 
-	int64_t total_noop_capacity; 
-	int64_t total_noop_count; 
+	int64_t noop_active_time; 
+	int total_noop_capacity; 
+	int total_noop_count; 
 	
+	Tuple (){
+		active_time = 0; 
+		noop_active_time = 0; 
+		total_capacity = 0; 
+		total_noop_capacity = 0; 
+		total_count = 0; 
+		total_noop_count = 0; 
+	}
+
 	void add_time(int64_t t) { active_time += t; }
 	void add_capacity(int cap) {total_capacity += cap;}
 	void add_count (int count){ total_count += count; }
+	void add_noop_time(int64_t t) {noop_active_time += t; }
 	void add_noop_capacity(int cap) {total_noop_capacity += cap; }
 	void add_noop_count(int count) { total_noop_count += count; } 
 
-	double get_IOPS(){ // per second 
+	double get_IOPS(){ // per second
+		if (active_time == 0) return 0;
+		cout << "total count " << total_count << "   " << total_capacity << "    " << active_time << endl;   
 		return (double)total_count * NSEC / active_time; 
 	}	
 	double get_noop_IOPS(){
-		return (double)total_noop_count * NSEC / active_time; 
+		if (noop_active_time == 0) return 0; 
+		return (double)total_noop_count * NSEC / noop_active_time; 
 	}
 	double get_noop_BW(){
-		return (double)total_noop_capacity * NSEC / active_time; 
+		if (noop_active_time == 0) return 0; 
+		return (double)total_noop_capacity * NSEC / (noop_active_time * 2); 
 	}
 	double get_BW(){
+		if (active_time == 0) return 0; 
 		return (double)total_capacity * NSEC / (active_time * 2); 
 	}
 
@@ -465,7 +481,7 @@ public:
 		switch (type) {
 			case READ: 
 				stat_read_throughput.add_time(duration); 
-				stat_write_throughput.add_time(duration); 
+	//			stat_write_throughput.add_time(duration); 
 				stat_rw_throughput.add_time(duration); 
 			
 				stat_read_throughput.add_capacity(page_size * count); 
@@ -475,7 +491,7 @@ public:
 				break; 
 			case WRITE: 
 				stat_write_throughput.add_time(duration); 
-				stat_read_throughput.add_time(duration); 
+	//			stat_read_throughput.add_time(duration); 
 				stat_rw_throughput.add_time(duration); 
 					
 				stat_write_throughput.add_capacity(page_size * count); 
@@ -484,9 +500,9 @@ public:
 				stat_rw_throughput.add_count(count); 
 				break; 
 			case NOOP_READ: 
-				stat_read_throughput.add_time(duration); 
-				stat_write_throughput.add_time(duration); 
-				stat_rw_throughput.add_time(duration); 
+				stat_read_throughput.add_noop_time(duration); 
+		//		stat_write_throughput.add_time(duration); 
+				stat_rw_throughput.add_noop_time(duration); 
 
 				stat_read_throughput.add_noop_capacity(page_size * count); 
 				stat_rw_throughput.add_noop_capacity(page_size * count); 
@@ -496,9 +512,9 @@ public:
 				
 				break; 
 			case NOOP_WRITE: 
-				stat_read_throughput.add_time(duration); 
-				stat_write_throughput.add_time(duration); 
-				stat_rw_throughput.add_time(duration); 
+		//		stat_read_throughput.add_time(duration); 
+				stat_write_throughput.add_noop_time(duration); 
+				stat_rw_throughput.add_noop_time(duration); 
 
 				stat_write_throughput.add_noop_capacity(page_size * count); 
 				stat_rw_throughput.add_noop_capacity(page_size * count); 
@@ -508,9 +524,9 @@ public:
 
 				break; 
 			case NOOP: 
-				stat_read_throughput.add_time(duration); 
-				stat_write_throughput.add_time(duration); 
-				stat_rw_throughput.add_time(duration); 
+		//		stat_read_throughput.add_noop_time(duration); 
+		//		stat_write_throughput.add_noop_time(duration); 
+		//		stat_rw_throughput.add_noop_time(duration); 
 				break; 
 			default: 
 				

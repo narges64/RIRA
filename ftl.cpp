@@ -170,6 +170,7 @@ void services_2_io(ssd_info * ssd, unsigned int channel, unsigned int * channel_
 			}
 		}
 	}
+
 }
 
 int find_lun_io_requests(ssd_info * ssd, unsigned int channel, unsigned int lun, sub_request ** subs, int * operation){

@@ -811,8 +811,8 @@ void free_all_node(ssd_info *ssd){
 		delete ssd; 
 }
 void close_files(ssd_info * ssd) {
-	for (int cd = 0; cd < ssd->parameter->consolidation_degree; cd++) 
-		fclose(ssd->tracefile[cd]);
+//	for (int cd = 0; cd < ssd->parameter->consolidation_degree; cd++) 
+//		fclose(ssd->tracefile[cd]);
 	
 	fflush(ssd->statisticfile);
 	fclose(ssd->statisticfile);
