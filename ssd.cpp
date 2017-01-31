@@ -529,7 +529,29 @@ void print_statistics(ssd_info *ssd, int app){
 		}
 		fprintf(ssd->statisticfile, "\n"); 
 	}
-	
+
+	fprintf(ssd->statisticfile, "\nlun noop IOPS \n"); 
+	for (chan = 0; chan < ssd->parameter->channel_number; chan++){
+		for (lun = 0; lun < ssd->channel_head[chan]->lun_num; lun++){
+			fprintf(ssd->statisticfile, "%f,", ssd->channel_head[chan]->lun_head[lun]->stat_read_throughput.get_noop_IOPS()); 
+			fprintf(ssd->statisticfile, "%f,", ssd->channel_head[chan]->lun_head[lun]->stat_write_throughput.get_noop_IOPS()); 
+			fprintf(ssd->statisticfile, "%f\t", ssd->channel_head[chan]->lun_head[lun]->stat_rw_throughput.get_noop_IOPS()); 
+		}
+		fprintf(ssd->statisticfile, "\n"); 
+	}
+
+
+	fprintf(ssd->statisticfile, "\nlun noop BW \n"); 
+	for (chan = 0; chan < ssd->parameter->channel_number; chan++){
+		for (lun = 0; lun < ssd->channel_head[chan]->lun_num; lun++){
+			fprintf(ssd->statisticfile, "%f,", ssd->channel_head[chan]->lun_head[lun]->stat_read_throughput.get_noop_BW()); 
+			fprintf(ssd->statisticfile, "%f,", ssd->channel_head[chan]->lun_head[lun]->stat_write_throughput.get_noop_BW()); 
+			fprintf(ssd->statisticfile, "%f\t", ssd->channel_head[chan]->lun_head[lun]->stat_rw_throughput.get_noop_BW()); 
+		}
+		fprintf(ssd->statisticfile, "\n"); 
+	}
+
+
 	fprintf(ssd->statisticfile, "\nlun erase count \n"); 	
 	for (chan = 0; chan < ssd->parameter->channel_number; chan++){
 		for (lun = 0; lun < ssd->channel_head[chan]->lun_num; lun++){

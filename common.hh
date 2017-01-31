@@ -17,7 +17,7 @@ using namespace std;
 
 enum GC_PRIORITY {GC_EARLY, GC_ONDEMAND}; 
 enum GC_STATES {GC_WAIT, GC_ERASE_C_A, GC_COPY_BACK, GC_COMPLETE}; 
-enum OPERATIONS {WRITE = 0, READ, ERASE, NO_OP, OP_NUM}; 
+enum OPERATIONS {WRITE = 0, READ, ERASE, NOOP_READ, NOOP_WRITE, NOOP, OP_NUM}; 
 enum PLANE_LEVEL_PARALLEL {BASE, GCIO, IOGC, GCGC}; 
 enum CHANNEL_MODE {CHANNEL_MODE_IDLE, CHANNEL_MODE_GC, CHANNEL_MODE_IO, CHANNEL_MODE_NUM}; 
 enum LUN_MODE {LUN_MODE_IDLE, LUN_MODE_GC, LUN_MODE_IO, LUN_MODE_NUM}; 
@@ -483,12 +483,37 @@ public:
 				stat_rw_throughput.add_capacity(page_size * count); 
 				stat_rw_throughput.add_count(count); 
 				break; 
-			case NO_OP: 
+			case NOOP_READ: 
+				stat_read_throughput.add_time(duration); 
+				stat_write_throughput.add_time(duration); 
+				stat_rw_throughput.add_time(duration); 
+
+				stat_read_throughput.add_noop_capacity(page_size * count); 
+				stat_rw_throughput.add_noop_capacity(page_size * count); 
+				
+				stat_read_throughput.add_noop_count(count); 
+				stat_rw_throughput.add_noop_count(count); 
+				
+				break; 
+			case NOOP_WRITE: 
+				stat_read_throughput.add_time(duration); 
+				stat_write_throughput.add_time(duration); 
+				stat_rw_throughput.add_time(duration); 
+
+				stat_write_throughput.add_noop_capacity(page_size * count); 
+				stat_rw_throughput.add_noop_capacity(page_size * count); 
+				
+				stat_write_throughput.add_noop_count(count); 
+				stat_rw_throughput.add_noop_count(count); 
+
+				break; 
+			case NOOP: 
 				stat_read_throughput.add_time(duration); 
 				stat_write_throughput.add_time(duration); 
 				stat_rw_throughput.add_time(duration); 
 				break; 
 			default: 
+				
 				cout << "lun stat update: type not known! " << endl; 
 				
 		}
