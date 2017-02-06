@@ -97,20 +97,19 @@ public:
 
 	double get_IOPS(){ // per second
 		if (active_time == 0) return 0;
-		cout << "total count " << total_count << "   " << total_capacity << "    " << active_time << endl;   
 		return (double)total_count * NSEC / active_time; 
 	}	
 	double get_noop_IOPS(){
 		if (noop_active_time == 0) return 0; 
 		return (double)total_noop_count * NSEC / noop_active_time; 
 	}
-	double get_noop_BW(){
+	double get_noop_BW(){ // MB/s
 		if (noop_active_time == 0) return 0; 
-		return (double)total_noop_capacity * NSEC / (noop_active_time * 2); 
+		return (double)total_noop_capacity * NSEC / (noop_active_time * 2 * 1024); 
 	}
-	double get_BW(){
+	double get_BW(){ // MB/s
 		if (active_time == 0) return 0; 
-		return (double)total_capacity * NSEC / (active_time * 2); 
+		return (double)total_capacity * NSEC / (active_time * 2 * 1024); 
 	}
 
 }; 

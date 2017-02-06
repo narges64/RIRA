@@ -554,7 +554,7 @@ void update_map_entry(ssd_info * ssd, int lpn, int ppn, int state){
 void full_write_preoccupation(ssd_info * ssd, bool seq){ 
 	unsigned int total_size = ssd->parameter->lun_num * ssd->parameter->plane_lun * ssd->parameter->block_plane * ssd->parameter->page_block; 
 	total_size = total_size * (1-ssd->parameter->overprovide); 
-	printf("full sequential write for total size %d page\n", total_size );
+	printf("full sequential write for total size %d page ", total_size );
 	// add write to table 
 	int lpn = 0; 
 	for (int i = 0; i <  total_size; i++){
@@ -570,7 +570,9 @@ void full_write_preoccupation(ssd_info * ssd, bool seq){
 		else 
 			lpn = rand() % total_size; 
 	}
-	printf("\n is complete!\n");
+	cout << "is complete. erase count: " <<  ssd->total_flash_erase_count << endl; 
+	ssd->total_flash_erase_count  = 0; 
+	
 }
 
 
