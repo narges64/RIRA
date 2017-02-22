@@ -72,12 +72,12 @@ public:
 class Tuple {
 public: 
 	int64_t active_time; 
-	int total_capacity; 
-	int total_count; 
+	int64_t total_capacity; 
+	int64_t total_count; 
 
 	int64_t noop_active_time; 
-	int total_noop_capacity; 
-	int total_noop_count; 
+	int64_t total_noop_capacity; 
+	int64_t total_noop_count; 
 	
 	Tuple (){
 		active_time = 0; 
@@ -89,11 +89,11 @@ public:
 	}
 
 	void add_time(int64_t t) { active_time += t; }
-	void add_capacity(int cap) {total_capacity += cap;}
-	void add_count (int count){ total_count += count; }
+	void add_capacity(int64_t cap) {total_capacity += cap;} // in sector
+	void add_count (int64_t count){ total_count += count; }
 	void add_noop_time(int64_t t) {noop_active_time += t; }
-	void add_noop_capacity(int cap) {total_noop_capacity += cap; }
-	void add_noop_count(int count) { total_noop_count += count; } 
+	void add_noop_capacity(int64_t cap) {total_noop_capacity += cap; }
+	void add_noop_count(int64_t count) { total_noop_count += count; } 
 
 	double get_IOPS(){ // per second
 		if (active_time == 0) return 0;
@@ -658,6 +658,8 @@ public:
 	channel_info **channel_head; 
 
 	int64_t * subreq_state_time; 	
+	Tuple read_throughput; 
+	Tuple write_throughput; 
 };
 
 void file_assert(int error,const char *s);

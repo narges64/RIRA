@@ -8,7 +8,7 @@ int  main(int argc, char * argv[]){
 	ssd_info * ssd = new ssd_info(parameters, argv[2], argv[5]); 
 	
 	full_write_preoccupation(ssd, true);
-	full_write_preoccupation(ssd, false);
+//	full_write_preoccupation(ssd, false);
 //	full_random_write(ssd); 
 //	full_random_write(ssd); 
 //	full_random_write(ssd); 
@@ -111,10 +111,7 @@ request * generate_next_request(ssd_info * ssd, int64_t nearest_event_time){
 	double rd_ratio = ssd->parameter->syn_rd_ratio; 
 	int lun_number = ssd->parameter->lun_num; 
 	uint64_t min_sector_address = 0; 
-	uint64_t max_sector_address = lun_number * ssd->parameter->plane_lun * 
-					ssd->parameter->block_plane * 
-					ssd->parameter->page_block * 
-					ssd->parameter->subpage_page; 
+	uint64_t max_sector_address =(long int)(((long int)ssd->parameter->subpage_page*ssd->parameter->page_block*ssd->parameter->block_plane*ssd->parameter->plane_lun*ssd->parameter->lun_num)*(1-ssd->parameter->overprovide));
 	
 	uint64_t size = ssd->parameter->syn_req_size; 
 	uint64_t avg_time = ssd->parameter->syn_interarrival_mean; // 1ms 
@@ -385,6 +382,11 @@ void collect_statistics(ssd_info * ssd, request * req){
 		ssd->read_request_size[req->app_id] += req->size; 
 		ssd->read_request_count[req->app_id]++; 
 		ssd->read_avg[req->app_id] += (req->response_time-req->time);
+		ssd->read_throughput.add_time(req->response_time - req->time); 
+		ssd->read_throughput.add_capacity(req->size); 
+		ssd->read_throughput.add_count(1); 
+		
+
 		if (req->response_time - req->time > ssd->read_worst_case_rt){
 			ssd->read_worst_case_rt = req->response_time - req->time; 
 		}
@@ -394,7 +396,10 @@ void collect_statistics(ssd_info * ssd, request * req){
 		ssd->write_request_size[req->app_id] += req->size;
 		ssd->write_request_count[req->app_id]++;
 		ssd->write_avg[req->app_id]+=(req->response_time - req->time);
-
+		ssd->write_throughput.add_time(req->response_time - req->time); 
+		ssd->write_throughput.add_capacity(req->size); 
+		ssd->write_throughput.add_count(1); 
+	
 		if (req->response_time - req->time > ssd->write_worst_case_rt){
 			ssd->write_worst_case_rt = req->response_time - req->time; 
 		}
@@ -422,15 +427,15 @@ void print_epoch_statistics(ssd_info * ssd, int app_id){
 	ssd->total_read_RT[app_id] = ((ssd->total_read_RT[app_id] * (double)prev_total_r ) + ssd->read_avg[app_id]) / next_total_r;  	
 	ssd->total_write_RT[app_id] = ((ssd->total_write_RT[app_id] * (double)prev_total_w ) + ssd->write_avg[app_id]) / next_total_w;  	
 	fprintf(ssd->statisticfile, "Latency epoch: %d \n", epoch_num); 
-	fprintf(ssd->statisticfile, "RT %lld , count  %lld\n", RT, rw_count);
-	fprintf(ssd->statisticfile, "read RT %lld , count %lld\n", read_RT, ssd->read_request_count[app_id]);
-	fprintf(ssd->statisticfile, "write RT %lld , count %lld\n", write_RT, ssd->write_request_count[app_id]);
-	fprintf(ssd->statisticfile, "read worst case %lld \n", ssd->read_worst_case_rt);
-	fprintf(ssd->statisticfile, "write worst case %lld \n", ssd->write_worst_case_rt);
+	fprintf(ssd->statisticfile, "RT %lld ns, count  %lld\n", RT, rw_count);
+	fprintf(ssd->statisticfile, "read RT %lld ns, count %lld\n", read_RT, ssd->read_request_count[app_id]);
+	fprintf(ssd->statisticfile, "write RT %lld ns, count %lld\n", write_RT, ssd->write_request_count[app_id]);
+	fprintf(ssd->statisticfile, "read worst case %lld ns\n", ssd->read_worst_case_rt);
+	fprintf(ssd->statisticfile, "write worst case %lld ns\n", ssd->write_worst_case_rt);
 	fprintf(ssd->statisticfile, "erase(gc) count %lld , total %lld\n", ssd->flash_erase_count, ssd->total_flash_erase_count);
-	fprintf(ssd->statisticfile, "Total RT %lld , count %lld \n", ssd->total_RT[app_id], next_total_rw);
-	fprintf(ssd->statisticfile, "Total read RT %lld , count %lld \n", ssd->total_read_RT[app_id], next_total_r);
-	fprintf(ssd->statisticfile, "Total write RT %lld , count %lld \n", ssd->total_write_RT[app_id], next_total_w);
+	fprintf(ssd->statisticfile, "Total RT %lld ns, count %lld \n", ssd->total_RT[app_id], next_total_rw);
+	fprintf(ssd->statisticfile, "Total read RT %lld ns, count %lld \n", ssd->total_read_RT[app_id], next_total_r);
+	fprintf(ssd->statisticfile, "Total write RT %lld ns, count %lld \n", ssd->total_write_RT[app_id], next_total_w);
 	fprintf(ssd->statisticfile, "GC move count %d \n" , ssd->gc_moved_page); 
 	ssd->read_request_count[app_id] = 0;
 	ssd->write_request_count[app_id] = 0;
@@ -492,6 +497,9 @@ void print_statistics(ssd_info *ssd, int app){
 	fprintf(ssd->statisticfile, "request average read response time[%d]: ( %lld ) , count %lld \n", app, ssd->total_read_RT[app] ,r_count);
 	fprintf(ssd->statisticfile, "request average write response time[%d]: ( %lld ) , count %lld \n", app, ssd->total_write_RT[app] ,w_count);
 
+	fprintf(ssd->statisticfile, "read IOPS and BW [%d]: %f , %f  \n", app, ssd->read_throughput.get_IOPS() , ssd->read_throughput.get_BW()); 
+	fprintf(ssd->statisticfile, "write IOPS and BW [%d]: %f , %f  \n", app, ssd->write_throughput.get_IOPS() , ssd->write_throughput.get_BW()); 
+
 	fprintf(ssd->statisticfile,"erase: ( %lld )\n", ssd->total_flash_erase_count);
 	fprintf(ssd->statisticfile,"total gc move count: %d \n", ssd->gc_moved_page);
 	
@@ -506,8 +514,8 @@ void print_statistics(ssd_info *ssd, int app){
 	ssd->flash_erase_count = 0; 
 	
 	// Print lun statistic output
-		
 	int chan,lun = 0; 
+	/* 
 	
 	
 	fprintf(ssd->statisticfile, "\nlun IOPS \n"); 
@@ -550,7 +558,7 @@ void print_statistics(ssd_info *ssd, int app){
 		}
 		fprintf(ssd->statisticfile, "\n"); 
 	}
-
+	*/
 
 	fprintf(ssd->statisticfile, "\nlun erase count \n"); 	
 	for (chan = 0; chan < ssd->parameter->channel_number; chan++){
@@ -559,13 +567,14 @@ void print_statistics(ssd_info *ssd, int app){
 		}
 		fprintf(ssd->statisticfile, "\n"); 
 	}
+	
 	fprintf(ssd->statisticfile, "\nplanes erase number (non-zeros)\n"); 
 	for(int i=0;i<ssd->parameter->channel_number;i++){
 		for (int j = 0; j < ssd->parameter->lun_channel[i]; j++){
 			for(int l=0;l<ssd->parameter->plane_lun;l++)
 			{
 				int plane_erase = ssd->channel_head[i]->lun_head[j]->plane_head[l]->erase_count; 
-				fprintf(ssd->statisticfile,"(%d):%13d\t",l, plane_erase);
+				fprintf(ssd->statisticfile,"%13d,",l, plane_erase);
 			}
 			fprintf(ssd->statisticfile, "\t");
 		}
