@@ -8,7 +8,6 @@
 #include <iostream>
 using namespace std; 
 
-#define QUEUE_LENGTH 32
 #define BUFSIZE 200
 #define PG_SUB 0xffffffffffffffff			
 #define EPOCH_LENGTH (int64_t) 100000000000 
@@ -74,42 +73,34 @@ public:
 	int64_t active_time; 
 	int64_t total_capacity; 
 	int64_t total_count; 
+	int64_t last_time; 
 
-	int64_t noop_active_time; 
-	int64_t total_noop_capacity; 
-	int64_t total_noop_count; 
-	
 	Tuple (){
 		active_time = 0; 
-		noop_active_time = 0; 
 		total_capacity = 0; 
-		total_noop_capacity = 0; 
 		total_count = 0; 
-		total_noop_count = 0; 
 	}
 
-	void add_time(int64_t t) { active_time += t; }
+	void add_time(int64_t start, int64_t end) {
+		if (start <=  last_time  && end >= last_time){ 
+			active_time += end - last_time; 
+			last_time = end; 
+		}
+		else if (start > last_time && end > last_time) {
+			active_time += end - start; 
+			last_time = end; 
+		}
+	}
 	void add_capacity(int64_t cap) {total_capacity += cap;} // in sector
 	void add_count (int64_t count){ total_count += count; }
-	void add_noop_time(int64_t t) {noop_active_time += t; }
-	void add_noop_capacity(int64_t cap) {total_noop_capacity += cap; }
-	void add_noop_count(int64_t count) { total_noop_count += count; } 
 
 	double get_IOPS(){ // per second
 		if (active_time == 0) return 0;
-		return (double)total_count * NSEC / active_time; 
+		return (double)total_count * NSEC / last_time; // active_time; 
 	}	
-	double get_noop_IOPS(){
-		if (noop_active_time == 0) return 0; 
-		return (double)total_noop_count * NSEC / noop_active_time; 
-	}
-	double get_noop_BW(){ // MB/s
-		if (noop_active_time == 0) return 0; 
-		return (double)total_noop_capacity * NSEC / (noop_active_time * 2 * 1024); 
-	}
 	double get_BW(){ // MB/s
 		if (active_time == 0) return 0; 
-		return (double)total_capacity * NSEC / (active_time * 2 * 1024); 
+		return (double)total_capacity * NSEC / (last_time /*active_time*/ * 2 * 1024); 
 	}
 
 }; 
@@ -125,7 +116,7 @@ public:
 	int repeat_trace; 
 	int mplane_gc; 
 	int gc_algorithm; 
-
+	int queue_length; 
 	double time_scale; 
 	unsigned int lun_num;          
 	unsigned int dram_capacity;    
@@ -165,7 +156,6 @@ public:
 	float gc_down_threshold; 
 	float gc_mplane_threshold;
 	int advanced_commands;  
-	int queue_length;
 	int pargc_approach; 
 
 	ac_time_characteristics time_characteristics;
@@ -476,12 +466,12 @@ public:
 	bool GCMode; 
 	int plane_token; 
 
-	void update_stat(int64_t duration, int type, int count, int page_size) {
+	void update_stat(int64_t start, int64_t end, int type, int count, int page_size) {
 		switch (type) {
 			case READ: 
-				stat_read_throughput.add_time(duration); 
-	//			stat_write_throughput.add_time(duration); 
-				stat_rw_throughput.add_time(duration); 
+				stat_read_throughput.add_time(start, end); 
+	//			stat_write_throughput.add_time(start, end); 
+				stat_rw_throughput.add_time(start, end); 
 			
 				stat_read_throughput.add_capacity(page_size * count); 
 				stat_read_throughput.add_count(count); 
@@ -489,43 +479,14 @@ public:
 				stat_rw_throughput.add_count(count); 
 				break; 
 			case WRITE: 
-				stat_write_throughput.add_time(duration); 
-	//			stat_read_throughput.add_time(duration); 
-				stat_rw_throughput.add_time(duration); 
+				stat_write_throughput.add_time(start, end); 
+	//			stat_read_throughput.add_time(start, end); 
+				stat_rw_throughput.add_time(start, end); 
 					
 				stat_write_throughput.add_capacity(page_size * count); 
 				stat_write_throughput.add_count(count); 
 				stat_rw_throughput.add_capacity(page_size * count); 
 				stat_rw_throughput.add_count(count); 
-				break; 
-			case NOOP_READ: 
-				stat_read_throughput.add_noop_time(duration); 
-		//		stat_write_throughput.add_time(duration); 
-				stat_rw_throughput.add_noop_time(duration); 
-
-				stat_read_throughput.add_noop_capacity(page_size * count); 
-				stat_rw_throughput.add_noop_capacity(page_size * count); 
-				
-				stat_read_throughput.add_noop_count(count); 
-				stat_rw_throughput.add_noop_count(count); 
-				
-				break; 
-			case NOOP_WRITE: 
-		//		stat_read_throughput.add_time(duration); 
-				stat_write_throughput.add_noop_time(duration); 
-				stat_rw_throughput.add_noop_time(duration); 
-
-				stat_write_throughput.add_noop_capacity(page_size * count); 
-				stat_rw_throughput.add_noop_capacity(page_size * count); 
-				
-				stat_write_throughput.add_noop_count(count); 
-				stat_rw_throughput.add_noop_count(count); 
-
-				break; 
-			case NOOP: 
-		//		stat_read_throughput.add_noop_time(duration); 
-		//		stat_write_throughput.add_noop_time(duration); 
-		//		stat_rw_throughput.add_noop_time(duration); 
 				break; 
 			default: 
 				

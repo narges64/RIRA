@@ -8,7 +8,7 @@ int  main(int argc, char * argv[]){
 	ssd_info * ssd = new ssd_info(parameters, argv[2], argv[5]); 
 	
 	full_write_preoccupation(ssd, true);
-//	full_write_preoccupation(ssd, false);
+	full_write_preoccupation(ssd, false);
 //	full_random_write(ssd); 
 //	full_random_write(ssd); 
 //	full_random_write(ssd); 
@@ -120,7 +120,7 @@ request * generate_next_request(ssd_info * ssd, int64_t nearest_event_time){
 	// Time 
  	uint64_t new_time = 0;
  	uint64_t time_interval = expo_dist(avg_time);
- 	new_time = previous_time + time_interval;
+ 	new_time = ssd->current_time; //  + time_interval;
 	
 	if (new_time > nearest_event_time) 
 		return NULL; 
@@ -325,7 +325,7 @@ request * read_request_from_file(ssd_info * ssd, int selected, int64_t nearest_e
 	
 }
 void add_to_request_queue(ssd_info * ssd, request * req){
-	req->begin_time = ssd->current_time; 
+	req->begin_time = ssd->current_time;
 	if(ssd->request_queue == NULL)          //The queue is empty
 	{
 		ssd->request_queue = req;
@@ -382,11 +382,9 @@ void collect_statistics(ssd_info * ssd, request * req){
 		ssd->read_request_size[req->app_id] += req->size; 
 		ssd->read_request_count[req->app_id]++; 
 		ssd->read_avg[req->app_id] += (req->response_time-req->time);
-		ssd->read_throughput.add_time(req->response_time - req->time); 
+		ssd->read_throughput.add_time(req->time, req->response_time);
 		ssd->read_throughput.add_capacity(req->size); 
 		ssd->read_throughput.add_count(1); 
-		
-
 		if (req->response_time - req->time > ssd->read_worst_case_rt){
 			ssd->read_worst_case_rt = req->response_time - req->time; 
 		}
@@ -396,10 +394,9 @@ void collect_statistics(ssd_info * ssd, request * req){
 		ssd->write_request_size[req->app_id] += req->size;
 		ssd->write_request_count[req->app_id]++;
 		ssd->write_avg[req->app_id]+=(req->response_time - req->time);
-		ssd->write_throughput.add_time(req->response_time - req->time); 
+		ssd->write_throughput.add_time(req->time, req->response_time); 
 		ssd->write_throughput.add_capacity(req->size); 
-		ssd->write_throughput.add_count(1); 
-	
+		ssd->write_throughput.add_count(1);	
 		if (req->response_time - req->time > ssd->write_worst_case_rt){
 			ssd->write_worst_case_rt = req->response_time - req->time; 
 		}

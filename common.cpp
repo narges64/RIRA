@@ -4,7 +4,8 @@ parameter_value::parameter_value(int argc, char ** argv){
 	strcpy(filename, argv[1]); 
 	load_parameters(argv[1]);
 	time_scale = atoi(argv[4]); 
-	lun_num = atoi(argv[3]); 
+	lun_num = atoi(argv[3]);
+	 
 	// distribute luns between channels 
 	for (int i = 0; i < channel_number; i++){
 		lun_channel[i] = 0;
@@ -26,6 +27,7 @@ parameter_value::parameter_value(int argc, char ** argv){
 	syn_req_size = atoi(argv[7]); 
 	syn_interarrival_mean = atoi(argv[8]); 
 	plane_level_tech = atoi(argv[9]);  
+	queue_length = atoi(argv[10]); 
 }
 
 void parameter_value::print_all_parameters(FILE * stat_file){
@@ -278,7 +280,6 @@ void parameter_value::load_parameters(char *parameter_file)
 	int res_eql;
 	char *ptr;
 
-	queue_length=QUEUE_LENGTH; // NARGES why 5, it's better to be more than 5, like 32 or 20  // FIXME 
 	memset(buf,0,BUFSIZE);
 	
 	fp=fopen(parameter_file,"r");
@@ -287,7 +288,8 @@ void parameter_value::load_parameters(char *parameter_file)
 		printf("the file parameter_file error!\n");
 		return; 	
 	}
-	
+
+	queue_length = 32; // default value	
 	while(fgets(buf,200,fp)){
 		if(buf[0] =='#' || buf[0] == ' ') continue;
 		ptr=strchr(buf,'=');

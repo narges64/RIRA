@@ -134,13 +134,13 @@ void services_2_io(ssd_info * ssd, unsigned int channel, unsigned int * channel_
 					channel_busy_time = subs_count * read_transfer_time; 
 					lun_busy_time = channel_busy_time + read_time;
 					
-					ssd->channel_head[channel]->lun_head[lun]->update_stat(lun_busy_time, READ, subs_count, ssd->parameter->subpage_page );  
+		//			ssd->channel_head[channel]->lun_head[lun]->update_stat(ssd->current_time , ssd->current_time + lun_busy_time, READ, subs_count, ssd->parameter->subpage_page );  
 					break; 
 				case WRITE: 
 					if (subs_count > 1) ssd->write_multiplane_count++; 
 					channel_busy_time = subs_count * write_transfer_time; 
 					lun_busy_time = channel_busy_time + write_time; 
-					ssd->channel_head[channel]->lun_head[lun]->update_stat(lun_busy_time, WRITE, subs_count, ssd->parameter->subpage_page); 
+		//			ssd->channel_head[channel]->lun_head[lun]->update_stat(ssd->current_time, ssd->current_time + lun_busy_time, WRITE, subs_count, ssd->parameter->subpage_page); 
 					break; 
 				default: 
 					cout << "Error: wrong operation (cannot be erase) " << endl; 
@@ -251,19 +251,19 @@ void services_2_gc(ssd_info * ssd, unsigned int channel, unsigned int * channel_
                			if (subs_count > 1) ssd->read_multiplane_count++; 
 				channel_busy_time = read_transfer_time * subs_count;
 				lun_busy_time = channel_busy_time + read_time;
-				ssd->channel_head[channel]->lun_head[lun]->update_stat(lun_busy_time, NOOP_READ, subs_count, ssd->parameter->subpage_page); 
+		//		ssd->channel_head[channel]->lun_head[lun]->update_stat(ssd->current_time , ssd->current_time + lun_busy_time, NOOP_READ, subs_count, ssd->parameter->subpage_page); 
 				break; 
 			case WRITE: 
                     		if (subs_count > 1) ssd->write_multiplane_count++; 
 				channel_busy_time = write_transfer_time * subs_count; 
 				lun_busy_time = channel_busy_time + write_time; 
-				ssd->channel_head[channel]->lun_head[lun]->update_stat(lun_busy_time, NOOP_WRITE, subs_count, ssd->parameter->subpage_page); 
+		//		ssd->channel_head[channel]->lun_head[lun]->update_stat(ssd->current_time , ssd->current_time + lun_busy_time, NOOP_WRITE, subs_count, ssd->parameter->subpage_page); 
 				break; 
 			case ERASE:
                     		if (subs_count > 1) ssd->erase_multiplane_count++; 
 				channel_busy_time = erase_transfer_time * subs_count; 
 				lun_busy_time = channel_busy_time + erase_time; 
-				ssd->channel_head[channel]->lun_head[lun]->update_stat(lun_busy_time, NOOP, subs_count, ssd->parameter->subpage_page); 	
+		//		ssd->channel_head[channel]->lun_head[lun]->update_stat(ssd->current_time , ssd->current_time  + lun_busy_time, NOOP, subs_count, ssd->parameter->subpage_page); 	
 				break;
 			default: 
 				cout << "Error in the operation: " << operation << endl; 	
