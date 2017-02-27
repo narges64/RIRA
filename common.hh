@@ -185,7 +185,7 @@ public:
 	} 
 	
 	~local(){}
-	void print(){
+	void print () const {
 		cout << "channel: " << channel << " lun: " << lun << " plane: "<< plane << " block:"<< block << " page: " << page << endl; 
 	}
 	int channel;
@@ -200,7 +200,11 @@ public:
 *mapping information,state
 *********************************************************/
 class entry{  
-public:                      
+public: 
+	entry(){
+		pn = -1; 
+		state = 0; 
+	}                     
 	int pn;   
 	uint64_t state;                      
 };

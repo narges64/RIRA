@@ -293,6 +293,51 @@ void services_2_gc(ssd_info * ssd, unsigned int channel, unsigned int * channel_
 	}
 }
 
+void update_map_entry(ssd_info * ssd, int lpn, int ppn){
+	uint64_t full_page=~(0xffffffffffffffff<<(ssd->parameter->subpage_page));
+	if (ppn == -1) full_page = 0; 
+	ssd->dram->map->map_entry[lpn].pn=ppn;	
+	ssd->dram->map->map_entry[lpn].state = full_page;  
+}
+
+
+
+void update_physical_page(ssd_info * ssd, const int ppn, const int lpn){
+	local * location = new local(0,0,0);
+	find_location(ssd, ppn, location);  
+
+	int c = location->channel; 
+	int l = location->lun; 
+	int p = location->plane; 
+	int b = location->block; 
+	int pg = location->page; 
+	
+	uint64_t full_page=~(0xffffffffffffffff<<(ssd->parameter->subpage_page));
+	uint64_t free_state = (~full_page); 
+		
+	if (lpn != -1) {
+		ssd->channel_head[c]->lun_head[l]->plane_head[p]->blk_head[b]->page_head[pg]->lpn=lpn;
+		ssd->channel_head[c]->lun_head[l]->plane_head[p]->blk_head[b]->page_head[pg]->valid_state=full_page; 
+		ssd->channel_head[c]->lun_head[l]->plane_head[p]->blk_head[b]->page_head[pg]->free_state=free_state; 	
+	
+		ssd->channel_head[c]->lun_head[l]->plane_head[p]->free_page--;
+		ssd->flash_prog_count++; 
+		ssd->channel_head[c]->program_count++; 
+		ssd->channel_head[c]->lun_head[l]->program_count++; 
+		ssd->channel_head[c]->lun_head[l]->plane_head[p]->program_count++; 
+	}else { 
+		ssd->channel_head[c]->lun_head[l]->plane_head[p]->blk_head[b]->page_head[pg]->lpn=-1;
+		ssd->channel_head[c]->lun_head[l]->plane_head[p]->blk_head[b]->page_head[pg]->valid_state=0; 
+		ssd->channel_head[c]->lun_head[l]->plane_head[p]->blk_head[b]->page_head[pg]->free_state=0; 	
+		ssd->channel_head[c]->lun_head[l]->plane_head[p]->blk_head[b]->invalid_page_num++;
+	}
+	delete location; 
+
+}
+
+
+
+
 int find_lun_gc_requests(ssd_info * ssd, unsigned int channel, unsigned int lun, sub_request ** subs, int * operation){	
 	int max_subs_count = ssd->parameter->plane_lun; 
 	unsigned int page_offset = -1; 
@@ -400,6 +445,7 @@ int get_new_ppn(ssd_info *ssd, int lpn, const local * location){
 		allocate_plane(ssd, new_location); 
 	}
 	if (allocate_page_in_plane(ssd, new_location) != SUCCESS){
+		delete new_location; 
 		return -1; 
 	}
 	int ppn = find_ppn(ssd, new_location); 
@@ -410,57 +456,19 @@ int get_new_ppn(ssd_info *ssd, int lpn, const local * location){
 STATE invalid_old_page(ssd_info * ssd, const int lpn){
 	if (ssd->dram->map->map_entry[lpn].state == 0) return FAIL; 
 	int old_ppn = ssd->dram->map->map_entry[lpn].pn; 
-	update_map_entry(ssd, lpn, -1, 0); 
-
-	local * location = new local(0,0,0); 
-	find_location(ssd, old_ppn, location); 
-	
-	int c = location->channel; 
-	int l = location->lun; 
-	int p = location->plane; 
-	int b = location->block; 
-	int pg = location->page; 
-	
-	ssd->channel_head[c]->lun_head[l]->plane_head[p]->blk_head[b]->page_head[pg]->valid_state=0;       
-	ssd->channel_head[c]->lun_head[l]->plane_head[p]->blk_head[b]->page_head[pg]->free_state=0; 
-	ssd->channel_head[c]->lun_head[l]->plane_head[p]->blk_head[b]->page_head[pg]->lpn=-1;
-	ssd->channel_head[c]->lun_head[l]->plane_head[p]->blk_head[b]->invalid_page_num++;
-	
+	update_map_entry(ssd, lpn, -1); 
+	update_physical_page(ssd, old_ppn, -1);
 	return SUCCESS; 
 }
-
 // When the page is allocated, write into it 
 STATE write_page(ssd_info * ssd, const int lpn, const int  ppn){
-	uint64_t full_page=~(0xffffffffffffffff<<(ssd->parameter->subpage_page));
-	uint64_t free_state = (~full_page); 
-	update_map_entry(ssd, lpn, ppn, full_page); 	
-	
-	local * location = new local(0,0,0);
-	find_location(ssd, ppn, location);  
-
-	int c = location->channel; 
-	int l = location->lun; 
-	int p = location->plane; 
-	int b = location->block; 
-	int pg = location->page; 
-
-	ssd->channel_head[c]->lun_head[l]->plane_head[p]->blk_head[b]->page_head[pg]->lpn=lpn;
-	ssd->channel_head[c]->lun_head[l]->plane_head[p]->blk_head[b]->page_head[pg]->valid_state=full_page; 
-	ssd->channel_head[c]->lun_head[l]->plane_head[p]->blk_head[b]->page_head[pg]->free_state=free_state; 	
-	ssd->channel_head[c]->lun_head[l]->plane_head[p]->free_page--;
-	
-	ssd->flash_prog_count++; 
-	ssd->channel_head[c]->program_count++; 
-	ssd->channel_head[c]->lun_head[l]->program_count++; 
-	ssd->channel_head[c]->lun_head[l]->plane_head[p]->program_count++; 
-
-	delete location; 
+	update_map_entry(ssd, lpn, ppn); 	
+	update_physical_page(ssd, ppn, lpn); 
 	return SUCCESS; 
 }
 
 void find_location(ssd_info *ssd,int ppn, local * location )
 {	
-	unsigned int i=0;
 	int pn,ppn_value=ppn;
 	int page_plane=0,page_lun=0,page_channel=0;
 
@@ -471,7 +479,6 @@ void find_location(ssd_info *ssd,int ppn, local * location )
 	
 	int page = ppn % (page_lun * ssd->parameter->lun_num); 
 	location->channel = 0; 
-	
 	while (true){
 		page_channel = page_lun * ssd->parameter->lun_channel[location->channel]; 
 		page = page - page_channel; 
@@ -541,20 +548,16 @@ bool check_need_gc(ssd_info * ssd, int ppn){
 	int all_page = ssd->parameter->page_block*ssd->parameter->block_plane; 
 	
 	if (free_page > (all_page * ssd->parameter->gc_down_threshold)){
+		delete location; 
 		return false; 
 	}	
+	delete location; 
 	return true; 
 }
-
-void update_map_entry(ssd_info * ssd, int lpn, int ppn, int state){
-	ssd->dram->map->map_entry[lpn].pn=ppn;	
-	ssd->dram->map->map_entry[lpn].state = state;  
-}
-
-void full_write_preoccupation(ssd_info * ssd, bool seq){ 
+void full_write_preconditioning(ssd_info * ssd, bool seq){ 
 	unsigned int total_size = ssd->parameter->lun_num * ssd->parameter->plane_lun * ssd->parameter->block_plane * ssd->parameter->page_block; 
 	total_size = total_size * (1-ssd->parameter->overprovide); 
-	printf("full sequential write for total size %d page ", total_size );
+	cerr << "full write for total size " << total_size << " page ";  
 	// add write to table 
 	int lpn = 0; 
 	for (int i = 0; i <  total_size; i++){
@@ -562,17 +565,20 @@ void full_write_preoccupation(ssd_info * ssd, bool seq){
 		int ppn = get_new_ppn (ssd, lpn);
 		write_page(ssd, lpn, ppn);  
 		bool gc = check_need_gc(ssd, ppn);
-		local * location = new local(0,0,0); 
-		find_location(ssd, ppn, location); 
-		if (gc) pre_process_gc(ssd, location);  
- 
+		if (gc) {
+			if (seq) cerr << "should not have GC in sequential preconditioning " << endl; 
+			local * location = new local(0,0,0); 
+			find_location(ssd, ppn, location); 
+			pre_process_gc(ssd, location);  
+			delete location; 
+ 		}
 		if(seq) lpn++; 
 		else 
 			lpn = rand() % total_size; 
-	}
-	cout << "is complete. erase count: " <<  ssd->total_flash_erase_count << endl; 
-	ssd->total_flash_erase_count  = 0; 
 	
+	}
+	cerr << "is complete. erase count: " <<  ssd->flash_erase_count << endl; 
+	ssd->flash_erase_count  = 0; 	
 }
 
 

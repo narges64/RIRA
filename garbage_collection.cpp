@@ -270,12 +270,14 @@ bool Schedule_GC(ssd_info * ssd, local * location){
 }
 
 void pre_process_gc(ssd_info * ssd, const local * location){
+	
 	int pre_process_move = 0; 
 	local * gc_location = new local(location->channel, location->lun, location->plane);  	
 	if (find_victim_block(ssd, gc_location) != SUCCESS) {
 		printf("Error: invalid block selected for gc \n");
 		return; 
 	}
+	//location->print(); 
 	for(unsigned int i=0;i<ssd->parameter->page_block;i++)
 	{
 		if(ssd->channel_head[gc_location->channel]->lun_head[gc_location->lun]->plane_head[gc_location->plane]->blk_head[gc_location->block]->page_head[i]->valid_state>0) 		
@@ -290,6 +292,7 @@ void pre_process_gc(ssd_info * ssd, const local * location){
 		}
 	}
 	erase_block(ssd, gc_location);  
+	delete gc_location; 
 }
 
 STATE add_gc_node(ssd_info * ssd, gc_operation * gc_node){
@@ -312,9 +315,11 @@ STATE delete_gc_node(ssd_info * ssd, gc_operation * gc_node){
 // =============== GC ALGORITHMS ================================ 
 unsigned int best_cost(ssd_info * ssd, plane_info * the_plane, int * block_numbers, int number, int order /*which best, first best, second best, etc. */, int active_block /*not this one*/){
 	int i, j; 
+	bool delete_blocks = false; 
 	if (block_numbers == NULL) // means all block in the plane 
 	{
-		block_numbers = new int[number]; // fixme no delete 
+		delete_blocks = true; 
+		block_numbers = new int[number];
 		for (i = 0; i < number; i++){
 			block_numbers[i] = i; 
 		}
@@ -336,8 +341,12 @@ unsigned int best_cost(ssd_info * ssd, plane_info * the_plane, int * block_numbe
 
 	while (block_numbers[order] == active_block) 
 		order++;
+		
+	unsigned int b = block_numbers[order]; 
+	if (delete_blocks) delete block_numbers; 		
+
 	if (order < 3){
-		return block_numbers[order];
+		return b; 
 	}
 	return -1; 
 }

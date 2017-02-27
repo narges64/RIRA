@@ -10,7 +10,7 @@ OBJ_DIR = obj
 OBJS = $(patsubst %.o,$(OBJ_DIR)/%.o,$(OBJ_FILES))
 
 CC = g++
-CFLAGS = -ggdb -I. -std=c++11 
+CFLAGS = -ggdb -I. -std=c++11 -pg 
 
 $(EXEC): $(OBJS)
 	$(CC) -o $@ $^ $(CFLAGS)
@@ -20,7 +20,7 @@ $(OBJ_DIR)/%.o: %.cpp	%.hh
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 
-debug: CFLAGS += -DDEBUG -ggdb
+debug: CFLAGS += -DDEBUG -ggdb -pg 
 debug: $(EXEC)
 
 clean:

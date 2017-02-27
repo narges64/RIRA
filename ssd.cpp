@@ -6,9 +6,9 @@ int  main(int argc, char * argv[]){
 	if (argc < 10) return 0;
 	parameter_value * parameters = new parameter_value(argc, argv);  
 	ssd_info * ssd = new ssd_info(parameters, argv[2], argv[5]); 
-	
-	full_write_preoccupation(ssd, true);
-	full_write_preoccupation(ssd, false);
+	cerr << "start pre-conditioning " << endl; 
+	full_write_preconditioning(ssd, true);
+	full_write_preconditioning(ssd, false);
 //	full_random_write(ssd); 
 //	full_random_write(ssd); 
 //	full_random_write(ssd); 
@@ -120,7 +120,8 @@ request * generate_next_request(ssd_info * ssd, int64_t nearest_event_time){
 	// Time 
  	uint64_t new_time = 0;
  	uint64_t time_interval = expo_dist(avg_time);
- 	new_time = ssd->current_time; //  + time_interval;
+ 	new_time = previous_time  + time_interval;
+	if (new_time < ssd->current_time) new_time = ssd->current_time; 
 	
 	if (new_time > nearest_event_time) 
 		return NULL; 
