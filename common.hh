@@ -212,18 +212,15 @@ public:
 	int trim_hit; 
 	buffer_entry(){
 		modified = false; 
-		evicted = true; 
+		evicted = false; 
 		lpn = -1;  
 		read_hit = 0; 
 		write_hit = 0; 
 		trim_hit = 0; 
 	}
 	buffer_entry(int l){
+		buffer_entry(); 
 		lpn = l; 
-		modified = false; 
-		read_hit = 0; 
-		write_hit = 0; 	
-		trim_hit = 0; 
 	}
 	buffer_entry * next_entry; 
 	buffer_entry * prev_entry; 	
@@ -260,7 +257,7 @@ public:
 		seq_number = gc_seq_num; 
 	}
 	~gc_operation(){
-	//	if (location) delete location; 
+	//	if (location ) delete location; 
 	}
 	local * location;
 	unsigned int seq_number;  
@@ -465,11 +462,12 @@ public:
 	~sub_request(){
 		if (location != NULL) delete location; 
 		if (update != NULL) delete update;	
-		if (buf_entry != NULL) delete buf_entry;   
+		if (buf_entry != NULL) delete buf_entry;  
+		if (state_time != NULL) delete state_time;  
 	}
 	
 	unsigned int app_id; 
-	unsigned int io_num; 
+	int io_num; 
 	unsigned int seq_num;
 
 	unsigned int lpn;                  
@@ -729,6 +727,7 @@ public:
 class statistics{
 public:
 	statistics( int cons_deg );
+	~statistics(); 
 	void reset_all();  
 	void print_all(){}
 	
@@ -781,6 +780,10 @@ class ssd_info{
 public:
 	ssd_info(parameter_value *, char * statistics_filename, char * trace_filename); 	
 	~ssd_info(){
+		delete repeat_times; 
+		delete last_times; 
+		delete tracefile; 
+		delete statisticfile; 
 		for (int i=0;i<parameter->channel_number;i++)
 		{
 			delete channel_head[i]; 
@@ -788,6 +791,7 @@ public:
 		delete channel_head; 
 		delete dram; 
 		delete parameter; 
+		delete stats; 
 	}
 	int64_t current_time;                
 	int request_sequence_number;

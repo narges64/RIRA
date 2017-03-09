@@ -155,7 +155,8 @@ sub_request * create_gc_sub_request( ssd_info * ssd,const local * location, int 
 	}
 
 	if (operation == READ)
-	{	
+	{
+		if (sub->location != NULL) delete sub->location; 	
 		sub->location = new local(location->channel, location->lun, location->plane,location->block, location->page);	
 		sub->ppn = find_ppn(ssd, location);  // or use the map FIXME 
 		if (sub->ppn != ssd->dram->map->map_entry[sub->lpn].pn )
@@ -165,6 +166,7 @@ sub_request * create_gc_sub_request( ssd_info * ssd,const local * location, int 
 	}
 	else if(operation == WRITE)
 	{
+		if (sub->location != NULL) delete sub->location; 
 		sub->location = new local(location->channel, location->lun, location->plane); 
 		invalid_old_page(ssd, sub->lpn); 
 		sub->ppn = get_new_ppn(ssd, sub->lpn, location);
@@ -173,6 +175,7 @@ sub_request * create_gc_sub_request( ssd_info * ssd,const local * location, int 
 	}
 	else if (operation == ERASE)
 	{
+		if (sub->location != NULL) delete sub->location; 
 		sub->location = new local(location->channel, location->lun, location->plane, location->block, 0); 
 		sub->ppn = -1; 	
 	}else {

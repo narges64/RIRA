@@ -110,6 +110,22 @@ statistics::statistics(int cons_deg){
 
 	reset_all(); 
 }
+statistics::~statistics(){
+	delete read_request_count; 
+	delete total_read_request_count; 
+	delete write_request_count; 
+	delete total_write_request_count; 
+	delete read_avg; 
+	delete write_avg; 
+	delete total_RT; 
+	delete total_read_RT; 
+	delete total_write_RT; 
+	delete read_request_size; 
+	delete total_read_request_size; 
+	delete write_request_size; 
+	delete total_write_request_size; 
+	delete subreq_state_time;
+}
 
 void statistics::reset_all(){
 	for (int i = 0; i < consolidation_degree; i++){

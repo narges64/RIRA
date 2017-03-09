@@ -207,6 +207,7 @@ void services_2_io(ssd_info * ssd, unsigned int channel, unsigned int * channel_
 					subs[i]->buf_entry = NULL;  
 					delete buf_ent; 
 				}
+				if (subs[i]->io_num == -1) delete subs[i]; 
 			}
 			
 			if (subs_count > 0){
@@ -221,6 +222,7 @@ void services_2_io(ssd_info * ssd, unsigned int channel, unsigned int * channel_
 			}
 		}
 	}
+	delete subs; 
 
 }
 
@@ -347,6 +349,7 @@ void services_2_gc(ssd_info * ssd, unsigned int channel, unsigned int * channel_
 		change_channel_state(ssd, channel, CHANNEL_MODE_GC, ssd->current_time , 
 					CHANNEL_MODE_IDLE, ssd->current_time + channel_busy_time); 	
 	}
+	delete subs; 
 }
 
 void update_map_entry(ssd_info * ssd, int lpn, int ppn){
