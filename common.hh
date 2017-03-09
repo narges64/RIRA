@@ -9,10 +9,12 @@
 using namespace std; 
 
 #define BUFSIZE 200
-#define PG_SUB 0xffffffffffffffff			
+#define PG_SUB 0xffffffff			
 #define EPOCH_LENGTH (int64_t) 100000000000 
 #define MAX(A,B) (A>B)?A:B;  
 #define NSEC 1000000000
+
+#define MAX_INT64  0x7fffffffffffffffll
 
 enum GC_PRIORITY {GC_EARLY, GC_ONDEMAND}; 
 enum GC_STATES {GC_WAIT, GC_ERASE_C_A, GC_COPY_BACK, GC_COMPLETE}; 
@@ -199,14 +201,44 @@ public:
 /********************************************************
 *mapping information,state
 *********************************************************/
+
+class buffer_entry{
+public: 
+	bool modified; 
+	bool evicted; 
+	int lpn; 
+	int read_hit; 
+	int write_hit; 
+	int trim_hit; 
+	buffer_entry(){
+		modified = false; 
+		evicted = true; 
+		lpn = -1;  
+		read_hit = 0; 
+		write_hit = 0; 
+		trim_hit = 0; 
+	}
+	buffer_entry(int l){
+		lpn = l; 
+		modified = false; 
+		read_hit = 0; 
+		write_hit = 0; 	
+		trim_hit = 0; 
+	}
+	buffer_entry * next_entry; 
+	buffer_entry * prev_entry; 	
+}; 
+
 class entry{  
 public: 
 	entry(){
 		pn = -1; 
-		state = 0; 
+		state = false; 
+		buf_ent = NULL; 
 	}                     
 	int pn;   
-	uint64_t state;                      
+	bool state;
+	buffer_entry * buf_ent;                  
 };
 
 class map_info{
@@ -217,18 +249,6 @@ public:
 	}
 
 	entry *map_entry;        //each entry indicate a mapping information
-};
-
-class dram_info{
-public:
-	dram_info(parameter_value * parameter); 
-	~dram_info(){
-		delete map; 
-	}
-	unsigned int dram_capacity;     
-	int64_t current_time;
-	map_info *map;
-
 };
 class gc_operation{   
 public:      
@@ -248,13 +268,188 @@ public:
 	unsigned int priority;    
 	gc_operation *next_node;
 };
+class write_buffer{
+public: 
+	int buffer_capacity; 
+	int entry_count; 
+	buffer_entry * buffer_head; 
+	buffer_entry * buffer_tail; 
+	write_buffer(int size, int sector_page){ // size in MB , sector_page total number of sector in a page (16 means 8KB page) 
+		buffer_capacity = size * 1024 * 2 / sector_page; 
+		entry_count = 0; 
+		buffer_head = NULL; 
+		buffer_tail = NULL; 
+	}
+	bool check_buffer(){
+		if (buffer_capacity == 0) return true; 
+		int count = 0; 
+		if ((buffer_head == NULL || buffer_tail == NULL) && entry_count != 0) return false; 
+		if (buffer_head == NULL && buffer_tail == NULL && entry_count == 0) return true; 
+
+		if (buffer_head->prev_entry != NULL || buffer_tail->next_entry != NULL) return false; 
+		buffer_entry * entry = buffer_head; 
+		while (entry != NULL) {
+			count++; 
+			entry = entry->next_entry; 
+		}
+		if (count != entry_count || count > buffer_capacity) return false; 
+		count = 0; 
+		entry = buffer_tail; 
+		while (entry != NULL) {
+			count++; 
+			entry = entry->prev_entry; 
+		}
+		if (count != entry_count || count > buffer_capacity) return false; 	 
+	
+		return true;  
+	}
+	
+	buffer_entry * select_eviction(){
+		buffer_entry * evict_candidate = buffer_tail; 
+		if (evict_candidate == NULL) return NULL; 
+		while(evict_candidate != NULL) {
+			if (evict_candidate->evicted) evict_candidate = evict_candidate->prev_entry;
+			else break;  
+		}
+		if (evict_candidate != NULL)  evict_candidate->evicted = true; 
+		return evict_candidate; 
+	}
+	
+	bool need_eviction(){
+		if (entry_count >= (buffer_capacity * 80 / 100) ) return true; 
+		return false; 
+	}
+
+	bool add_tail(buffer_entry * entry){ 
+		if (entry_count >= buffer_capacity){return false;}
+		if (buffer_tail == NULL) {entry_count++; buffer_tail = entry; buffer_head = entry; return true; }
+		buffer_tail->next_entry = entry; 
+		entry->prev_entry = buffer_tail; 
+		buffer_tail = entry;
+		entry_count++;  
+		return true; 
+	}
+	
+	bool add_head(buffer_entry * entry){
+		if (entry_count >= buffer_capacity){return false;}
+		if (buffer_head == NULL) {
+			entry_count++; 
+			buffer_head = entry; 
+			buffer_tail = entry; 
+			buffer_head->prev_entry = NULL; // just to make sure everything is fine 
+			buffer_tail->next_entry = NULL; // just to make sure everything is fine 
+			return true; 
+		}
+		buffer_head->prev_entry = entry; 
+		entry->next_entry = buffer_head; 
+		buffer_head = entry; 
+		buffer_head->prev_entry = NULL; 
+		entry_count++;
+		return true; 
+	}
+	buffer_entry * add_head(int lpn){
+		buffer_entry * buf_ent = new buffer_entry(lpn); 
+		if (!add_head(buf_ent)) return NULL; 
+		return buf_ent; 
+	}	
+	buffer_entry * add_tail(int lpn){
+		buffer_entry * buf_ent = new buffer_entry(lpn); 
+		if (!add_tail(buf_ent)) return NULL; 
+		return buf_ent; 
+	}
+
+	buffer_entry * remove_entry (buffer_entry * entry){
+		if (entry == NULL) return NULL; 
+		if (entry_count == 0) return NULL; 
+		if (entry == buffer_head) {
+			return remove_head(); 
+		}
+		if (entry == buffer_tail){
+			return remove_tail();  
+		}
+		entry->prev_entry->next_entry = entry->next_entry; 
+		entry->next_entry->prev_entry = entry->prev_entry;
+		entry->next_entry = NULL;
+		entry->prev_entry = NULL; 
+		entry_count--;  
+		return entry; 
+	}
+	buffer_entry * remove_head(){
+		if (entry_count == 0) return NULL; 
+		buffer_entry * temp = buffer_head; 
+		buffer_head = temp->next_entry; 
+		buffer_head->prev_entry = NULL; 
+		temp->next_entry = NULL; 
+		entry_count--; 	
+		return temp; 
+	}
+	buffer_entry * remove_tail(){
+		if (entry_count == 0) return NULL; 
+		buffer_entry * temp = buffer_tail; 
+		buffer_tail = temp->prev_entry; 
+		buffer_tail->next_entry = NULL; 
+		temp->prev_entry = NULL;  
+		entry_count--;
+		return temp; 
+	}
+
+	bool is_full(){
+		if (entry_count < buffer_capacity) return false; 
+		return true; 
+	}
+	int evict(){ 
+		int lpn = buffer_tail->lpn; 
+		buffer_entry * buf_tail = remove_tail(); 
+		delete buf_tail; 
+		return lpn; 
+	}
+	void hit_read(buffer_entry * entry){
+		entry->read_hit++;
+		add_head(remove_entry(entry)); 
+	}
+	void hit_write(buffer_entry * entry){
+		entry->write_hit++; 
+		entry->modified = true; 
+		add_head(remove_entry(entry)); 
+	}
+	void hit_trim(buffer_entry * entry){
+		entry->trim_hit++; 	
+		buffer_entry * buf_ent = remove_entry(entry); 
+		delete buf_ent; // useless to increase trim hit, but anyways 
+	}
+}; 
 
 
+class dram_info{
+public:
+	dram_info(parameter_value * parameter); 
+	~dram_info(){
+		delete map; 
+	}
+	unsigned int dram_capacity;     
+	int64_t current_time;
+	map_info *map;
+	write_buffer * buffer; 	
+};
 
 class sub_request{
 public: 
  
-	sub_request(int64_t ct){
+	sub_request(int64_t ct, int lpnum, int s, int sn, int op){	
+		app_id = -1; 
+		io_num = -1; 
+		seq_num = sn;  
+		lpn = lpnum; 
+		ppn = -1;
+		buf_entry = NULL; 
+		operation = op;  
+		size = s; 
+		state = 0; 
+		begin_time = ct; 
+		wait_time = 0; 
+		complete_time = MAX_INT64; 
+		gc_node = NULL; 
+
 		next_node = NULL; 
 		next_subs = NULL; 
 		update = NULL; 
@@ -263,21 +458,23 @@ public:
 		for (int i = 0; i < SR_MODE_NUM; i++) state_time[i] = 0;
 		current_time = ct; 
 		current_state = SR_MODE_WAIT; 
+		state_current_time = ct; 
 		next_state = SR_MODE_WAIT; 
 		next_state_predict_time = ct; 
 	}
 	~sub_request(){
-		if (location) delete location; 
-		if (update) delete update; 
+		if (location != NULL) delete location; 
+		if (update != NULL) delete update;	
+		if (buf_entry != NULL) delete buf_entry;   
 	}
-	
 	
 	unsigned int app_id; 
 	unsigned int io_num; 
 	unsigned int seq_num;
 
 	unsigned int lpn;                  
-	int ppn;                  
+	int ppn;    
+	buffer_entry * buf_entry;               
 	unsigned int operation;            
 	int size;
 	unsigned int current_state;        
@@ -313,13 +510,10 @@ public:
 		subs = NULL; 
 		critical_sub = NULL; 
 		
-		energy_consumption = 0; 
 		subs = NULL; 
-		need_distr_flag = NULL; 
 		complete_lsn_count = 0; 
 	}
 	~request(){
-		if (need_distr_flag) delete need_distr_flag; 
 		
 		sub_request * tmp; 
 		while(subs!=NULL)
@@ -337,11 +531,9 @@ public:
 	unsigned int lsn;
 	unsigned int size;
 	unsigned int operation;
-	unsigned int* need_distr_flag;
 	unsigned int complete_lsn_count;   //record the count of lsn served by buffer
 	int64_t begin_time;
 	int64_t response_time;
-	double energy_consumption;         
 	sub_request *subs;          
 	request *next_node;       
 	sub_request * critical_sub;
@@ -379,10 +571,8 @@ public:
 class page_info{    
 public:                  
 	page_info(); 
-	uint64_t valid_state;                
-	uint64_t free_state;                    //each bit indicates the subpage is free or occupted. 1 indicates that the bit is free and 0 indicates that the bit is used
+	bool valid_state;                
 	unsigned int lpn;                 
-	unsigned int written_count;       
 };
 
 
@@ -440,13 +630,12 @@ class lun_info{
 public: 
       	lun_info(parameter_value *); 
 	~lun_info(){
-		for (int i = 0; i < plane_num; i++){
+		for (int i = 0; i < 2; i++){
 			delete plane_head[i]; 
 		}
 		delete plane_head; 
 		delete state_time; 
 	}     
-	int plane_num; 
 	plane_info **plane_head;
 	int erase_count;  
 	int program_count; 
@@ -485,7 +674,7 @@ public:
 			case WRITE: 
 				stat_write_throughput.add_time(start, end); 
 	//			stat_read_throughput.add_time(start, end); 
-				stat_rw_throughput.add_time(start, end); 
+					stat_rw_throughput.add_time(start, end); 
 					
 				stat_write_throughput.add_capacity(page_size * count); 
 				stat_write_throughput.add_count(count); 
@@ -507,8 +696,9 @@ public:
 }; 
 
 
-class channel_info{
-public:           
+
+class channel_info {
+public: 
 	channel_info(int channel_number, parameter_value*); 
 	~channel_info(){
 		for (int i = 0; i < lun_num; i++){
@@ -533,33 +723,16 @@ public:
 
 	lun_info **lun_head;     
 	int64_t * state_time; 
-};
+};	
 
-class ssd_info{ 
 
+class statistics{
 public:
-	ssd_info(parameter_value *, char * statistics_filename, char * trace_filename); 	
-	~ssd_info(){
-		for (int i=0;i<parameter->channel_number;i++)
-		{
-			delete channel_head[i]; 
-		}
-		delete channel_head; 
-		delete dram; 
-		delete parameter; 
-	}
-	double ssd_energy;                  
-	int64_t current_time;                
-	int64_t next_request_time;
-	unsigned int real_time_subreq;       
-	int flag;
-	int active_flag;                     
-	int total_page_number;
-	int request_sequence_number;
-	int subrequest_sequence_number;  
-	int gc_sequence_number; 
-	int lun_token;                  
-	int gc_request;            
+	statistics( int cons_deg );
+	void reset_all();  
+	void print_all(){}
+	
+	int consolidation_degree; 	
 	int64_t * read_request_count;
 	int64_t * total_read_request_count;
 	int64_t * write_request_count;
@@ -580,27 +753,50 @@ public:
 
 	int64_t queue_prog_count, queue_read_count; 	
 	int64_t direct_erase_count, total_direct_erase_count; 
-	
+	int gc_moved_page; 	
 	int64_t copy_back_count, total_copy_back_count; 
-
 	int64_t read_multiplane_count, write_multiplane_count, erase_multiplane_count; 
-
 	int64_t m_plane_read_count, total_m_plane_read_count; 
 	int64_t m_plane_prog_count, total_m_plane_prog_count; 
 	int64_t m_plane_erase_count, total_m_plane_erase_count; 
-	
 	int64_t interleave_read_count, total_interleave_read_count; 
 	int64_t interleave_prog_count, total_interleave_prog_count; 
 	int64_t interleave_erase_count, total_interleave_erase_count; 
-	
 	int64_t gc_copy_back, total_gc_copy_back; 
 	int64_t waste_page_count, total_waste_page_count;
 	int64_t update_read_count, total_update_read_count; 
-	
-	int64_t request_queue_length; 
 	int64_t write_worst_case_rt;
 	int64_t read_worst_case_rt; 
-		
+	int64_t * subreq_state_time; 	
+	Tuple read_throughput; 
+	Tuple write_throughput; 
+
+}; 
+
+
+
+
+class ssd_info{ 
+
+public:
+	ssd_info(parameter_value *, char * statistics_filename, char * trace_filename); 	
+	~ssd_info(){
+		for (int i=0;i<parameter->channel_number;i++)
+		{
+			delete channel_head[i]; 
+		}
+		delete channel_head; 
+		delete dram; 
+		delete parameter; 
+	}
+	int64_t current_time;                
+	int request_sequence_number;
+	int subrequest_sequence_number;  
+	int gc_sequence_number; 
+	int lun_token;                  
+	int gc_request;            
+	int64_t request_queue_length; 
+	
 	int64_t total_execution_time; 
 	
 	int * repeat_times; // repeate trace for each application 
@@ -608,11 +804,10 @@ public:
 	int steady_state_counter; 
 	int steady_state; 
 	
-	int gc_moved_page; 
 	int64_t min_lsn;
 	int64_t max_lsn;
 	
-	FILE * tracefile[10];
+	FILE * *tracefile;
 	FILE * statisticfile;
 	parameter_value *parameter;   
 	dram_info *dram;
@@ -621,10 +816,7 @@ public:
 
 	SubQueue ssd_wsubs;    
 	channel_info **channel_head; 
-
-	int64_t * subreq_state_time; 	
-	Tuple read_throughput; 
-	Tuple write_throughput; 
+	statistics * stats; 
 };
 
 void file_assert(int error,const char *s);

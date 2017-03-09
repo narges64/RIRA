@@ -25,5 +25,7 @@ void full_write_preconditioning(ssd_info * ssd, bool seq);
 STATE invalid_old_page(ssd_info * ssd, const int lpn); 
 STATE write_page(ssd_info * ssd, const int lpn, const int  ppn); 
 int get_active_block(ssd_info * ssd, local * location);                             
+STATE service_in_buffer(ssd_info * ssd, sub_request * sub); 
+void service_in_flash(ssd_info * ssd, sub_request * sub); 
 #endif
 

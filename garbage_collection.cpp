@@ -10,7 +10,7 @@ void launch_gc_for_plane(ssd_info * ssd, gc_operation * gc_node){
 	}
 	for(unsigned int i=0;i<ssd->parameter->page_block;i++)
 	{
-		if(ssd->channel_head[location->channel]->lun_head[location->lun]->plane_head[location->plane]->blk_head[location->block]->page_head[i]->valid_state>0) 		
+		if(ssd->channel_head[location->channel]->lun_head[location->lun]->plane_head[location->plane]->blk_head[location->block]->page_head[i]->valid_state == true) 		
 		{
 			location->page=i;
 			if (move_page(ssd, location, gc_node) == FAIL){
@@ -51,12 +51,17 @@ void ProcessGC(ssd_info *ssd){ // send LUNs to GC mode, or return back to IO mod
 	for (unsigned int channel = 0; channel < ssd->parameter->channel_number; channel++){
 		for (unsigned int lun = 0; lun < ssd->parameter->lun_channel[channel]; lun++){
 			bool on_demand = update_priority (ssd, channel, lun );  
-			 
+			bool any_gc = false; 
+			for (unsigned int plane = 0; plane < ssd->parameter->plane_lun; plane++){
+				if (ssd->channel_head[channel]->lun_head[lun]->plane_head[plane]->scheduled_gc != NULL) 
+					any_gc = true;  
+			}
+			if (any_gc == false) continue; 
 			if ( (ssd->channel_head[channel]->lun_head[lun]->GCMode == false) && 
 				( on_demand ||  
 					(ssd->channel_head[channel]->lun_head[lun]->rsubs_queue.is_empty() && 
 					ssd->channel_head[channel]->lun_head[lun]->wsubs_queue.is_empty()))) {
- 
+				 
 				ssd->channel_head[channel]->lun_head[lun]->GCMode = true;  
 				gc_for_lun(ssd, channel, lun); 
 			}
@@ -128,38 +133,38 @@ STATE find_victim_block(ssd_info * ssd, local * location){
 	return SUCCESS; 
 }
 sub_request * create_gc_sub_request( ssd_info * ssd,const local * location, int operation, gc_operation * gc_node){
-	sub_request * sub = new sub_request(ssd->current_time); 
 		
-	sub->gc_node = gc_node;
-
 	if (gc_node != NULL)	{
-		if (location->channel != gc_node->location->channel || location->lun != gc_node->location->lun)
-			cout << "Error in location and gc_node incompatible! " << endl; 
+		if (location->channel != gc_node->location->channel || location->lun != gc_node->location->lun){
+			cout << "Error in location and gc_node incompatible! " << endl;
+			return NULL;  
+		}
 	}
 
-	sub->seq_num = ssd->subrequest_sequence_number++; 
-	if (operation != ERASE){
-		sub->lpn = ssd->channel_head[location->channel]->lun_head[location->lun]->plane_head[location->plane]->blk_head[location->block]->page_head[location->page]->lpn;
-		sub->size= ssd->parameter->subpage_page;  
-		sub->state=(ssd->dram->map->map_entry[sub->lpn].state&0x7fffffffffffffff);
-	}
+	sub_request * sub = new sub_request(ssd->current_time, -1, ssd->parameter->subpage_page, ssd->subrequest_sequence_number++,operation); 
+
+	sub->gc_node = gc_node;
 	sub->begin_time=ssd->current_time;
+
+	if (operation != ERASE) {
+		sub->lpn = ssd->channel_head[location->channel]->lun_head[location->lun]->plane_head[location->plane]->blk_head[location->block]->page_head[location->page]->lpn;
+		if (ssd->dram->map->map_entry[sub->lpn].state) 
+			sub->state = 0x7fffffffffffffff; 
+		else 
+			sub->state = 0; 
+	}
+
 	if (operation == READ)
 	{	
-		sub->location = new local(location->channel, location->lun, location->plane,location->block, location->page); 
-		sub->begin_time = ssd->current_time;
-	
+		sub->location = new local(location->channel, location->lun, location->plane,location->block, location->page);	
 		sub->ppn = find_ppn(ssd, location);  // or use the map FIXME 
-		
 		if (sub->ppn != ssd->dram->map->map_entry[sub->lpn].pn )
 			printf("Error ppn does not match the mapping table! \n"); 
 		
-		sub->operation = READ;
 		
 	}
 	else if(operation == WRITE)
 	{
-		sub->operation = WRITE;
 		sub->location = new local(location->channel, location->lun, location->plane); 
 		invalid_old_page(ssd, sub->lpn); 
 		sub->ppn = get_new_ppn(ssd, sub->lpn, location);
@@ -168,16 +173,14 @@ sub_request * create_gc_sub_request( ssd_info * ssd,const local * location, int 
 	}
 	else if (operation == ERASE)
 	{
-		sub->operation = ERASE; 
 		sub->location = new local(location->channel, location->lun, location->plane, location->block, 0); 
-		
+		sub->ppn = -1; 	
 	}else {
 		delete sub; 
 		printf("\nERROR ! Unexpected command.\n");
 		return NULL;
 	}
-	
-		
+			
 	return sub; 
 }
 STATE move_page(ssd_info * ssd,  const local * location, gc_operation * gc_node){
@@ -208,12 +211,11 @@ int erase_block(ssd_info * ssd,const local * location){
 	
 	for (i=0;i<ssd->parameter->page_block;i++)
 	{
-		ssd->channel_head[channel]->lun_head[lun]->plane_head[plane]->blk_head[block]->page_head[i]->free_state=PG_SUB;
-		ssd->channel_head[channel]->lun_head[lun]->plane_head[plane]->blk_head[block]->page_head[i]->valid_state=0;
+		ssd->channel_head[channel]->lun_head[lun]->plane_head[plane]->blk_head[block]->page_head[i]->valid_state=false;
 		ssd->channel_head[channel]->lun_head[lun]->plane_head[plane]->blk_head[block]->page_head[i]->lpn=-1;
 	}
 	
-	ssd->flash_erase_count++;
+	ssd->stats->flash_erase_count++;
 	ssd->channel_head[channel]->erase_count++;			
 	ssd->channel_head[channel]->lun_head[lun]->erase_count++;
 	ssd->channel_head[channel]->lun_head[lun]->plane_head[plane]->erase_count++; 
@@ -280,7 +282,7 @@ void pre_process_gc(ssd_info * ssd, const local * location){
 	//location->print(); 
 	for(unsigned int i=0;i<ssd->parameter->page_block;i++)
 	{
-		if(ssd->channel_head[gc_location->channel]->lun_head[gc_location->lun]->plane_head[gc_location->plane]->blk_head[gc_location->block]->page_head[i]->valid_state>0) 		
+		if(ssd->channel_head[gc_location->channel]->lun_head[gc_location->lun]->plane_head[gc_location->plane]->blk_head[gc_location->block]->page_head[i]->valid_state == true) 		
 		{
 			gc_location->page=i;
 			

@@ -47,14 +47,24 @@ ssd_info::ssd_info(parameter_value * parameters, char * statistics_filename, cha
 	
 	repeat_times = new int[parameters->consolidation_degree]; 
 	last_times = new int64_t [parameters->consolidation_degree]; 
-	
+	tracefile = new FILE* [parameters->consolidation_degree]; 	
 	for (int cd = 0; cd < parameters->consolidation_degree; cd++){
 		repeat_times[cd]=0; // do not repeat the trace (just once) 
-		last_times[cd]=0; 
+		last_times[cd]=0;
+		tracefile[cd] = NULL;  
 	}
 		
-	min_lsn=0x7fffffff;
-	total_page_number=parameters->lun_num*parameters->plane_lun*parameters->block_plane*parameters->page_block;
+	lun_token = 0; 	
+	min_lsn=0;
+	max_lsn= parameters->lun_num * parameters->plane_lun * parameters->block_plane * parameters->page_block * parameters->subpage_page * parameters->overprovide; 
+
+	request_sequence_number = 0;
+	subrequest_sequence_number = 0;  
+	gc_sequence_number = 0; 
+	
+	request_queue_length = 0; 
+	request_queue = NULL; 
+	stats = new statistics(parameters->consolidation_degree); 
 
 	dram = new dram_info(parameters);
 	
@@ -76,23 +86,33 @@ ssd_info::ssd_info(parameter_value * parameters, char * statistics_filename, cha
 	fprintf(statisticfile,"-----------------------simulation output----------------------\n");
 	fflush(statisticfile);
 
-	read_request_count = new int64_t[parameters->consolidation_degree];
-	total_read_request_count = new int64_t[parameters->consolidation_degree];
-	write_request_count = new int64_t[parameters->consolidation_degree];
-	total_write_request_count = new int64_t[parameters->consolidation_degree];
+}
 
-	read_avg = new int64_t[parameters->consolidation_degree];
-	write_avg = new int64_t[parameters->consolidation_degree];
-	total_RT = new int64_t[parameters->consolidation_degree];
-	total_read_RT = new int64_t[parameters->consolidation_degree];
-	total_write_RT = new int64_t[parameters->consolidation_degree];
+statistics::statistics(int cons_deg){
+	consolidation_degree = cons_deg; 
+	read_request_count = new int64_t[cons_deg];
+	total_read_request_count = new int64_t[cons_deg];
+	write_request_count = new int64_t[cons_deg];
+	total_write_request_count = new int64_t[cons_deg];
 
-	read_request_size = new int64_t[parameters->consolidation_degree];
-	total_read_request_size = new int64_t[parameters->consolidation_degree];
-	write_request_size = new int64_t[parameters->consolidation_degree];
-	total_write_request_size = new int64_t[parameters->consolidation_degree];
+	read_avg = new int64_t[cons_deg];
+	write_avg = new int64_t[cons_deg];
+	total_RT = new int64_t[cons_deg];
+	total_read_RT = new int64_t[cons_deg];
+	total_write_RT = new int64_t[cons_deg];
 
-	for (int i = 0; i < parameters->consolidation_degree; i++){
+	read_request_size = new int64_t[cons_deg];
+	total_read_request_size = new int64_t[cons_deg];
+	write_request_size = new int64_t[cons_deg];
+	total_write_request_size = new int64_t[cons_deg];
+
+	subreq_state_time = new int64_t[SR_MODE_NUM]; 
+
+	reset_all(); 
+}
+
+void statistics::reset_all(){
+	for (int i = 0; i < consolidation_degree; i++){
 		read_request_count[i] = 0;
 		total_read_request_count[i] = 0;
 
@@ -148,11 +168,7 @@ ssd_info::ssd_info(parameter_value * parameters, char * statistics_filename, cha
 	read_worst_case_rt = 0; 
 	
 	gc_moved_page = 0; 
-	request_sequence_number = 0;
-	subrequest_sequence_number = 0;  
-	gc_sequence_number = 0; 
-	lun_token = 0; 	
-	subreq_state_time = new int64_t[SR_MODE_NUM]; 
+
 	for (int i = 0; i < SR_MODE_NUM; i++){
 		subreq_state_time[i] = 0; 	
 	}
@@ -163,21 +179,19 @@ ssd_info::ssd_info(parameter_value * parameters, char * statistics_filename, cha
 
 }
 
-
-
 dram_info::dram_info(parameter_value * parameters)
 {
-	dram_capacity = parameters->dram_capacity;		
 	map = new map_info(); 
 	int page_num = parameters->page_block*parameters->block_plane*parameters->plane_lun*parameters->lun_num;
 	map->map_entry = new entry[page_num];
+
+	dram_capacity = parameters->dram_capacity;		
+	buffer = new write_buffer(dram_capacity, parameters->subpage_page);  
 }
 
 page_info::page_info(){
-	valid_state =0;
-	free_state = PG_SUB;
+	valid_state =false;
 	lpn = -1;
-	written_count=0; 
 }
 
 blk_info::blk_info(parameter_value * parameters)
@@ -225,7 +239,6 @@ lun_info::lun_info(parameter_value * parameter)
 	next_state = LUN_MODE_IDLE;
 	current_time = 0;
 	next_state_predict_time = 0;		
-	plane_num = parameter->plane_lun; 	
 	read_count = 0;
 	program_count = 0;
 	erase_count = 0;

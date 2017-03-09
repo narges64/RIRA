@@ -1,82 +1,128 @@
 #include "ftl.hh"
+
+void service_in_flash(ssd_info * ssd, sub_request * sub){
+		if (sub->operation == READ) {
+			if (ssd->channel_head[sub->location->channel]->lun_head[sub->location->lun]->rsubs_queue.find_subreq(sub)){ // the request already exists 
+				sub->complete_time=ssd->current_time+1000;
+				change_subrequest_state(ssd, sub,SR_MODE_ST_S,ssd->current_time,SR_MODE_COMPLETE,sub->complete_time); 
+				sub->state_current_time = sub->next_state_predict_time; 
+				ssd->stats->queue_read_count++; 
+			} else {
+				ssd->channel_head[sub->location->channel]->lun_head[sub->location->lun]->rsubs_queue.push_tail(sub); 
+			} 
+		} else if (sub->operation == WRITE){
+			
+			invalid_old_page(ssd, sub->lpn); 
+			sub->ppn = get_new_ppn(ssd, sub->lpn);
+			write_page(ssd, sub->lpn, sub->ppn);  
+			find_location(ssd, sub->ppn, sub->location);  
+			ssd->channel_head[sub->location->channel]->lun_head[sub->location->lun]->wsubs_queue.push_tail(sub); 
+			Schedule_GC(ssd, sub->location); 	
+		} 
+}
+
+
+STATE service_in_buffer(ssd_info * ssd, sub_request * sub){
+	
+	// check mapping table and find the request 
+	if (sub->operation == READ){
+		buffer_entry * buf_ent = NULL; 
+		if (ssd->dram->map->map_entry[sub->lpn].buf_ent != NULL){
+			buf_ent = ssd->dram->map->map_entry[sub->lpn].buf_ent; 
+			ssd->dram->buffer->hit_read(buf_ent); 
+			sub->complete_time = ssd->current_time + 1000; 
+			change_subrequest_state(ssd, sub,SR_MODE_ST_S,ssd->current_time,SR_MODE_COMPLETE,sub->complete_time); 
+			return SUCCESS; 
+		}else {
+			return FAIL; 
+		}
+	}	
+	else if (sub->operation == WRITE){
+		buffer_entry * buf_ent = NULL; 
+		if (ssd->dram->map->map_entry[sub->lpn].buf_ent == NULL) {
+			if (ssd->dram->buffer->is_full()) {
+				return FAIL; 
+			}
+			buf_ent = ssd->dram->buffer->add_head(sub->lpn); 
+			invalid_old_page(ssd, sub->lpn); 
+			ssd->dram->map->map_entry[sub->lpn].pn = -1; 
+			ssd->dram->map->map_entry[sub->lpn].buf_ent = buf_ent; 
+			sub->complete_time = ssd->current_time + 1000; 
+			change_subrequest_state(ssd, sub,SR_MODE_ST_S,ssd->current_time,SR_MODE_COMPLETE,sub->complete_time); 
+
+			if(ssd->dram->buffer->need_eviction()){
+				buffer_entry * bufent = ssd->dram->buffer->select_eviction(); 
+				if (bufent != NULL) { 
+					unsigned int full_page=~(0xffffffff<<(ssd->parameter->subpage_page));
+					sub_request * evict_sub = create_sub_request(ssd, bufent->lpn, ssd->parameter->subpage_page, full_page , NULL, WRITE);  
+					evict_sub->buf_entry = bufent; 
+					evict_sub->ppn = get_new_ppn(ssd, bufent->lpn); 
+					ssd->dram->map->map_entry[bufent->lpn].buf_ent = NULL; 
+					write_page(ssd, bufent->lpn, evict_sub->ppn); 
+					find_location(ssd,evict_sub->ppn, evict_sub->location); 	
+					ssd->channel_head[evict_sub->location->channel]->lun_head[evict_sub->location->lun]->wsubs_queue.push_tail(evict_sub); 
+					// will be removed from the buffer when the sub request is done! 	
+				}
+			}
+			return SUCCESS; 
+
+		}else {
+			buf_ent = ssd->dram->map->map_entry[sub->lpn].buf_ent; 
+			ssd->dram->buffer->hit_write(buf_ent); 
+			sub->complete_time = ssd->current_time + 1000; 
+			change_subrequest_state(ssd, sub,SR_MODE_ST_S,ssd->current_time,SR_MODE_COMPLETE,sub->complete_time); 
+			return SUCCESS; 
+		}
+		
+	}
+}
+
 sub_request * create_sub_request( ssd_info * ssd, int lpn,int size,uint64_t state, request * req,unsigned int operation){
 	sub_request* sub=NULL,* sub_r=NULL;
 	channel_info * p_ch=NULL;
 	unsigned int flag=0;
-	sub = new sub_request(ssd->current_time); 	
+	sub = new sub_request(ssd->current_time, lpn, size, ssd->subrequest_sequence_number++, operation); 	
+	
 	if(req!=NULL)
 	{
 		sub->next_subs = req->subs;
 		req->subs = sub;
+	
+		sub->app_id = req->app_id;
+		sub->io_num = req->io_num;
+	
+		sub->state_time[SR_MODE_WAIT] = ssd->current_time - req->time;
+		sub->state_current_time = ssd->current_time;
 	}
-	sub->seq_num = ssd->subrequest_sequence_number++; 
+	else 
+	{
+		sub->state_time[SR_MODE_WAIT] = 0;
+		sub->state_current_time = ssd->current_time;
+	}
+	
+ 
 	if (operation == READ)
 	{
-		find_location(ssd,ssd->dram->map->map_entry[lpn].pn, sub->location);
-		sub->begin_time = ssd->current_time;  	
-		sub->lpn = lpn;
-		sub->size=size;            
-		if (req != NULL){
-			sub->app_id = req->app_id;
-			sub->io_num = req->io_num;
-		}
-		for (int i = 0; i < 10; i++){
-			sub->state_time[i] = 0;
-		}
-		if (req != NULL){
-			sub->state_time[SR_MODE_WAIT] = ssd->current_time - req->time;
-			sub->state_current_time = ssd->current_time;
-		}
-		else {
-			sub->state_time[SR_MODE_WAIT] = 0;
-			sub->state_current_time = ssd->current_time;
-		}
-		sub->ppn = ssd->dram->map->map_entry[lpn].pn;
-		sub->operation = READ;
-		sub->state=(ssd->dram->map->map_entry[lpn].state&0x7fffffffffffffff);
-		if (ssd->channel_head[sub->location->channel]->lun_head[sub->location->lun]->rsubs_queue.find_subreq(sub)){ // the request already exists 
-			sub->complete_time=ssd->current_time+1000;
-			change_subrequest_state(ssd, sub,SR_MODE_ST_S,ssd->current_time,SR_MODE_COMPLETE,sub->complete_time); 
-			sub->state_current_time = sub->next_state_predict_time; 
-			ssd->queue_read_count++; 
-		} else {
-			ssd->channel_head[sub->location->channel]->lun_head[sub->location->lun]->rsubs_queue.push_tail(sub); 
+		sub->ppn  = ssd->dram->map->map_entry[lpn].pn; 
+		if (sub->ppn >= 0) {
+			find_location(ssd,sub->ppn, sub->location);
+			if (ssd->dram->map->map_entry[lpn].state) 
+				sub->state = 0x7fffffffffffffff; 
+			else 
+				sub->state = 0; 
+		}else {
+			sub->state = state; 
 		} 
 	}
 	else if(operation == WRITE)
 	{
-		sub->ppn=0;
-		sub->operation = WRITE;
-		sub->lpn=lpn;
-		sub->size=size;
+		sub->ppn = -1; // ssd->dram->map->map_entry[lpn].pn; 
 		sub->state=state;
-		sub->begin_time=ssd->current_time;
-		if (req != NULL){
-			sub->app_id = req->app_id;
-			sub->io_num = req->io_num;
-		}
-		for (int i = 0; i < 10; i++){
-			sub->state_time[i] = 0;
-		}
-		if (req != NULL){
-			sub->state_time[SR_MODE_WAIT] = ssd->current_time - req->time;
-			sub->state_current_time = ssd->current_time;
-		}
-		else {
-			sub->state_time[SR_MODE_WAIT] = 0;
-			sub->state_current_time = ssd->current_time;
-		}
-		invalid_old_page(ssd, sub->lpn); 
-		sub->ppn = get_new_ppn(ssd, sub->lpn);
-		write_page(ssd, sub->lpn, sub->ppn);  
-		find_location(ssd, sub->ppn, sub->location);  
-		ssd->channel_head[sub->location->channel]->lun_head[sub->location->lun]->wsubs_queue.push_tail(sub); 
-		Schedule_GC(ssd, sub->location); 	
 	}
 	else
 	{
 		delete sub; 
-		printf("\nERROR ! Unexpected command.\n");
+		printf("\n FIXME TRIM command \n");
 		return NULL;
 	}
 	
@@ -130,14 +176,14 @@ void services_2_io(ssd_info * ssd, unsigned int channel, unsigned int * channel_
 				subs_count = find_lun_gc_requests(ssd, channel, lun, subs, &operation); 
 			switch (operation){
 				case READ: 
-					if (subs_count > 1) ssd->read_multiplane_count++; 
+					if (subs_count > 1) ssd->stats->read_multiplane_count++; 
 					channel_busy_time = subs_count * read_transfer_time; 
 					lun_busy_time = channel_busy_time + read_time;
 					
 		//			ssd->channel_head[channel]->lun_head[lun]->update_stat(ssd->current_time , ssd->current_time + lun_busy_time, READ, subs_count, ssd->parameter->subpage_page );  
 					break; 
 				case WRITE: 
-					if (subs_count > 1) ssd->write_multiplane_count++; 
+					if (subs_count > 1) ssd->stats->write_multiplane_count++; 
 					channel_busy_time = subs_count * write_transfer_time; 
 					lun_busy_time = channel_busy_time + write_time; 
 		//			ssd->channel_head[channel]->lun_head[lun]->update_stat(ssd->current_time, ssd->current_time + lun_busy_time, WRITE, subs_count, ssd->parameter->subpage_page); 
@@ -155,7 +201,12 @@ void services_2_io(ssd_info * ssd, unsigned int channel, unsigned int * channel_
 				change_plane_state(ssd, subs[i]->location->channel, 
 						subs[i]->location->lun, subs[i]->location->plane, 
 						PLANE_MODE_IO, ssd->current_time, 
-						PLANE_MODE_IDLE, subs[i]->complete_time); 
+						PLANE_MODE_IDLE, subs[i]->complete_time);
+				if (subs[i]->buf_entry != NULL){ 
+					buffer_entry * buf_ent = ssd->dram->buffer->remove_entry(subs[i]->buf_entry); 
+					subs[i]->buf_entry = NULL;  
+					delete buf_ent; 
+				}
 			}
 			
 			if (subs_count > 0){
@@ -248,19 +299,19 @@ void services_2_gc(ssd_info * ssd, unsigned int channel, unsigned int * channel_
 
 		switch(operation){
 			case READ: 
-               			if (subs_count > 1) ssd->read_multiplane_count++; 
+               			if (subs_count > 1) ssd->stats->read_multiplane_count++; 
 				channel_busy_time = read_transfer_time * subs_count;
 				lun_busy_time = channel_busy_time + read_time;
 		//		ssd->channel_head[channel]->lun_head[lun]->update_stat(ssd->current_time , ssd->current_time + lun_busy_time, NOOP_READ, subs_count, ssd->parameter->subpage_page); 
 				break; 
 			case WRITE: 
-                    		if (subs_count > 1) ssd->write_multiplane_count++; 
+                    		if (subs_count > 1) ssd->stats->write_multiplane_count++; 
 				channel_busy_time = write_transfer_time * subs_count; 
 				lun_busy_time = channel_busy_time + write_time; 
 		//		ssd->channel_head[channel]->lun_head[lun]->update_stat(ssd->current_time , ssd->current_time + lun_busy_time, NOOP_WRITE, subs_count, ssd->parameter->subpage_page); 
 				break; 
 			case ERASE:
-                    		if (subs_count > 1) ssd->erase_multiplane_count++; 
+                    		if (subs_count > 1) ssd->stats->erase_multiplane_count++; 
 				channel_busy_time = erase_transfer_time * subs_count; 
 				lun_busy_time = channel_busy_time + erase_time; 
 		//		ssd->channel_head[channel]->lun_head[lun]->update_stat(ssd->current_time , ssd->current_time  + lun_busy_time, NOOP, subs_count, ssd->parameter->subpage_page); 	
@@ -281,6 +332,11 @@ void services_2_gc(ssd_info * ssd, unsigned int channel, unsigned int * channel_
 				subs[i]->location->lun, subs[i]->location->plane, 
 				PLANE_MODE_GC, ssd->current_time, PLANE_MODE_IDLE, 
 				ssd->current_time + lun_busy_time); 
+			if (subs[i]->buf_entry != NULL){ 
+				buffer_entry * buf_ent  = ssd->dram->buffer->remove_entry(subs[i]->buf_entry); 
+				subs[i]->buf_entry = NULL; 	
+				delete buf_ent;  
+			}
 			if (operation == ERASE){
 				delete_gc_node(ssd, subs[i]->gc_node);
 				erase_block(ssd,subs[i]->location); 
@@ -294,8 +350,8 @@ void services_2_gc(ssd_info * ssd, unsigned int channel, unsigned int * channel_
 }
 
 void update_map_entry(ssd_info * ssd, int lpn, int ppn){
-	uint64_t full_page=~(0xffffffffffffffff<<(ssd->parameter->subpage_page));
-	if (ppn == -1) full_page = 0; 
+	bool full_page= true; 
+	if (ppn == -1) full_page = false;  
 	ssd->dram->map->map_entry[lpn].pn=ppn;	
 	ssd->dram->map->map_entry[lpn].state = full_page;  
 }
@@ -312,23 +368,20 @@ void update_physical_page(ssd_info * ssd, const int ppn, const int lpn){
 	int b = location->block; 
 	int pg = location->page; 
 	
-	uint64_t full_page=~(0xffffffffffffffff<<(ssd->parameter->subpage_page));
-	uint64_t free_state = (~full_page); 
+	unsigned int full_page=~(0xffffffff<<(ssd->parameter->subpage_page));
 		
 	if (lpn != -1) {
 		ssd->channel_head[c]->lun_head[l]->plane_head[p]->blk_head[b]->page_head[pg]->lpn=lpn;
-		ssd->channel_head[c]->lun_head[l]->plane_head[p]->blk_head[b]->page_head[pg]->valid_state=full_page; 
-		ssd->channel_head[c]->lun_head[l]->plane_head[p]->blk_head[b]->page_head[pg]->free_state=free_state; 	
+		ssd->channel_head[c]->lun_head[l]->plane_head[p]->blk_head[b]->page_head[pg]->valid_state=true; 
 	
 		ssd->channel_head[c]->lun_head[l]->plane_head[p]->free_page--;
-		ssd->flash_prog_count++; 
+		ssd->stats->flash_prog_count++; 
 		ssd->channel_head[c]->program_count++; 
 		ssd->channel_head[c]->lun_head[l]->program_count++; 
 		ssd->channel_head[c]->lun_head[l]->plane_head[p]->program_count++; 
 	}else { 
 		ssd->channel_head[c]->lun_head[l]->plane_head[p]->blk_head[b]->page_head[pg]->lpn=-1;
-		ssd->channel_head[c]->lun_head[l]->plane_head[p]->blk_head[b]->page_head[pg]->valid_state=0; 
-		ssd->channel_head[c]->lun_head[l]->plane_head[p]->blk_head[b]->page_head[pg]->free_state=0; 	
+		ssd->channel_head[c]->lun_head[l]->plane_head[p]->blk_head[b]->page_head[pg]->valid_state=false; 
 		ssd->channel_head[c]->lun_head[l]->plane_head[p]->blk_head[b]->invalid_page_num++;
 	}
 	delete location; 
@@ -454,7 +507,7 @@ int get_new_ppn(ssd_info *ssd, int lpn, const local * location){
 }
 
 STATE invalid_old_page(ssd_info * ssd, const int lpn){
-	if (ssd->dram->map->map_entry[lpn].state == 0) return FAIL; 
+	if (ssd->dram->map->map_entry[lpn].state == false) return FAIL; 
 	int old_ppn = ssd->dram->map->map_entry[lpn].pn; 
 	update_map_entry(ssd, lpn, -1); 
 	update_physical_page(ssd, old_ppn, -1);
@@ -467,8 +520,7 @@ STATE write_page(ssd_info * ssd, const int lpn, const int  ppn){
 	return SUCCESS; 
 }
 
-void find_location(ssd_info *ssd,int ppn, local * location )
-{	
+void find_location(ssd_info * ssd, int ppn, local * location){
 	int pn,ppn_value=ppn;
 	int page_plane=0,page_lun=0,page_channel=0;
 
@@ -577,8 +629,8 @@ void full_write_preconditioning(ssd_info * ssd, bool seq){
 			lpn = rand() % total_size; 
 	
 	}
-	cerr << "is complete. erase count: " <<  ssd->flash_erase_count << endl; 
-	ssd->flash_erase_count  = 0; 	
+	cerr << "is complete. erase count: " <<  ssd->stats->flash_erase_count << endl; 
+	ssd->stats->flash_erase_count  = 0; 	
 }
 
 

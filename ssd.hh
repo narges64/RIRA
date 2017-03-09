@@ -9,7 +9,6 @@
 #include <sys/types.h>
 #include "ftl.hh"
 
-#define MAX_INT64  0x7fffffffffffffffll
 
 
 ssd_info *simulate(ssd_info *);
@@ -21,7 +20,7 @@ int get_requests_consolidation(ssd_info *ssd);
 int select_trace_file(ssd_info * ssd);
 int64_t find_nearest_event(ssd_info *);
 unsigned int lpn2ppn(ssd_info * ,unsigned int lsn);
-unsigned int transfer_size(ssd_info *,int,unsigned int,request *);
+unsigned int transfer_size(ssd_info *,unsigned int,request *);
 void trace_output(ssd_info* );
 void print_statistics(ssd_info *, int);
 void free_all_node(ssd_info *);
