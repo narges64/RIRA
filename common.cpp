@@ -64,7 +64,7 @@ ssd_info::ssd_info(parameter_value * parameters, char * statistics_filename, cha
 	
 	request_queue_length = 0; 
 	request_queue = NULL; 
-	stats = new statistics(parameters->consolidation_degree); 
+	stats = new statistics(this, parameters->consolidation_degree); 
 
 	dram = new dram_info(parameters);
 	
@@ -88,7 +88,14 @@ ssd_info::ssd_info(parameter_value * parameters, char * statistics_filename, cha
 
 }
 
-statistics::statistics(int cons_deg){
+void ssd_info::reset_ssd_stats(){
+	for (int i = 0; i < parameters->channel_num; i++){
+		channel_head[i]->reset_channel_stats(); 
+	}
+
+}
+
+statistics::statistics(ssd_info * ssd, int cons_deg){
 	consolidation_degree = cons_deg; 
 	read_request_count = new int64_t[cons_deg];
 	total_read_request_count = new int64_t[cons_deg];
@@ -108,7 +115,7 @@ statistics::statistics(int cons_deg){
 
 	subreq_state_time = new int64_t[SR_MODE_NUM]; 
 
-	reset_all(); 
+	reset_all(ssd); 
 }
 statistics::~statistics(){
 	delete read_request_count; 
@@ -127,7 +134,7 @@ statistics::~statistics(){
 	delete subreq_state_time;
 }
 
-void statistics::reset_all(){
+void statistics::reset_all(ssd_info * ssd){
 	for (int i = 0; i < consolidation_degree; i++){
 		read_request_count[i] = 0;
 		total_read_request_count[i] = 0;
@@ -193,6 +200,9 @@ void statistics::reset_all(){
 	write_multiplane_count = 0; 
 	erase_multiplane_count = 0; 
 
+
+	ssd->reset_ssd_stats(); 
+
 }
 
 dram_info::dram_info(parameter_value * parameters)
@@ -248,7 +258,11 @@ plane_info::plane_info(parameter_value  * parameters)
 	}
 	scheduled_gc = NULL; 
 }
-
+void plane_info::reset_plane_stats(){
+	erase_count = 0; 
+	read_count = 0; 
+	program_count = 0; 
+}
 lun_info::lun_info(parameter_value * parameter)
 {		
 	current_state = LUN_MODE_IDLE;
@@ -275,6 +289,11 @@ lun_info::lun_info(parameter_value * parameter)
 		state_time[i] = 0; 
 	
 }
+void lun_info::reset_lun_stats(int plane_num){
+	for (int i = 0; i < plane_num; i++){
+		plane_head[i]->reset_plane_stats(); 
+	}
+}
 channel_info::channel_info(int channel_number, parameter_value * parameters) {
 	// set the parameter of each channel
 	lun_num = parameters->lun_channel[channel_number];
@@ -294,6 +313,11 @@ channel_info::channel_info(int channel_number, parameter_value * parameters) {
 		state_time[i] = 0; 
 	}
 	
+}
+void channel_info::reset_channel_stats(int lun_count, int plane_num){
+	for (int i = 0; i < lun_count; i++){
+		lun_head[i]->reset_lun_stats(plane_num); 
+	}
 }
 void parameter_value::load_parameters(char *parameter_file)
 {

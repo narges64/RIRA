@@ -602,7 +602,8 @@ public:
 		}
 		delete blk_head; 
 		delete state_time; 
-	}	
+	}
+	void reset_plane_stat(); 	
 	int64_t add_reg_ppn;                   
 	int64_t free_page;            
 	int64_t ers_invalid;          
@@ -626,14 +627,15 @@ public:
 
 class lun_info{
 public: 
-      	lun_info(parameter_value *); 
+    lun_info(parameter_value *); 
 	~lun_info(){
 		for (int i = 0; i < 2; i++){
 			delete plane_head[i]; 
 		}
 		delete plane_head; 
 		delete state_time; 
-	}     
+	}
+	void reset_lun_stats();      
 	plane_info **plane_head;
 	int erase_count;  
 	int program_count; 
@@ -705,6 +707,7 @@ public:
 		delete lun_head; 
 		delete state_time; 
 	}
+	void reset_channel_stat(int lun_number); 
 	int lun_num; 
 	int64_t read_count;
 	int64_t program_count;
@@ -793,6 +796,7 @@ public:
 		delete parameter; 
 		delete stats; 
 	}
+	void reset_ssd_stats(); 
 	int64_t current_time;                
 	int request_sequence_number;
 	int subrequest_sequence_number;  
