@@ -603,7 +603,7 @@ public:
 		delete blk_head; 
 		delete state_time; 
 	}
-	void reset_plane_stat(); 	
+	void reset_plane_stats(); 	
 	int64_t add_reg_ppn;                   
 	int64_t free_page;            
 	int64_t ers_invalid;          
@@ -635,7 +635,7 @@ public:
 		delete plane_head; 
 		delete state_time; 
 	}
-	void reset_lun_stats();      
+	void reset_lun_stats(int plane_num);      
 	plane_info **plane_head;
 	int erase_count;  
 	int program_count; 
@@ -707,7 +707,7 @@ public:
 		delete lun_head; 
 		delete state_time; 
 	}
-	void reset_channel_stat(int lun_number); 
+	void reset_channel_stats(int lun_number, int plane_per_lun); 
 	int lun_num; 
 	int64_t read_count;
 	int64_t program_count;
@@ -729,7 +729,7 @@ public:
 
 class statistics{
 public:
-	statistics( int cons_deg );
+	statistics(int cons_deg );
 	~statistics(); 
 	void reset_all();  
 	void print_all(){}

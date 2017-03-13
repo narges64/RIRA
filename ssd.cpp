@@ -11,7 +11,8 @@ int  main(int argc, char * argv[]){
 	full_write_preconditioning(ssd, false);
 
 	ssd->stats->print_all(); // does nothing now 
-	ssd->stats->reset_all(ssd); 	
+	ssd->stats->reset_all();
+	ssd->reset_ssd_stats();  	
 	simulate(ssd);
 		
 	for (int cd = 0; cd < ssd->parameter->consolidation_degree; cd++){

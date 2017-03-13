@@ -64,7 +64,7 @@ ssd_info::ssd_info(parameter_value * parameters, char * statistics_filename, cha
 	
 	request_queue_length = 0; 
 	request_queue = NULL; 
-	stats = new statistics(this, parameters->consolidation_degree); 
+	stats = new statistics(parameters->consolidation_degree); 
 
 	dram = new dram_info(parameters);
 	
@@ -89,13 +89,13 @@ ssd_info::ssd_info(parameter_value * parameters, char * statistics_filename, cha
 }
 
 void ssd_info::reset_ssd_stats(){
-	for (int i = 0; i < parameters->channel_num; i++){
-		channel_head[i]->reset_channel_stats(); 
+	for (int i = 0; i < parameter->channel_number; i++){
+		channel_head[i]->reset_channel_stats(parameter->lun_channel[i], parameter->plane_lun); 
 	}
 
 }
 
-statistics::statistics(ssd_info * ssd, int cons_deg){
+statistics::statistics(int cons_deg){
 	consolidation_degree = cons_deg; 
 	read_request_count = new int64_t[cons_deg];
 	total_read_request_count = new int64_t[cons_deg];
@@ -115,7 +115,7 @@ statistics::statistics(ssd_info * ssd, int cons_deg){
 
 	subreq_state_time = new int64_t[SR_MODE_NUM]; 
 
-	reset_all(ssd); 
+	reset_all(); 
 }
 statistics::~statistics(){
 	delete read_request_count; 
@@ -134,7 +134,7 @@ statistics::~statistics(){
 	delete subreq_state_time;
 }
 
-void statistics::reset_all(ssd_info * ssd){
+void statistics::reset_all(){
 	for (int i = 0; i < consolidation_degree; i++){
 		read_request_count[i] = 0;
 		total_read_request_count[i] = 0;
@@ -201,7 +201,6 @@ void statistics::reset_all(ssd_info * ssd){
 	erase_multiplane_count = 0; 
 
 
-	ssd->reset_ssd_stats(); 
 
 }
 
