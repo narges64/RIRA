@@ -1,4 +1,8 @@
 #include "ftl.hh"
+#include <chrono>
+
+
+
 
 void service_in_flash(ssd_info * ssd, sub_request * sub){
 		if (sub->operation == READ) {
@@ -518,6 +522,7 @@ STATE invalid_old_page(ssd_info * ssd, const int lpn){
 }
 // When the page is allocated, write into it 
 STATE write_page(ssd_info * ssd, const int lpn, const int  ppn){
+
 	update_map_entry(ssd, lpn, ppn); 	
 	update_physical_page(ssd, ppn, lpn); 
 	return SUCCESS; 
@@ -616,6 +621,7 @@ void full_write_preconditioning(ssd_info * ssd, bool seq){
 	// add write to table 
 	int lpn = 0; 
 	for (int i = 0; i <  total_size; i++){
+
 		invalid_old_page(ssd, lpn); 
 		int ppn = get_new_ppn (ssd, lpn);
 		write_page(ssd, lpn, ppn);  
@@ -630,7 +636,6 @@ void full_write_preconditioning(ssd_info * ssd, bool seq){
 		if(seq) lpn++; 
 		else 
 			lpn = rand() % total_size; 
-	
 	}
 	cerr << "is complete. erase count: " <<  ssd->stats->flash_erase_count << endl; 
 	ssd->stats->flash_erase_count  = 0; 	
