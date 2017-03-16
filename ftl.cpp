@@ -375,8 +375,6 @@ void update_physical_page(ssd_info * ssd, const int ppn, const int lpn){
 	int b = location->block; 
 	int pg = location->page; 
 	
-	unsigned int full_page=~(0xffffffff<<(ssd->parameter->subpage_page));
-		
 	if (lpn != -1) {
 		ssd->channel_head[c]->lun_head[l]->plane_head[p]->blk_head[b]->page_head[pg]->lpn=lpn;
 		ssd->channel_head[c]->lun_head[l]->plane_head[p]->blk_head[b]->page_head[pg]->valid_state=true; 
@@ -387,9 +385,12 @@ void update_physical_page(ssd_info * ssd, const int ppn, const int lpn){
 		ssd->channel_head[c]->lun_head[l]->program_count++; 
 		ssd->channel_head[c]->lun_head[l]->plane_head[p]->program_count++; 
 	}else { 
-		ssd->channel_head[c]->lun_head[l]->plane_head[p]->blk_head[b]->page_head[pg]->lpn=-1;
-		ssd->channel_head[c]->lun_head[l]->plane_head[p]->blk_head[b]->page_head[pg]->valid_state=false; 
-		ssd->channel_head[c]->lun_head[l]->plane_head[p]->blk_head[b]->invalid_page_num++;
+		blk_info * block = ssd->channel_head[c]->lun_head[l]->plane_head[p]->blk_head[b]; 
+		
+		block->page_head[pg]->lpn=-1;
+		if (block->page_head[pg]->valid_state) 	
+			ssd->channel_head[c]->lun_head[l]->plane_head[p]->blk_head[b]->invalid_page_num++;
+		block->page_head[pg]->valid_state=false;
 	}
 	delete location; 
 
@@ -479,7 +480,6 @@ int get_active_block(ssd_info *ssd, local * location){
 }
 
 STATE allocate_page_in_plane( ssd_info *ssd, local * location){
-	STATE s = SUCCESS; 
 	int channel = location->channel; 
 	int lun = location->lun; 
 	int plane = location->plane; 
@@ -522,7 +522,6 @@ STATE invalid_old_page(ssd_info * ssd, const int lpn){
 }
 // When the page is allocated, write into it 
 STATE write_page(ssd_info * ssd, const int lpn, const int  ppn){
-
 	update_map_entry(ssd, lpn, ppn); 	
 	update_physical_page(ssd, ppn, lpn); 
 	return SUCCESS; 
@@ -637,8 +636,9 @@ void full_write_preconditioning(ssd_info * ssd, bool seq){
 		else 
 			lpn = rand() % total_size; 
 	}
-	cerr << "is complete. erase count: " <<  ssd->stats->flash_erase_count << endl; 
+	cerr << "is complete. erase count: " <<  ssd->stats->flash_erase_count  << ". move count: " << ssd->stats->gc_moved_page << endl; 
 	ssd->stats->flash_erase_count  = 0; 	
+	ssd->stats->gc_moved_page = 0; 
 }
 
 

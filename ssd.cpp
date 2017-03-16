@@ -96,7 +96,8 @@ int add_fetched_request(ssd_info * ssd, request * request1, uint64_t nearest_eve
 	if (request1->io_num % 100000 == 0){
 		cout << "fetching io request number: " << request1->io_num ; 
 		cout << "\terase: " << ssd->stats->total_flash_erase_count ;
-		cout << "\tq length: " << ssd->request_queue_length  << "  " << ssd->parameter->queue_length<< endl; 
+		cout << "\tq length: " << ssd->request_queue_length  << "  " << ssd->parameter->queue_length; 
+		cout << "\tmove count: " << ssd->stats->gc_moved_page << endl; 
 	}
 	return 1; 
 }
@@ -457,7 +458,6 @@ void print_epoch_statistics(ssd_info * ssd, int app_id){
 	ssd->stats->read_avg[app_id] = 0;
 	ssd->stats->write_avg[app_id] = 0;
 	ssd->stats->flash_erase_count = 0;
-	ssd->stats->gc_moved_page = 0;
 
 	// =================== SUBREQ STATES ===========================================================
 	fprintf(ssd->statisticfile, "SUBREQ ep: %d time:\t", epoch_num); 

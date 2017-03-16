@@ -22,6 +22,7 @@ void launch_gc_for_plane(ssd_info * ssd, gc_operation * gc_node){
 	}
 	sub_request * erase_subreq = create_gc_sub_request( ssd, location, ERASE, gc_node); 
 	ssd->channel_head[location->channel]->lun_head[location->lun]->GCSubs.push_tail(erase_subreq); 	
+	ssd->stats->gc_moved_page += page_move_count; 
 }
 
 STATE gc_for_lun(ssd_info *ssd, unsigned int channel, unsigned int lun){	
@@ -280,6 +281,7 @@ void pre_process_gc(ssd_info * ssd, const local * location){
 	local * gc_location = new local(location->channel, location->lun, location->plane);  	
 	if (find_victim_block(ssd, gc_location) != SUCCESS) {
 		printf("Error: invalid block selected for gc \n");
+		delete gc_location; 
 		return; 
 	}
 	//location->print(); 
@@ -298,6 +300,7 @@ void pre_process_gc(ssd_info * ssd, const local * location){
 	}
 	erase_block(ssd, gc_location);  
 	delete gc_location; 
+	ssd->stats->gc_moved_page += pre_process_move; 	
 }
 
 STATE add_gc_node(ssd_info * ssd, gc_operation * gc_node){
