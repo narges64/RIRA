@@ -786,7 +786,6 @@ public:
 		delete repeat_times; 
 		delete last_times; 
 		delete tracefile; 
-		delete statisticfile; 
 		for (int i=0;i<parameter->channel_number;i++)
 		{
 			delete channel_head[i]; 
