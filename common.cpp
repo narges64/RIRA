@@ -212,6 +212,7 @@ dram_info::dram_info(parameter_value * parameters)
 
 	dram_capacity = parameters->dram_capacity;		
 	buffer = new write_buffer(dram_capacity, parameters->subpage_page);  
+	gc_buffer = new write_buffer(dram_capacity, parameters->subpage_page); 
 }
 
 page_info::page_info(){
@@ -474,7 +475,7 @@ void trace_assert(int64_t time,int device,unsigned int lsn,int size,int ope)
 {
 	if(time <0 || device < 0  || size < 0 || ope < 0)
 	{
-		printf("trace error:%lld %d %d %d %d\n",time,device,lsn,size,ope);
+		cout << "trace error: " << time << "  " << device << " " << lsn << " " << size << "  " << ope << endl; 
 		getchar();
 		exit(-1);
 	}

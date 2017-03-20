@@ -27,4 +27,5 @@ bool Schedule_GC(ssd_info * ssd, local * location);
 void pre_process_gc(ssd_info * ssd, const local * location); 
 STATE delete_gc_node(ssd_info * ssd, gc_operation * gc_node); 
 STATE service_in_gc_buffer(ssd_info * ssd, sub_request * sub); 
+STATE insert_in_gc_buffer(ssd_info * ssd, sub_request * sub); 
 #endif

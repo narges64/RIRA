@@ -14,8 +14,7 @@ void service_in_flash(ssd_info * ssd, sub_request * sub){
 			} else {
 				ssd->channel_head[sub->location->channel]->lun_head[sub->location->lun]->rsubs_queue.push_tail(sub); 
 			} 
-		} else if (sub->operation == WRITE){
-			
+		} else if (sub->operation == WRITE){	
 			invalid_old_page(ssd, sub->lpn); 
 			sub->ppn = get_new_ppn(ssd, sub->lpn);
 			write_page(ssd, sub->lpn, sub->ppn);  
@@ -32,8 +31,11 @@ STATE service_in_buffer(ssd_info * ssd, sub_request * sub){
 	if (sub->operation == READ){
 		buffer_entry * buf_ent = NULL; 
 		if (ssd->dram->map->map_entry[sub->lpn].buf_ent != NULL){
-			buf_ent = ssd->dram->map->map_entry[sub->lpn].buf_ent; 
-			ssd->dram->buffer->hit_read(buf_ent); 
+			buf_ent = ssd->dram->map->map_entry[sub->lpn].buf_ent;
+			if (buf_ent->gc_entry)  
+				ssd->dram->gc_buffer->hit_read(buf_ent); 
+			else
+				ssd->dram->buffer->hit_read(buf_ent); 
 			sub->complete_time = ssd->current_time + 1000; 
 			change_subrequest_state(ssd, sub,SR_MODE_ST_S,ssd->current_time,SR_MODE_COMPLETE,sub->complete_time); 
 			return SUCCESS; 
@@ -49,7 +51,6 @@ STATE service_in_buffer(ssd_info * ssd, sub_request * sub){
 			}
 			buf_ent = ssd->dram->buffer->add_head(sub->lpn); 
 			invalid_old_page(ssd, sub->lpn); 
-			ssd->dram->map->map_entry[sub->lpn].pn = -1; 
 			ssd->dram->map->map_entry[sub->lpn].buf_ent = buf_ent; 
 			sub->complete_time = ssd->current_time + 1000; 
 			change_subrequest_state(ssd, sub,SR_MODE_ST_S,ssd->current_time,SR_MODE_COMPLETE,sub->complete_time); 
@@ -72,7 +73,10 @@ STATE service_in_buffer(ssd_info * ssd, sub_request * sub){
 
 		}else {
 			buf_ent = ssd->dram->map->map_entry[sub->lpn].buf_ent; 
-			ssd->dram->buffer->hit_write(buf_ent); 
+			if (buf_ent->gc_entry) 
+				ssd->dram->gc_buffer->hit_write(buf_ent); 
+			else 
+				ssd->dram->buffer->hit_write(buf_ent); 
 			sub->complete_time = ssd->current_time + 1000; 
 			change_subrequest_state(ssd, sub,SR_MODE_ST_S,ssd->current_time,SR_MODE_COMPLETE,sub->complete_time); 
 			return SUCCESS; 
@@ -206,12 +210,19 @@ void services_2_io(ssd_info * ssd, unsigned int channel, unsigned int * channel_
 						subs[i]->location->lun, subs[i]->location->plane, 
 						PLANE_MODE_IO, ssd->current_time, 
 						PLANE_MODE_IDLE, subs[i]->complete_time);
-				if (subs[i]->buf_entry != NULL){ 
-					buffer_entry * buf_ent = ssd->dram->buffer->remove_entry(subs[i]->buf_entry); 
-					subs[i]->buf_entry = NULL;  
-					delete buf_ent; 
+				if (subs[i]->buf_entry != NULL){
+					buffer_entry * buf_ent = NULL; 
+					if (subs[i]->buf_entry->gc_entry){  
+						buf_ent = ssd->dram->gc_buffer->remove_entry(subs[i]->buf_entry); 
+						subs[i]->buf_entry = NULL; 
+						delete subs[i];  
+					}else{
+						buf_ent = ssd->dram->buffer->remove_entry(subs[i]->buf_entry); 
+						subs[i]->buf_entry = NULL;  
+					} 
+					if (buf_ent != NULL) 
+						delete buf_ent; 
 				}
-				if (subs[i]->io_num == -1) delete subs[i]; 
 			}
 			
 			if (subs_count > 0){
@@ -339,7 +350,11 @@ void services_2_gc(ssd_info * ssd, unsigned int channel, unsigned int * channel_
 				PLANE_MODE_GC, ssd->current_time, PLANE_MODE_IDLE, 
 				ssd->current_time + lun_busy_time); 
 			if (subs[i]->buf_entry != NULL){ 
-				buffer_entry * buf_ent  = ssd->dram->buffer->remove_entry(subs[i]->buf_entry); 
+				buffer_entry * buf_ent  = subs[i]->buf_entry; 
+				if (buf_ent->gc_entry) 
+					buf_ent = ssd->dram->gc_buffer->remove_entry(buf_ent); 
+				else 
+					buf_ent = ssd->dram->buffer->remove_entry(buf_ent); 
 				subs[i]->buf_entry = NULL; 	
 				delete buf_ent;  
 			}

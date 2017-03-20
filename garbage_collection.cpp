@@ -10,10 +10,10 @@ STATE insert_in_gc_buffer(ssd_info * ssd, sub_request * sub){
 			return FAIL; 
 		}
 		buf_ent = ssd->dram->gc_buffer->add_head(sub->lpn); 
+		buf_ent->gc_entry = true; 
 		invalid_old_page(ssd, sub->lpn); 
-		ssd->dram->map->map_entry[sub->lpn].pn = -1; 
 		ssd->dram->map->map_entry[sub->lpn].buf_ent = buf_ent; 
-		sub->complete_time = ssd->current_time + 1000; 
+		sub->complete_time = ssd->current_time + 1000; // FIXME  
 		change_subrequest_state(ssd, sub,SR_MODE_ST_S,ssd->current_time,SR_MODE_COMPLETE,sub->complete_time); 
 
 		if(ssd->dram->gc_buffer->need_eviction()){
@@ -30,14 +30,18 @@ STATE insert_in_gc_buffer(ssd_info * ssd, sub_request * sub){
 				// will be removed from the buffer when the sub request is done! 	
 			}
 		}
-		return SUCCESS; 
-	}else {
-		buf_ent = ssd->dram->map->map_entry[sub->lpn].buf_ent; 
-		ssd->dram->buffer->hit_write(buf_ent); 
-		sub->complete_time = ssd->current_time + 1000; 
-		change_subrequest_state(ssd, sub,SR_MODE_ST_S,ssd->current_time,SR_MODE_COMPLETE,sub->complete_time); 
-		return SUCCESS; 
 	}
+	else {
+		cout << "In what situation this might happen? " << endl; 
+		buf_ent = ssd->dram->map->map_entry[sub->lpn].buf_ent; 
+		if (buf_ent->gc_entry) 
+			ssd->dram->gc_buffer->hit_write(buf_ent); 
+		else 
+			ssd->dram->buffer->hit_write(buf_ent); 
+		sub->complete_time = ssd->current_time + 1000; // FIXME 
+		change_subrequest_state(ssd, sub,SR_MODE_ST_S,ssd->current_time,SR_MODE_COMPLETE,sub->complete_time); 
+	}
+	return SUCCESS;  
 }
 
 void launch_gc_for_plane(ssd_info * ssd, gc_operation * gc_node){	
@@ -233,8 +237,13 @@ STATE move_page(ssd_info * ssd,  const local * location, gc_operation * gc_node)
 	sub_request * wsub = create_gc_sub_request(ssd, location, WRITE, gc_node); 
 	
 	ssd->channel_head[rsub->location->channel]->lun_head[rsub->location->lun]->GCSubs.push_tail(rsub);
-	ssd->channel_head[wsub->location->channel]->lun_head[wsub->location->lun]->GCSubs.push_tail(wsub); 
 	
+	if (insert_in_gc_buffer(ssd, wsub) != SUCCESS) 
+		ssd->channel_head[wsub->location->channel]->lun_head[wsub->location->lun]->GCSubs.push_tail(wsub); 
+	else {
+		// FIXME maybe collecting some statistics 
+		delete wsub; 
+	}
 	return SUCCESS;
 }
 

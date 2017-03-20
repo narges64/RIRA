@@ -20,7 +20,7 @@ $(OBJ_DIR)/%.o: %.cpp	%.hh
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 
-debug: CFLAGS += -DDEBUG -ggdb -pg 
+debug: CFLAGS += -DDEBUG -ggdb -pg -std=c++11 
 debug: $(EXEC)
 
 clean:
