@@ -1,5 +1,45 @@
 #include "garbage_collection.hh"
 
+
+STATE insert_in_gc_buffer(ssd_info * ssd, sub_request * sub){
+	if (sub->operation != WRITE) return FAIL; 	
+
+	buffer_entry * buf_ent = NULL; 
+	if (ssd->dram->map->map_entry[sub->lpn].buf_ent == NULL) {
+		if (ssd->dram->gc_buffer->is_full()) {
+			return FAIL; 
+		}
+		buf_ent = ssd->dram->gc_buffer->add_head(sub->lpn); 
+		invalid_old_page(ssd, sub->lpn); 
+		ssd->dram->map->map_entry[sub->lpn].pn = -1; 
+		ssd->dram->map->map_entry[sub->lpn].buf_ent = buf_ent; 
+		sub->complete_time = ssd->current_time + 1000; 
+		change_subrequest_state(ssd, sub,SR_MODE_ST_S,ssd->current_time,SR_MODE_COMPLETE,sub->complete_time); 
+
+		if(ssd->dram->gc_buffer->need_eviction()){
+			buffer_entry * bufent = ssd->dram->gc_buffer->select_eviction(); 
+			if (bufent != NULL) { 
+				unsigned int full_page=~(0xffffffff<<(ssd->parameter->subpage_page));
+				sub_request * evict_sub = create_sub_request(ssd, bufent->lpn, ssd->parameter->subpage_page, full_page , NULL, WRITE);  
+				evict_sub->buf_entry = bufent; 
+				evict_sub->ppn = get_new_ppn(ssd, bufent->lpn); 
+				ssd->dram->map->map_entry[bufent->lpn].buf_ent = NULL; 
+				write_page(ssd, bufent->lpn, evict_sub->ppn); 
+				find_location(ssd,evict_sub->ppn, evict_sub->location); 	
+				ssd->channel_head[evict_sub->location->channel]->lun_head[evict_sub->location->lun]->wsubs_queue.push_tail(evict_sub); 
+				// will be removed from the buffer when the sub request is done! 	
+			}
+		}
+		return SUCCESS; 
+	}else {
+		buf_ent = ssd->dram->map->map_entry[sub->lpn].buf_ent; 
+		ssd->dram->buffer->hit_write(buf_ent); 
+		sub->complete_time = ssd->current_time + 1000; 
+		change_subrequest_state(ssd, sub,SR_MODE_ST_S,ssd->current_time,SR_MODE_COMPLETE,sub->complete_time); 
+		return SUCCESS; 
+	}
+}
+
 void launch_gc_for_plane(ssd_info * ssd, gc_operation * gc_node){	
 	if (gc_node == NULL) return; 
 	unsigned int page_move_count = 0;  
