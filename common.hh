@@ -494,7 +494,7 @@ public:
 		next_state_predict_time = ct; 
 	}
 	~sub_request(){
-		if (location != NULL) delete location; 
+		//if (location != NULL) delete location; 
 		if (update != NULL) delete update;	
 		if (buf_entry != NULL) delete buf_entry;  
 		if (state_time != NULL) delete state_time;  
