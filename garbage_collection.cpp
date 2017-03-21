@@ -212,7 +212,6 @@ sub_request * create_gc_sub_request( ssd_info * ssd,const local * location, int 
 	else if(operation == WRITE)
 	{
 		if (sub->location != NULL) delete sub->location; 
-		invalid_old_page(ssd, sub->lpn); 
 		
 			}
 	else if (operation == ERASE)
@@ -233,14 +232,15 @@ STATE move_page(ssd_info * ssd,  const local * location, gc_operation * gc_node)
 	sub_request * rsub = create_gc_sub_request(ssd, location, READ, gc_node); 
 	sub_request * wsub = create_gc_sub_request(ssd, location, WRITE, gc_node); 
 	
+	invalid_old_page(ssd, wsub->lpn); 
 	ssd->channel_head[rsub->location->channel]->lun_head[rsub->location->lun]->GCSubs.push_tail(rsub);
 
 	if (insert_in_gc_buffer(ssd, wsub) != SUCCESS) 
 	{
 		wsub->location = new local(location->channel, location->lun, location->plane); 
 		wsub->ppn = get_new_ppn(ssd, wsub->lpn, location);
-		find_location(ssd, wsub->ppn, wsub->location); 
 		write_page(ssd, wsub->lpn, wsub->ppn);  	
+		find_location(ssd, wsub->ppn, wsub->location); 
 		ssd->channel_head[wsub->location->channel]->lun_head[wsub->location->lun]->GCSubs.push_tail(wsub); 
 	}else{ 
 		if (wsub != NULL) 

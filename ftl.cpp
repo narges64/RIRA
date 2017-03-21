@@ -1,9 +1,6 @@
 #include "ftl.hh"
 #include <chrono>
 
-
-
-
 void service_in_flash(ssd_info * ssd, sub_request * sub){
 		if (sub->operation == READ) {
 			if (ssd->channel_head[sub->location->channel]->lun_head[sub->location->lun]->rsubs_queue.find_subreq(sub)){ // the request already exists 
@@ -18,8 +15,10 @@ void service_in_flash(ssd_info * ssd, sub_request * sub){
 			invalid_old_page(ssd, sub->lpn); 
 			sub->ppn = get_new_ppn(ssd, sub->lpn);
 			write_page(ssd, sub->lpn, sub->ppn);  
+
 			find_location(ssd, sub->ppn, sub->location);  
 			ssd->channel_head[sub->location->channel]->lun_head[sub->location->lun]->wsubs_queue.push_tail(sub); 
+
 			Schedule_GC(ssd, sub->location); 	
 		} 
 }
@@ -50,8 +49,10 @@ STATE service_in_buffer(ssd_info * ssd, sub_request * sub){
 				return FAIL; 
 			}
 			buf_ent = ssd->dram->buffer->add_head(sub->lpn); 
-			invalid_old_page(ssd, sub->lpn); 
+			buf_ent->gc_entry = false; 
 			ssd->dram->map->map_entry[sub->lpn].buf_ent = buf_ent; 
+			
+			invalid_old_page(ssd, sub->lpn); 
 			sub->complete_time = ssd->current_time + 1000; 
 			change_subrequest_state(ssd, sub,SR_MODE_ST_S,ssd->current_time,SR_MODE_COMPLETE,sub->complete_time); 
 
@@ -62,8 +63,8 @@ STATE service_in_buffer(ssd_info * ssd, sub_request * sub){
 					sub_request * evict_sub = create_sub_request(ssd, bufent->lpn, ssd->parameter->subpage_page, full_page , NULL, WRITE);  
 					evict_sub->buf_entry = bufent; 
 					evict_sub->ppn = get_new_ppn(ssd, bufent->lpn); 
-					ssd->dram->map->map_entry[bufent->lpn].buf_ent = NULL; 
 					write_page(ssd, bufent->lpn, evict_sub->ppn); 
+					
 					find_location(ssd,evict_sub->ppn, evict_sub->location); 	
 					ssd->channel_head[evict_sub->location->channel]->lun_head[evict_sub->location->lun]->wsubs_queue.push_tail(evict_sub); 
 					// will be removed from the buffer when the sub request is done! 	
@@ -211,6 +212,7 @@ void services_2_io(ssd_info * ssd, unsigned int channel, unsigned int * channel_
 						PLANE_MODE_IO, ssd->current_time, 
 						PLANE_MODE_IDLE, subs[i]->complete_time);
 				if (subs[i]->buf_entry != NULL){
+					ssd->dram->map->map_entry[subs[i]->buf_entry->lpn].buf_ent = NULL; 
 					buffer_entry * buf_ent = NULL; 
 					if (subs[i]->buf_entry->gc_entry){  
 						buf_ent = ssd->dram->gc_buffer->remove_entry(subs[i]->buf_entry); 
@@ -218,7 +220,8 @@ void services_2_io(ssd_info * ssd, unsigned int channel, unsigned int * channel_
 						delete subs[i];  
 					}else{
 						buf_ent = ssd->dram->buffer->remove_entry(subs[i]->buf_entry); 
-						subs[i]->buf_entry = NULL;  
+						subs[i]->buf_entry = NULL; 
+						delete subs[i]; 
 					} 
 					if (buf_ent != NULL) 
 						delete buf_ent; 
