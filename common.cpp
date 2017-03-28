@@ -474,7 +474,7 @@ void trace_assert(int64_t time,int device,unsigned int lsn,int size,int ope)
 {
 	if(time <0 || device < 0  || size < 0 || ope < 0)
 	{
-		printf("trace error:%lld %d %d %d %d\n",time,device,lsn,size,ope);
+		cout << "trace error: " << time << "  " << device << " " << lsn << " " << size << "  " << ope << endl; 
 		getchar();
 		exit(-1);
 	}

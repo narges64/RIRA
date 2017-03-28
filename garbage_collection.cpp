@@ -1,5 +1,6 @@
 #include "garbage_collection.hh"
 
+
 void launch_gc_for_plane(ssd_info * ssd, gc_operation * gc_node){	
 	if (gc_node == NULL) return; 
 	unsigned int page_move_count = 0;  
@@ -22,6 +23,7 @@ void launch_gc_for_plane(ssd_info * ssd, gc_operation * gc_node){
 	}
 	sub_request * erase_subreq = create_gc_sub_request( ssd, location, ERASE, gc_node); 
 	ssd->channel_head[location->channel]->lun_head[location->lun]->GCSubs.push_tail(erase_subreq); 	
+	ssd->stats->gc_moved_page += page_move_count; 
 }
 
 STATE gc_for_lun(ssd_info *ssd, unsigned int channel, unsigned int lun){	
@@ -167,12 +169,8 @@ sub_request * create_gc_sub_request( ssd_info * ssd,const local * location, int 
 	else if(operation == WRITE)
 	{
 		if (sub->location != NULL) delete sub->location; 
-		sub->location = new local(location->channel, location->lun, location->plane); 
-		invalid_old_page(ssd, sub->lpn); 
-		sub->ppn = get_new_ppn(ssd, sub->lpn, location);
-		find_location(ssd, sub->ppn, sub->location); 
-		write_page(ssd, sub->lpn, sub->ppn);  
-	}
+		
+			}
 	else if (operation == ERASE)
 	{
 		if (sub->location != NULL) delete sub->location; 
@@ -189,9 +187,15 @@ sub_request * create_gc_sub_request( ssd_info * ssd,const local * location, int 
 STATE move_page(ssd_info * ssd,  const local * location, gc_operation * gc_node){
 
 	sub_request * rsub = create_gc_sub_request(ssd, location, READ, gc_node); 
-	sub_request * wsub = create_gc_sub_request(ssd, location, WRITE, gc_node); 
-	
 	ssd->channel_head[rsub->location->channel]->lun_head[rsub->location->lun]->GCSubs.push_tail(rsub);
+	
+
+	sub_request * wsub = create_gc_sub_request(ssd, location, WRITE, gc_node); 
+	invalid_old_page(ssd, wsub->lpn); 
+	wsub->location = new local(location->channel, location->lun, location->plane); 
+	wsub->ppn = get_new_ppn(ssd, wsub->lpn, location);
+	write_page(ssd, wsub->lpn, wsub->ppn);  	
+	find_location(ssd, wsub->ppn, wsub->location); 
 	ssd->channel_head[wsub->location->channel]->lun_head[wsub->location->lun]->GCSubs.push_tail(wsub); 
 	
 	return SUCCESS;
@@ -280,6 +284,7 @@ void pre_process_gc(ssd_info * ssd, const local * location){
 	local * gc_location = new local(location->channel, location->lun, location->plane);  	
 	if (find_victim_block(ssd, gc_location) != SUCCESS) {
 		printf("Error: invalid block selected for gc \n");
+		delete gc_location; 
 		return; 
 	}
 	//location->print(); 
@@ -298,6 +303,7 @@ void pre_process_gc(ssd_info * ssd, const local * location){
 	}
 	erase_block(ssd, gc_location);  
 	delete gc_location; 
+	ssd->stats->gc_moved_page += pre_process_move; 	
 }
 
 STATE add_gc_node(ssd_info * ssd, gc_operation * gc_node){

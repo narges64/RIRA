@@ -203,7 +203,7 @@ public:
 *********************************************************/
 
 class buffer_entry{
-public: 
+public:	
 	bool modified; 
 	bool evicted; 
 	int lpn; 
@@ -216,7 +216,7 @@ public:
 		lpn = -1;  
 		read_hit = 0; 
 		write_hit = 0; 
-		trim_hit = 0; 
+		trim_hit = 0;
 	}
 	buffer_entry(int l){
 		buffer_entry(); 
@@ -280,23 +280,35 @@ public:
 	bool check_buffer(){
 		if (buffer_capacity == 0) return true; 
 		int count = 0; 
-		if ((buffer_head == NULL || buffer_tail == NULL) && entry_count != 0) return false; 
+		if ((buffer_head == NULL || buffer_tail == NULL) && entry_count != 0) {
+			cout << "BUFFER head and tail problem " << endl; 
+			return false; 
+		} 
 		if (buffer_head == NULL && buffer_tail == NULL && entry_count == 0) return true; 
 
-		if (buffer_head->prev_entry != NULL || buffer_tail->next_entry != NULL) return false; 
+		if (buffer_head->prev_entry != NULL || buffer_tail->next_entry != NULL) {
+			cout << "BUFFER head and tail, next and prev problem " << endl; 
+			return false; 
+		} 
 		buffer_entry * entry = buffer_head; 
 		while (entry != NULL) {
 			count++; 
 			entry = entry->next_entry; 
 		}
-		if (count != entry_count || count > buffer_capacity) return false; 
+		if (count != entry_count || count > buffer_capacity) {
+			cout << "BUFFER count does not match " << count <<   " * "<< entry_count << " *  " << buffer_capacity  << endl; 
+			return false; 
+		} 
 		count = 0; 
 		entry = buffer_tail; 
 		while (entry != NULL) {
 			count++; 
 			entry = entry->prev_entry; 
 		}
-		if (count != entry_count || count > buffer_capacity) return false; 	 
+		if (count != entry_count || count > buffer_capacity) {
+			cout << "BUFFER reverse count does not match " << endl; 
+			return false; 
+		} 	 
 	
 		return true;  
 	}
@@ -312,14 +324,22 @@ public:
 		return evict_candidate; 
 	}
 	
-	bool need_eviction(){
+	bool need_eviction(){ // For now I assume 80 percent 
 		if (entry_count >= (buffer_capacity * 80 / 100) ) return true; 
 		return false; 
 	}
 
 	bool add_tail(buffer_entry * entry){ 
 		if (entry_count >= buffer_capacity){return false;}
-		if (buffer_tail == NULL) {entry_count++; buffer_tail = entry; buffer_head = entry; return true; }
+		if (entry == NULL) return false; 
+		if (buffer_tail == NULL) {
+			entry_count++; 
+			buffer_tail = entry; 
+			buffer_head = entry; 
+			buffer_head->prev_entry = NULL; 
+			buffer_tail->next_entry = NULL; 
+			return true; 
+		}
 		buffer_tail->next_entry = entry; 
 		entry->prev_entry = buffer_tail; 
 		buffer_tail = entry;
@@ -329,6 +349,7 @@ public:
 	
 	bool add_head(buffer_entry * entry){
 		if (entry_count >= buffer_capacity){return false;}
+		if (entry == NULL) return false; 
 		if (buffer_head == NULL) {
 			entry_count++; 
 			buffer_head = entry; 
@@ -377,6 +398,7 @@ public:
 		buffer_head = temp->next_entry; 
 		buffer_head->prev_entry = NULL; 
 		temp->next_entry = NULL; 
+		temp->prev_entry = NULL; 
 		entry_count--; 	
 		return temp; 
 	}
@@ -386,6 +408,7 @@ public:
 		buffer_tail = temp->prev_entry; 
 		buffer_tail->next_entry = NULL; 
 		temp->prev_entry = NULL;  
+		temp->next_entry = NULL; 
 		entry_count--;
 		return temp; 
 	}
@@ -394,23 +417,31 @@ public:
 		if (entry_count < buffer_capacity) return false; 
 		return true; 
 	}
-	int evict(){ 
-		int lpn = buffer_tail->lpn; 
-		buffer_entry * buf_tail = remove_tail(); 
-		delete buf_tail; 
-		return lpn; 
-	}
 	void hit_read(buffer_entry * entry){
+		if (entry == NULL) {
+			cout << "Error in hit read " << endl; 
+			return; 
+		}
 		entry->read_hit++;
+		if (entry->evicted) return; 
 		add_head(remove_entry(entry)); 
 	}
 	void hit_write(buffer_entry * entry){
+		if (entry == NULL){
+			cout << "Error in hit write " << endl; 
+			return; 
+		}
 		entry->write_hit++; 
 		entry->modified = true; 
+		if (entry->evicted) return; 
 		add_head(remove_entry(entry)); 
 	}
 	void hit_trim(buffer_entry * entry){
+		if (entry == NULL){
+			cout << "Error in hit trim " << endl; 
+		}
 		entry->trim_hit++; 	
+		if (entry->evicted) return; 
 		buffer_entry * buf_ent = remove_entry(entry); 
 		delete buf_ent; // useless to increase trim hit, but anyways 
 	}
@@ -460,7 +491,7 @@ public:
 		next_state_predict_time = ct; 
 	}
 	~sub_request(){
-		if (location != NULL) delete location; 
+		//if (location != NULL) delete location; 
 		if (update != NULL) delete update;	
 		if (buf_entry != NULL) delete buf_entry;  
 		if (state_time != NULL) delete state_time;  
@@ -802,7 +833,7 @@ public:
 	int gc_sequence_number; 
 	int lun_token;                  
 	int gc_request;            
-	int64_t request_queue_length; 
+	int request_queue_length; 
 	
 	int64_t total_execution_time; 
 	

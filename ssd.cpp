@@ -94,9 +94,12 @@ int add_fetched_request(ssd_info * ssd, request * request1, uint64_t nearest_eve
 	}
 	add_to_request_queue(ssd, request1);
 	if (request1->io_num % 100000 == 0){
+		ssd->stats->total_flash_erase_count += ssd->stats->flash_erase_count;
+		ssd->stats->flash_erase_count = 0; 
 		cout << "fetching io request number: " << request1->io_num ; 
 		cout << "\terase: " << ssd->stats->total_flash_erase_count ;
-		cout << "\tq length: " << ssd->request_queue_length  << "  " << ssd->parameter->queue_length<< endl; 
+		cout << "\tq length: " << ssd->request_queue_length  << "  " << ssd->parameter->queue_length; 
+		cout << "\tmove count: " << ssd->stats->gc_moved_page << endl; 
 	}
 	return 1; 
 }
@@ -426,9 +429,21 @@ void print_epoch_statistics(ssd_info * ssd, int app_id){
 	int64_t next_total_r = ssd->stats->total_read_request_count[app_id]; 
 	int64_t next_total_w = ssd->stats->total_write_request_count[app_id]; 
 	ssd->stats->total_flash_erase_count += ssd->stats->flash_erase_count;
-	ssd->stats->total_RT[app_id] = ((ssd->stats->total_RT[app_id] * (double)prev_total_rw) + ssd->stats->read_avg[app_id] + ssd->stats->write_avg[app_id]) / (next_total_rw);
-	ssd->stats->total_read_RT[app_id] = ((ssd->stats->total_read_RT[app_id] * (double)prev_total_r ) + ssd->stats->read_avg[app_id]) / next_total_r;  	
-	ssd->stats->total_write_RT[app_id] = ((ssd->stats->total_write_RT[app_id] * (double)prev_total_w ) + ssd->stats->write_avg[app_id]) / next_total_w;  	
+	if (next_total_rw != 0) 
+		ssd->stats->total_RT[app_id] = ((ssd->stats->total_RT[app_id] * (double)prev_total_rw) + ssd->stats->read_avg[app_id] + ssd->stats->write_avg[app_id]) / (next_total_rw);
+	else 
+		ssd->stats->total_RT[app_id] = 0; 
+
+	if (next_total_r != 0) 
+		ssd->stats->total_read_RT[app_id] = ((ssd->stats->total_read_RT[app_id] * (double)prev_total_r ) + ssd->stats->read_avg[app_id]) / next_total_r;  
+	else 
+		ssd->stats->total_read_RT[app_id] = 0; 	
+
+	if (next_total_w != 0) 
+		ssd->stats->total_write_RT[app_id] = ((ssd->stats->total_write_RT[app_id] * (double)prev_total_w ) + ssd->stats->write_avg[app_id]) / next_total_w;  
+	else 
+		ssd->stats->total_write_RT[app_id] = 0; 	
+
 	fprintf(ssd->statisticfile, "Latency epoch: %d \n", epoch_num); 
 	fprintf(ssd->statisticfile, "RT %lld ns, count  %lld\n", RT, rw_count);
 	fprintf(ssd->statisticfile, "read RT %lld ns, count %lld\n", read_RT, ssd->stats->read_request_count[app_id]);
@@ -445,7 +460,6 @@ void print_epoch_statistics(ssd_info * ssd, int app_id){
 	ssd->stats->read_avg[app_id] = 0;
 	ssd->stats->write_avg[app_id] = 0;
 	ssd->stats->flash_erase_count = 0;
-	ssd->stats->gc_moved_page = 0;
 
 	// =================== SUBREQ STATES ===========================================================
 	fprintf(ssd->statisticfile, "SUBREQ ep: %d time:\t", epoch_num); 

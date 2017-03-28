@@ -1,9 +1,6 @@
 #include "ftl.hh"
 #include <chrono>
 
-
-
-
 void service_in_flash(ssd_info * ssd, sub_request * sub){
 		if (sub->operation == READ) {
 			if (ssd->channel_head[sub->location->channel]->lun_head[sub->location->lun]->rsubs_queue.find_subreq(sub)){ // the request already exists 
@@ -14,13 +11,14 @@ void service_in_flash(ssd_info * ssd, sub_request * sub){
 			} else {
 				ssd->channel_head[sub->location->channel]->lun_head[sub->location->lun]->rsubs_queue.push_tail(sub); 
 			} 
-		} else if (sub->operation == WRITE){
-			
+		} else if (sub->operation == WRITE){	
 			invalid_old_page(ssd, sub->lpn); 
 			sub->ppn = get_new_ppn(ssd, sub->lpn);
 			write_page(ssd, sub->lpn, sub->ppn);  
+
 			find_location(ssd, sub->ppn, sub->location);  
 			ssd->channel_head[sub->location->channel]->lun_head[sub->location->lun]->wsubs_queue.push_tail(sub); 
+
 			Schedule_GC(ssd, sub->location); 	
 		} 
 }
@@ -32,7 +30,7 @@ STATE service_in_buffer(ssd_info * ssd, sub_request * sub){
 	if (sub->operation == READ){
 		buffer_entry * buf_ent = NULL; 
 		if (ssd->dram->map->map_entry[sub->lpn].buf_ent != NULL){
-			buf_ent = ssd->dram->map->map_entry[sub->lpn].buf_ent; 
+			buf_ent = ssd->dram->map->map_entry[sub->lpn].buf_ent;
 			ssd->dram->buffer->hit_read(buf_ent); 
 			sub->complete_time = ssd->current_time + 1000; 
 			change_subrequest_state(ssd, sub,SR_MODE_ST_S,ssd->current_time,SR_MODE_COMPLETE,sub->complete_time); 
@@ -48,9 +46,9 @@ STATE service_in_buffer(ssd_info * ssd, sub_request * sub){
 				return FAIL; 
 			}
 			buf_ent = ssd->dram->buffer->add_head(sub->lpn); 
-			invalid_old_page(ssd, sub->lpn); 
-			ssd->dram->map->map_entry[sub->lpn].pn = -1; 
 			ssd->dram->map->map_entry[sub->lpn].buf_ent = buf_ent; 
+			
+			invalid_old_page(ssd, sub->lpn); 
 			sub->complete_time = ssd->current_time + 1000; 
 			change_subrequest_state(ssd, sub,SR_MODE_ST_S,ssd->current_time,SR_MODE_COMPLETE,sub->complete_time); 
 
@@ -61,8 +59,8 @@ STATE service_in_buffer(ssd_info * ssd, sub_request * sub){
 					sub_request * evict_sub = create_sub_request(ssd, bufent->lpn, ssd->parameter->subpage_page, full_page , NULL, WRITE);  
 					evict_sub->buf_entry = bufent; 
 					evict_sub->ppn = get_new_ppn(ssd, bufent->lpn); 
-					ssd->dram->map->map_entry[bufent->lpn].buf_ent = NULL; 
 					write_page(ssd, bufent->lpn, evict_sub->ppn); 
+					
 					find_location(ssd,evict_sub->ppn, evict_sub->location); 	
 					ssd->channel_head[evict_sub->location->channel]->lun_head[evict_sub->location->lun]->wsubs_queue.push_tail(evict_sub); 
 					// will be removed from the buffer when the sub request is done! 	
@@ -206,12 +204,15 @@ void services_2_io(ssd_info * ssd, unsigned int channel, unsigned int * channel_
 						subs[i]->location->lun, subs[i]->location->plane, 
 						PLANE_MODE_IO, ssd->current_time, 
 						PLANE_MODE_IDLE, subs[i]->complete_time);
-				if (subs[i]->buf_entry != NULL){ 
-					buffer_entry * buf_ent = ssd->dram->buffer->remove_entry(subs[i]->buf_entry); 
-					subs[i]->buf_entry = NULL;  
-					delete buf_ent; 
+				if (subs[i]->buf_entry != NULL){
+					ssd->dram->map->map_entry[subs[i]->buf_entry->lpn].buf_ent = NULL; 
+					buffer_entry * buf_ent = NULL; 
+					buf_ent = ssd->dram->buffer->remove_entry(subs[i]->buf_entry); 
+					subs[i]->buf_entry = NULL; 
+					delete subs[i]; 
+					if (buf_ent != NULL) 
+						delete buf_ent; 
 				}
-				if (subs[i]->io_num == -1) delete subs[i]; 
 			}
 			
 			if (subs_count > 0){
@@ -339,7 +340,8 @@ void services_2_gc(ssd_info * ssd, unsigned int channel, unsigned int * channel_
 				PLANE_MODE_GC, ssd->current_time, PLANE_MODE_IDLE, 
 				ssd->current_time + lun_busy_time); 
 			if (subs[i]->buf_entry != NULL){ 
-				buffer_entry * buf_ent  = ssd->dram->buffer->remove_entry(subs[i]->buf_entry); 
+				buffer_entry * buf_ent  = subs[i]->buf_entry; 
+				buf_ent = ssd->dram->buffer->remove_entry(buf_ent); 
 				subs[i]->buf_entry = NULL; 	
 				delete buf_ent;  
 			}
@@ -375,8 +377,6 @@ void update_physical_page(ssd_info * ssd, const int ppn, const int lpn){
 	int b = location->block; 
 	int pg = location->page; 
 	
-	unsigned int full_page=~(0xffffffff<<(ssd->parameter->subpage_page));
-		
 	if (lpn != -1) {
 		ssd->channel_head[c]->lun_head[l]->plane_head[p]->blk_head[b]->page_head[pg]->lpn=lpn;
 		ssd->channel_head[c]->lun_head[l]->plane_head[p]->blk_head[b]->page_head[pg]->valid_state=true; 
@@ -387,9 +387,12 @@ void update_physical_page(ssd_info * ssd, const int ppn, const int lpn){
 		ssd->channel_head[c]->lun_head[l]->program_count++; 
 		ssd->channel_head[c]->lun_head[l]->plane_head[p]->program_count++; 
 	}else { 
-		ssd->channel_head[c]->lun_head[l]->plane_head[p]->blk_head[b]->page_head[pg]->lpn=-1;
-		ssd->channel_head[c]->lun_head[l]->plane_head[p]->blk_head[b]->page_head[pg]->valid_state=false; 
-		ssd->channel_head[c]->lun_head[l]->plane_head[p]->blk_head[b]->invalid_page_num++;
+		blk_info * block = ssd->channel_head[c]->lun_head[l]->plane_head[p]->blk_head[b]; 
+		
+		block->page_head[pg]->lpn=-1;
+		if (block->page_head[pg]->valid_state) 	
+			ssd->channel_head[c]->lun_head[l]->plane_head[p]->blk_head[b]->invalid_page_num++;
+		block->page_head[pg]->valid_state=false;
 	}
 	delete location; 
 
@@ -479,7 +482,6 @@ int get_active_block(ssd_info *ssd, local * location){
 }
 
 STATE allocate_page_in_plane( ssd_info *ssd, local * location){
-	STATE s = SUCCESS; 
 	int channel = location->channel; 
 	int lun = location->lun; 
 	int plane = location->plane; 
@@ -522,7 +524,6 @@ STATE invalid_old_page(ssd_info * ssd, const int lpn){
 }
 // When the page is allocated, write into it 
 STATE write_page(ssd_info * ssd, const int lpn, const int  ppn){
-
 	update_map_entry(ssd, lpn, ppn); 	
 	update_physical_page(ssd, ppn, lpn); 
 	return SUCCESS; 
@@ -637,8 +638,9 @@ void full_write_preconditioning(ssd_info * ssd, bool seq){
 		else 
 			lpn = rand() % total_size; 
 	}
-	cerr << "is complete. erase count: " <<  ssd->stats->flash_erase_count << endl; 
+	cerr << "is complete. erase count: " <<  ssd->stats->flash_erase_count  << ". move count: " << ssd->stats->gc_moved_page << endl; 
 	ssd->stats->flash_erase_count  = 0; 	
+	ssd->stats->gc_moved_page = 0; 
 }
 
 
