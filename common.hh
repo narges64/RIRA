@@ -395,6 +395,10 @@ public:
 	}
 	buffer_entry * remove_head(){
 		if (entry_count == 0) return NULL;
+		if (buffer_head == NULL) {
+				cout << "error in remove head" << endl;
+				return NULL;
+		}
 		buffer_entry * temp = buffer_head;
 		buffer_head = temp->next_entry;
 		if (buffer_head != NULL)
@@ -406,6 +410,10 @@ public:
 	}
 	buffer_entry * remove_tail(){
 		if (entry_count == 0) return NULL;
+		if (buffer_tail == NULL) {
+			cout << "error in buffer tail remove " << endl;
+			return NULL;
+		}
 		buffer_entry * temp = buffer_tail;
 		buffer_tail = temp->prev_entry;
 		if (buffer_tail != NULL)
