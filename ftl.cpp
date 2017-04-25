@@ -215,7 +215,6 @@ void services_2_io(ssd_info * ssd, unsigned int channel,
 	sub_request ** subs;
 	unsigned int subs_count = 0;
 	unsigned int max_subs_count = ssd->parameter->plane_lun;
-	cout << max_subs_count; 
 	subs = new sub_request *[max_subs_count];
 	unsigned int lun;
 	int random = rand();

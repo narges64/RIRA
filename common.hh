@@ -397,7 +397,8 @@ public:
 		if (entry_count == 0) return NULL;
 		buffer_entry * temp = buffer_head;
 		buffer_head = temp->next_entry;
-		buffer_head->prev_entry = NULL;
+		if (buffer_head != NULL)
+			buffer_head->prev_entry = NULL;
 		temp->next_entry = NULL;
 		temp->prev_entry = NULL;
 		entry_count--;
@@ -407,7 +408,8 @@ public:
 		if (entry_count == 0) return NULL;
 		buffer_entry * temp = buffer_tail;
 		buffer_tail = temp->prev_entry;
-		buffer_tail->next_entry = NULL;
+		if (buffer_tail != NULL)
+			buffer_tail->next_entry = NULL;
 		temp->prev_entry = NULL;
 		temp->next_entry = NULL;
 		entry_count--;
