@@ -394,11 +394,11 @@ public:
 		}
 
 		if (buffer_head == NULL && buffer_tail != NULL){
-			cout << "**** Buffer head and tail problem 1 " << endl;
+			cout << "**** Buffer head and tail problem 1 7" << endl;
 			return false;
 		}
 		if (buffer_head != NULL && buffer_tail == NULL){
-			cout << "**** Buffer head and tail problem 2" << endl;
+			cout << "**** Buffer head and tail problem 2 7" << endl;
 			return false;
 		}
 
@@ -431,11 +431,11 @@ public:
 		entry_count--;
 
 		if (buffer_head == NULL && buffer_tail != NULL){
-			cout << "**** Buffer head and tail problem 1 " << endl;
+			cout << "**** Buffer head and tail problem 1 8" << endl;
 
 		}
 		if (buffer_head != NULL && buffer_tail == NULL){
-			cout << "**** Buffer head and tail problem 2" << endl;
+			cout << "**** Buffer head and tail problem 2 8" << endl;
 
 		}
 
@@ -461,11 +461,11 @@ public:
 		entry_count--;
 
 		if (buffer_head == NULL && buffer_tail != NULL){
-			cout << "**** Buffer head and tail problem 1 " << endl;
+			cout << "**** Buffer head and tail problem 1 9" << endl;
 
 		}
 		if (buffer_head != NULL && buffer_tail == NULL){
-			cout << "**** Buffer head and tail problem 2" << endl;
+			cout << "**** Buffer head and tail problem 2 9" << endl;
 
 		}
 
@@ -490,11 +490,11 @@ public:
 		entry_count--;
 
 		if (buffer_head == NULL && buffer_tail != NULL){
-			cout << "**** Buffer head and tail problem 1 " << endl;
+			cout << "**** Buffer head and tail problem 1 10" << endl;
 
 		}
 		if (buffer_head != NULL && buffer_tail == NULL){
-			cout << "**** Buffer head and tail problem 2" << endl;
+			cout << "**** Buffer head and tail problem 2 10" << endl;
 
 		}
 
@@ -518,11 +518,11 @@ public:
 		}
 
 		if (buffer_head == NULL && buffer_tail != NULL){
-			cout << "**** Buffer head and tail problem 1 " << endl;
+			cout << "**** Buffer head and tail problem 1 11" << endl;
 
 		}
 		if (buffer_head != NULL && buffer_tail == NULL){
-			cout << "**** Buffer head and tail problem 2" << endl;
+			cout << "**** Buffer head and tail problem 2 11" << endl;
 
 		}
 	}
@@ -539,11 +539,11 @@ public:
 				cout << "problem in hit write " << endl;
 
 		if (buffer_head == NULL && buffer_tail != NULL){
-			cout << "**** Buffer head and tail problem 1 " << endl;
+			cout << "**** Buffer head and tail problem 1 12" << endl;
 
 		}
 		if (buffer_head != NULL && buffer_tail == NULL){
-			cout << "**** Buffer head and tail problem 2" << endl;
+			cout << "**** Buffer head and tail problem 2 12" << endl;
 
 		}
 	}
