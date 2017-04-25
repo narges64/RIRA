@@ -454,7 +454,9 @@ public:
 		entry->read_hit++;
 		if (entry->evicted) return;
 		buffer_entry * temp = remove_entry(entry);
-		add_head(temp);
+		if (!add_head(temp)) {
+				cout << "problem in hit read " << endl;
+		}
 	}
 	void hit_write(buffer_entry * entry){
 		if (entry == NULL){
@@ -465,7 +467,8 @@ public:
 		entry->modified = true;
 		if (entry->evicted) return;
 		buffer_entry * temp = remove_entry(entry);
-		add_head(temp);
+		if (!add_head(temp))
+				cout << "problem in hit write " << endl;
 	}
 	void hit_trim(buffer_entry * entry){
 		if (entry == NULL){
