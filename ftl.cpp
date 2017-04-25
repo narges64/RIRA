@@ -414,15 +414,14 @@ void services_2_gc(ssd_info * ssd, unsigned int channel,unsigned int * channel_b
 				buffer_entry * buf_ent  = subs[i]->buf_entry;
 				buf_ent = ssd->dram->buffer->remove_entry(buf_ent);
 				subs[i]->buf_entry = NULL;
-				delete subs[i];
 				if (buf_ent != NULL)
 					delete buf_ent;
 			}
 			if (operation == ERASE){
 				delete_gc_node(ssd, subs[i]->gc_node);
 				erase_block(ssd,subs[i]->location);
-				delete subs[i];
 			}
+			delete subs[i];
 		}
 		change_lun_state (ssd, channel, lun, LUN_MODE_GC, ssd->current_time ,
 					LUN_MODE_IDLE, ssd->current_time + lun_busy_time);

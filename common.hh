@@ -23,7 +23,7 @@ enum PLANE_LEVEL_PARALLEL {BASE, GCIO, IOGC, GCGC};
 enum CHANNEL_MODE {CHANNEL_MODE_IDLE, CHANNEL_MODE_GC, CHANNEL_MODE_IO, CHANNEL_MODE_NUM};
 enum LUN_MODE {LUN_MODE_IDLE, LUN_MODE_GC, LUN_MODE_IO, LUN_MODE_NUM};
 enum PLANE_MODE {PLANE_MODE_IDLE, PLANE_MODE_GC, PLANE_MODE_IO, PLANE_MODE_NUM};
-enum SUBREQ_MODE {SR_MODE_WAIT, SR_MODE_ST_S, SR_MODE_ST_M, SR_MODE_IOC_S, SR_MODE_IOC_O, SR_MODE_IOC_M, SR_MODE_GCC_S, SR_MODE_GCC_O, SR_MODE_GCC_M, SR_MODE_COMPLETE, SR_MODE_NUM};
+enum SUBREQ_MODE {SR_MODE_WAIT = 0, SR_MODE_ST_S, SR_MODE_ST_M, SR_MODE_IOC_S, SR_MODE_IOC_O, SR_MODE_IOC_M, SR_MODE_GCC_S, SR_MODE_GCC_O, SR_MODE_GCC_M, SR_MODE_COMPLETE, SR_MODE_NUM};
 enum PARGC_APPROACH{BLIND = 0, PATTERN, COST_AWARE, DYN_COST_AWARE, PREEMPTIVE, CACHE_INVOLVED, PRE_MOVE, NO_PGC};
 enum STATE {ERROR = -1, FAIL, SUCCESS};
 enum GC_ALG{GREEDY, FIFO, WINDOWED, RGA, RANDOM, RANDOMP, RANDOMPP, SIMILAR};
@@ -220,7 +220,7 @@ public:
 		write_hit = 0;
 		trim_hit = 0;
 		next_entry = NULL;
-		prev_entry = NULL; 
+		prev_entry = NULL;
 	}
 	buffer_entry(int l){
 		buffer_entry();
@@ -261,7 +261,7 @@ public:
 		seq_number = gc_seq_num;
 	}
 	~gc_operation(){
-	//	if (location ) delete location;
+		if (location != NULL) delete location;
 	}
 	local * location;
 	unsigned int seq_number;
@@ -609,10 +609,10 @@ public:
 		next_state_predict_time = ct;
 	}
 	~sub_request(){
-		//if (location != NULL) delete location;
+		if (location != NULL) delete location;
 		if (update != NULL) delete update;
 		if (buf_entry != NULL) delete buf_entry;
-		if (state_time != NULL) delete state_time;
+		if (state_time != NULL) delete [] state_time;
 	}
 
 	unsigned int app_id;

@@ -203,15 +203,13 @@ int erase_block(ssd_info * ssd,const local * location){
 	unsigned int plane = location->plane;
 	unsigned int block = location->block;
 
-	unsigned int i=0;
-
 	int initial_free = ssd->channel_head[channel]->lun_head[lun]->plane_head[plane]->blk_head[block]->free_page_num;
 	ssd->channel_head[channel]->lun_head[lun]->plane_head[plane]->blk_head[block]->free_page_num=ssd->parameter->page_block;
 	ssd->channel_head[channel]->lun_head[lun]->plane_head[plane]->blk_head[block]->invalid_page_num=0;
 	ssd->channel_head[channel]->lun_head[lun]->plane_head[plane]->blk_head[block]->last_write_page=-1;
 	ssd->channel_head[channel]->lun_head[lun]->plane_head[plane]->blk_head[block]->erase_count++;
 
-	for (i=0;i<ssd->parameter->page_block;i++)
+	for (int i=0;i<ssd->parameter->page_block;i++)
 	{
 		ssd->channel_head[channel]->lun_head[lun]->plane_head[plane]->blk_head[block]->page_head[i]->valid_state=false;
 		ssd->channel_head[channel]->lun_head[lun]->plane_head[plane]->blk_head[block]->page_head[i]->lpn=-1;

@@ -444,6 +444,8 @@ void parameter_value::load_parameters(char *parameter_file)
 			sscanf(buf + next_eql, "%d",&syn_req_count);
 		}else if((res_eql=strcmp(buf,"time scale")) == 0){
 			sscanf(buf + next_eql,"%lf",&time_scale);
+		}else if((res_eql=strcmp(buf,"plane level tech")) == 0){
+			sscanf(buf + next_eql,"%d",&plane_level_tech); 
 		}else{
 			printf("don't match\t %s\n",buf);
 		}
