@@ -281,8 +281,16 @@ public:
 	bool check_buffer(){
 		if (buffer_capacity == 0) return true;
 		int count = 0;
+		if (buffer_head == NULL && buffer_tail != NULL){
+			cout << "Buffer head and tail problem 1 " << endl;
+			return false;
+		}
+		if (buffer_head != NULL && buffer_tail == NULL){
+			cout << "Buffer head and tail problem 2" << endl;
+			return false;
+		}
 		if ((buffer_head == NULL || buffer_tail == NULL) && entry_count != 0) {
-			cout << "BUFFER head and tail problem " << endl;
+			cout << "BUFFER head and tail problem 3" << endl;
 			return false;
 		}
 		if (buffer_head == NULL && buffer_tail == NULL && entry_count == 0) return true;
@@ -350,6 +358,17 @@ public:
 			buffer_tail->next_entry = NULL;
 			entry_count++;
 		}
+
+		if (buffer_head == NULL && buffer_tail != NULL){
+			cout << "**** Buffer head and tail problem 1 " << endl;
+			return false;
+		}
+		if (buffer_head != NULL && buffer_tail == NULL){
+			cout << "**** Buffer head and tail problem 2" << endl;
+			return false;
+		}
+
+
 		return true;
 	}
 
@@ -373,6 +392,16 @@ public:
 			buffer_head->prev_entry = NULL;
 			entry_count++;
 		}
+
+		if (buffer_head == NULL && buffer_tail != NULL){
+			cout << "**** Buffer head and tail problem 1 " << endl;
+			return false;
+		}
+		if (buffer_head != NULL && buffer_tail == NULL){
+			cout << "**** Buffer head and tail problem 2" << endl;
+			return false;
+		}
+
 		return true;
 	}
 	buffer_entry * add_head(int lpn){
@@ -400,6 +429,16 @@ public:
 		entry->next_entry = NULL;
 		entry->prev_entry = NULL;
 		entry_count--;
+
+		if (buffer_head == NULL && buffer_tail != NULL){
+			cout << "**** Buffer head and tail problem 1 " << endl;
+
+		}
+		if (buffer_head != NULL && buffer_tail == NULL){
+			cout << "**** Buffer head and tail problem 2" << endl;
+
+		}
+
 		return entry;
 	}
 	buffer_entry * remove_head(){
@@ -420,6 +459,16 @@ public:
 		temp->next_entry = NULL;
 		temp->prev_entry = NULL;
 		entry_count--;
+
+		if (buffer_head == NULL && buffer_tail != NULL){
+			cout << "**** Buffer head and tail problem 1 " << endl;
+
+		}
+		if (buffer_head != NULL && buffer_tail == NULL){
+			cout << "**** Buffer head and tail problem 2" << endl;
+
+		}
+
 		return temp;
 	}
 	buffer_entry * remove_tail(){
@@ -439,6 +488,16 @@ public:
 		temp->prev_entry = NULL;
 		temp->next_entry = NULL;
 		entry_count--;
+
+		if (buffer_head == NULL && buffer_tail != NULL){
+			cout << "**** Buffer head and tail problem 1 " << endl;
+
+		}
+		if (buffer_head != NULL && buffer_tail == NULL){
+			cout << "**** Buffer head and tail problem 2" << endl;
+
+		}
+
 		return temp;
 	}
 
@@ -457,6 +516,15 @@ public:
 		if (!add_head(temp)) {
 				cout << "problem in hit read " << endl;
 		}
+
+		if (buffer_head == NULL && buffer_tail != NULL){
+			cout << "**** Buffer head and tail problem 1 " << endl;
+
+		}
+		if (buffer_head != NULL && buffer_tail == NULL){
+			cout << "**** Buffer head and tail problem 2" << endl;
+
+		}
 	}
 	void hit_write(buffer_entry * entry){
 		if (entry == NULL){
@@ -469,6 +537,15 @@ public:
 		buffer_entry * temp = remove_entry(entry);
 		if (!add_head(temp))
 				cout << "problem in hit write " << endl;
+
+		if (buffer_head == NULL && buffer_tail != NULL){
+			cout << "**** Buffer head and tail problem 1 " << endl;
+
+		}
+		if (buffer_head != NULL && buffer_tail == NULL){
+			cout << "**** Buffer head and tail problem 2" << endl;
+
+		}
 	}
 	void hit_trim(buffer_entry * entry){
 		if (entry == NULL){
