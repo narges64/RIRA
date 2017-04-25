@@ -186,7 +186,7 @@ STATE move_page(ssd_info * ssd,  const local * location, gc_operation * gc_node)
 
 
 	sub_request * wsub = create_gc_sub_request(ssd, location, WRITE, gc_node);
-	invalid_old_page(ssd, wsub->lpn); 
+	invalid_old_page(ssd, wsub->lpn);
 	wsub->location = new local(location->channel, location->lun, location->plane);
 	wsub->ppn = get_new_ppn(ssd, wsub->lpn, location);
 	write_page(ssd, wsub->lpn, wsub->ppn);
@@ -349,7 +349,7 @@ unsigned int best_cost(ssd_info * ssd, plane_info * the_plane, int * block_numbe
 		order++;
 
 	unsigned int b = block_numbers[order];
-	if (delete_blocks) delete block_numbers;
+	if (delete_blocks) delete [] block_numbers;
 
 	if (order < 3){
 		return b;

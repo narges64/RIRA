@@ -81,6 +81,7 @@ public:
 		active_time = 0;
 		total_capacity = 0;
 		total_count = 0;
+		last_time = 0;
 	}
 
 	void add_time(int64_t start, int64_t end) {
@@ -218,6 +219,8 @@ public:
 		read_hit = 0;
 		write_hit = 0;
 		trim_hit = 0;
+		next_entry = NULL;
+		prev_entry = NULL; 
 	}
 	buffer_entry(int l){
 		buffer_entry();
@@ -488,7 +491,7 @@ public:
 		if (buffer_tail != NULL)
 			buffer_tail->next_entry = NULL;
 		else
-			buffer_head = NULL; 
+			buffer_head = NULL;
 		temp->prev_entry = NULL;
 		temp->next_entry = NULL;
 		entry_count--;
