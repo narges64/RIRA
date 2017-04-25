@@ -456,6 +456,8 @@ public:
 		buffer_head = temp->next_entry;
 		if (buffer_head != NULL)
 			buffer_head->prev_entry = NULL;
+		else
+			buffer_tail = NULL;
 		temp->next_entry = NULL;
 		temp->prev_entry = NULL;
 		entry_count--;
@@ -485,6 +487,8 @@ public:
 		buffer_tail = temp->prev_entry;
 		if (buffer_tail != NULL)
 			buffer_tail->next_entry = NULL;
+		else
+			buffer_head = NULL; 
 		temp->prev_entry = NULL;
 		temp->next_entry = NULL;
 		entry_count--;
