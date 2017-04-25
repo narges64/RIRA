@@ -45,7 +45,7 @@ ssd_info *simulate(ssd_info *ssd){
 		flag=get_requests_consolidation(ssd);
 		if(flag == 1)
 		{
-			distribute(ssd); // in ssd.cpp 
+			distribute(ssd); // in ssd.cpp
 		}
 		process(ssd); // in ftl.cpp
 		trace_output(ssd);
@@ -507,8 +507,7 @@ void print_statistics(ssd_info *ssd, int app){
 	//ssd->total_write_avg[app] += ssd->write_avg[app];
 	//ssd->total_flash_erase_count += ssd->flash_erase_count;
 
-
-	fprintf(ssd->statisticfile, "======== Round %d for application %d , time %lld ============ \n", ssd->repeat_times[app], app, ssd->total_execution_time);
+	fprintf(ssd->statisticfile, "======== Application %d , time %lld ============ \n", app, ssd->total_execution_time);
 
 	int64_t rw_count = ssd->stats->total_read_request_count[app] + ssd->stats->total_write_request_count[app];
 	int64_t r_count = ssd->stats->total_read_request_count[app];
