@@ -813,7 +813,7 @@ public:
 class ssd_info{
 
 public:
-	ssd_info(parameter_value *, char * statistics_filename); 	
+	ssd_info(parameter_value *, char * statistics_filename);
 	~ssd_info(){
 		delete repeat_times;
 		delete last_times;

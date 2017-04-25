@@ -37,6 +37,7 @@ void parameter_value::print_all_parameters(FILE * stat_file){
 
 ssd_info::ssd_info(parameter_value * parameters, char * statistics_filename)
 {
+	current_time = 0;
 	parameter = parameters;
 	int over_provide = 100.0 * parameters->overprovide;
 
