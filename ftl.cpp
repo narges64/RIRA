@@ -215,6 +215,7 @@ void services_2_io(ssd_info * ssd, unsigned int channel,
 	sub_request ** subs;
 	unsigned int subs_count = 0;
 	unsigned int max_subs_count = ssd->parameter->plane_lun;
+	cout << max_subs_count; 
 	subs = new sub_request *[max_subs_count];
 	unsigned int lun;
 	int random = rand();
@@ -284,7 +285,7 @@ void services_2_io(ssd_info * ssd, unsigned int channel,
 			}
 		}
 	}
-	delete subs;
+	delete [] subs;
 
 }
 
@@ -421,7 +422,7 @@ void services_2_gc(ssd_info * ssd, unsigned int channel,unsigned int * channel_b
 			if (operation == ERASE){
 				delete_gc_node(ssd, subs[i]->gc_node);
 				erase_block(ssd,subs[i]->location);
-				delete subs[i]; 
+				delete subs[i];
 			}
 		}
 		change_lun_state (ssd, channel, lun, LUN_MODE_GC, ssd->current_time ,
@@ -429,7 +430,7 @@ void services_2_gc(ssd_info * ssd, unsigned int channel,unsigned int * channel_b
 		change_channel_state(ssd, channel, CHANNEL_MODE_GC, ssd->current_time ,
 					CHANNEL_MODE_IDLE, ssd->current_time + channel_busy_time);
 	}
-	delete subs;
+	delete [] subs;
 }
 
 int find_lun_gc_requests(ssd_info * ssd, unsigned int channel, unsigned int lun,
