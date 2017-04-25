@@ -334,17 +334,22 @@ public:
 		if (entry_count >= buffer_capacity){return false;}
 		if (entry == NULL) return false;
 		if (buffer_tail == NULL) {
-			entry_count++;
+			if (buffer_head != NULL || entry_count != 0) {
+				cout << "some error in add tail  " << endl;
+				return false;
+			}
+			entry_count = 1;
 			buffer_tail = entry;
 			buffer_head = entry;
 			buffer_head->prev_entry = NULL;
 			buffer_tail->next_entry = NULL;
-			return true;
+		}else {
+			buffer_tail->next_entry = entry;
+			entry->prev_entry = buffer_tail;
+			buffer_tail = entry;
+			buffer_tail->next_entry = NULL;
+			entry_count++;
 		}
-		buffer_tail->next_entry = entry;
-		entry->prev_entry = buffer_tail;
-		buffer_tail = entry;
-		entry_count++;
 		return true;
 	}
 
@@ -352,18 +357,22 @@ public:
 		if (entry_count >= buffer_capacity){return false;}
 		if (entry == NULL) return false;
 		if (buffer_head == NULL) {
-			entry_count++;
+			if (buffer_tail != NULL || entry_count != 0){
+				cout << "error in add head " << endl;
+				return false;
+			}
+			entry_count = 1;
 			buffer_head = entry;
 			buffer_tail = entry;
 			buffer_head->prev_entry = NULL; // just to make sure everything is fine
 			buffer_tail->next_entry = NULL; // just to make sure everything is fine
-			return true;
+		}else {
+			buffer_head->prev_entry = entry;
+			entry->next_entry = buffer_head;
+			buffer_head = entry;
+			buffer_head->prev_entry = NULL;
+			entry_count++;
 		}
-		buffer_head->prev_entry = entry;
-		entry->next_entry = buffer_head;
-		buffer_head = entry;
-		buffer_head->prev_entry = NULL;
-		entry_count++;
 		return true;
 	}
 	buffer_entry * add_head(int lpn){
@@ -399,6 +408,11 @@ public:
 				cout << "error in remove head" << endl;
 				return NULL;
 		}
+		if (buffer_head->prev_entry != NULL) {
+				cout << "error in remove head " << endl;
+				return NULL;
+		}
+
 		buffer_entry * temp = buffer_head;
 		buffer_head = temp->next_entry;
 		if (buffer_head != NULL)
@@ -411,6 +425,10 @@ public:
 	buffer_entry * remove_tail(){
 		if (entry_count == 0) return NULL;
 		if (buffer_tail == NULL) {
+			cout << "error in buffer tail remove " << endl;
+			return NULL;
+		}
+		if (buffer_tail->next_entry != NULL) {
 			cout << "error in buffer tail remove " << endl;
 			return NULL;
 		}
@@ -435,7 +453,8 @@ public:
 		}
 		entry->read_hit++;
 		if (entry->evicted) return;
-		add_head(remove_entry(entry));
+		buffer_entry * temp = remove_entry(entry);
+		add_head(temp);
 	}
 	void hit_write(buffer_entry * entry){
 		if (entry == NULL){
@@ -445,7 +464,8 @@ public:
 		entry->write_hit++;
 		entry->modified = true;
 		if (entry->evicted) return;
-		add_head(remove_entry(entry));
+		buffer_entry * temp = remove_entry(entry);
+		add_head(temp);
 	}
 	void hit_trim(buffer_entry * entry){
 		if (entry == NULL){
