@@ -38,7 +38,6 @@ ssd_info *simulate(ssd_info *ssd){
 	printf("begin simulating.......................\n");
 	printf("\n");
 
-
 	int i = 0;
 	while(flag!=100)
 	{
@@ -152,7 +151,8 @@ request * generate_next_request(ssd_info * ssd, int64_t nearest_event_time){
  	}
 
  	// Address
- 	uint64_t address = (((rand() % (max_sector_address - min_sector_address)) + min_sector_address ) / 16) * 16;
+	int align = ssd->parameter->subpage_page; 
+ 	uint64_t address = (((rand() % (max_sector_address - min_sector_address)) + min_sector_address ) / align) * align;
 	request1->lsn = address;
 
  	// Size

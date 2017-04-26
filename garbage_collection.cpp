@@ -203,7 +203,7 @@ int erase_block(ssd_info * ssd,const local * location){
 	unsigned int plane = location->plane;
 	unsigned int block = location->block;
 
-	int initial_free = ssd->channel_head[channel]->lun_head[lun]->plane_head[plane]->blk_head[block]->free_page_num;
+//	int initial_free = ssd->channel_head[channel]->lun_head[lun]->plane_head[plane]->blk_head[block]->free_page_num;
 	ssd->channel_head[channel]->lun_head[lun]->plane_head[plane]->blk_head[block]->free_page_num=ssd->parameter->page_block;
 	ssd->channel_head[channel]->lun_head[lun]->plane_head[plane]->blk_head[block]->invalid_page_num=0;
 	ssd->channel_head[channel]->lun_head[lun]->plane_head[plane]->blk_head[block]->last_write_page=-1;
@@ -219,7 +219,7 @@ int erase_block(ssd_info * ssd,const local * location){
 	ssd->channel_head[channel]->erase_count++;
 	ssd->channel_head[channel]->lun_head[lun]->erase_count++;
 	ssd->channel_head[channel]->lun_head[lun]->plane_head[plane]->erase_count++;
-	ssd->channel_head[channel]->lun_head[lun]->plane_head[plane]->free_page += (ssd->parameter->page_block - initial_free);
+	ssd->channel_head[channel]->lun_head[lun]->plane_head[plane]->free_page += ssd->parameter->page_block; //  - initial_free);
 
 //	cout << "erase block " << channel << " "<< lun << " "<< plane << " "<< block << endl;
 	return SUCCESS;
@@ -347,6 +347,8 @@ unsigned int best_cost(ssd_info * ssd, plane_info * the_plane, int * block_numbe
 		order++;
 
 	unsigned int b = block_numbers[order];
+	if (the_plane->blk_head[b]->invalid_page_num < 10) 
+		cout << "selected block " << the_plane->blk_head[b]->invalid_page_num << endl; 
 	if (delete_blocks) delete [] block_numbers;
 
 	if (order < 3){
