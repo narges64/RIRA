@@ -6,10 +6,12 @@ do
 	do 
 		for queue in 32 # 1000 
 		do 
-			for rd in 1.0 0.9 0.8 0.7 0.6 0.5 0.4 0.3 0.2 0.1 0.0  
+			for rd in 0.9 0.5 0.1  
 			do 
 				echo "chip ".$chip." inter ".$inter." size ".$size." rd ".$rd.$queue
-				./ssd page.parameters_SLC Results/slc_$rd.$size.$chip.$queue $chip 1 trace_1 $rd $size 100 0  $queue > Results/out_slc_$rd.$size.$chip.$queue
+				./ssd page.parameters_SLC_0MB Results/slc_${rd}.${size}.${chip}.${queue}_0MB $chip 1 trace_1 $rd $size 100 0  $queue > Results/out_slc_$rd.$size.$chip.$queue_0MB
+				./ssd page.parameters_SLC_8MB Results/slc_${rd}.${size}.${chip}.${queue}_8MB $chip 1 trace_1 $rd $size 100 0  $queue > Results/out_slc_$rd.$size.$chip.$queue_8MB
+				./ssd page.parameters_SLC_16MB Results/slc_${rd}.${size}.${chip}.${queue}_16MB $chip 1 trace_1 $rd $size 100 0  $queue > Results/out_slc_$rd.$size.$chip.$queue_16MB
 			done
 		done 
 	done 
