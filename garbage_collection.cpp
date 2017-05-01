@@ -347,8 +347,14 @@ unsigned int best_cost(ssd_info * ssd, plane_info * the_plane, int * block_numbe
 		order++;
 
 	unsigned int b = block_numbers[order];
-	if (the_plane->blk_head[b]->invalid_page_num < 10) 
-		cout << "selected block " << the_plane->blk_head[b]->invalid_page_num << endl; 
+//	if (the_plane->blk_head[b]->invalid_page_num == 18) {
+//		for (int bl = 0; bl < 256; bl++)
+//		for (int i = 0; i < 64; i++){
+//			cout << "LPN " << bl << "   " << i << "  " << the_plane->blk_head[bl]->page_head[i]->lpn << endl; 
+//		} 
+
+//		cout << "selected block " << the_plane->blk_head[b]->invalid_page_num << endl; 
+//	}
 	if (delete_blocks) delete [] block_numbers;
 
 	if (order < 3){

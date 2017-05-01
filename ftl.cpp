@@ -10,7 +10,8 @@ void full_write_preconditioning(ssd_info * ssd, bool seq){
 	int lpn = 0;
 	for (int i = 0; i <  total_size; i++){
 
-		invalid_old_page(ssd, lpn);
+		if ( (invalid_old_page(ssd, lpn) != SUCCESS)  && !seq) 
+			cout << "fail in invalid old page" << endl; 
 		int ppn = get_new_ppn (ssd, lpn);
 		write_page(ssd, lpn, ppn);
 		bool gc = check_need_gc(ssd, ppn);
@@ -21,8 +22,10 @@ void full_write_preconditioning(ssd_info * ssd, bool seq){
 			pre_process_gc(ssd, location);
 			delete location;
  		}
-		if(seq) lpn++;
-		else
+		if(seq) {
+			lpn++;
+			lpn = lpn % total_size; 
+		}else
 			lpn = rand() % total_size;
 	}
 	cerr << "is complete. erase count: " <<  ssd->stats->flash_erase_count
@@ -129,6 +132,8 @@ STATE service_in_buffer(ssd_info * ssd, sub_request * sub){
 							ssd->parameter->subpage_page, full_page,
 							NULL, WRITE);
 			evict_sub->buf_entry = buf_ent;
+			
+			invalid_old_page(ssd, sub->lpn); 
 			evict_sub->ppn = get_new_ppn(ssd, sub->lpn);
 			find_location(ssd,evict_sub->ppn, evict_sub->location);
 			write_page(ssd, evict_sub->lpn, evict_sub->ppn);

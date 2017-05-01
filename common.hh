@@ -244,12 +244,16 @@ public:
 
 class map_info{
 public:
+	map_info(){
+		count = 0; 
+	}
 	~map_info(){
 		delete map_entry;
 	//	delete attach_info;
 	}
 
 	entry *map_entry;        //each entry indicate a mapping information
+	int count; 
 };
 class gc_operation{
 public:

@@ -204,6 +204,7 @@ dram_info::dram_info(parameter_value * parameters)
 {
 	map = new map_info();
 	int page_num = parameters->page_block*parameters->block_plane*parameters->plane_lun*parameters->lun_num;
+	map->count = page_num * (1-parameters->overprovide); 
 	map->map_entry = new entry[page_num];
 
 	dram_capacity = parameters->dram_capacity;
