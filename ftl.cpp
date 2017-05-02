@@ -95,6 +95,12 @@ STATE service_in_buffer(ssd_info * ssd, sub_request * sub){
 	// check mapping table and find the request
 	if (sub->operation == READ){
 		buffer_entry * buf_ent = NULL;
+		if (ssd->parameter->dram_capacity == 0) {
+			sub->buf_entry = NULL;
+			service_in_flash(ssd, sub); 
+			return SUCCESS; 
+		}
+			
 		if (ssd->dram->map->map_entry[sub->lpn].buf_ent != NULL){
 			buf_ent = ssd->dram->map->map_entry[sub->lpn].buf_ent;
 			ssd->dram->buffer->hit_read(buf_ent);
@@ -108,9 +114,14 @@ STATE service_in_buffer(ssd_info * ssd, sub_request * sub){
 		}
 	}
 	else if (sub->operation == WRITE){
+		if (ssd->parameter->dram_capacity == 0) {
+			sub->buf_entry = NULL;
+			service_in_flash(ssd, sub); 
+			return SUCCESS; 
+		}
 		buffer_entry * buf_ent = NULL;
-		if (ssd->dram->map->map_entry[sub->lpn].buf_ent == NULL) {
-			if (ssd->dram->buffer->is_full()) {
+		if (ssd->parameter->dram_capacity == 0 || ssd->dram->map->map_entry[sub->lpn].buf_ent == NULL) {
+			if (ssd->parameter->dram_capacity == 0 || ssd->dram->buffer->is_full()) {
 				sub->buf_entry = NULL;  // so this one has to be considered for RT
 				service_in_flash(ssd, sub);
 				return SUCCESS;

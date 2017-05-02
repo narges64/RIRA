@@ -675,6 +675,15 @@ public:
 		}
 
 	}
+	void to_string(){
+		cout << begin_time << endl; 
+	}
+	void print_to_file(FILE * tracefile) {
+		if (operation == 0) 
+			fprintf(tracefile, "%d\t%lld\t0\t0\tWrite\t%d\t%d\t1\n" , io_num , time, lsn, size ); 
+		else
+			fprintf(tracefile, "%d\t%lld\t0\t0\tRead\t%d\t%d\t1\n" , io_num , time, lsn, size ); 
+	}
 	unsigned int app_id;
 	unsigned int io_num;
 
@@ -937,8 +946,6 @@ public:
 	ssd_info(parameter_value *, char * statistics_filename);
 	~ssd_info(){
 		delete repeat_times;
-		delete last_times;
-		delete tracefile;
 		for (int i=0;i<parameter->channel_number;i++)
 		{
 			delete channel_head[i];
@@ -960,14 +967,14 @@ public:
 	int64_t total_execution_time;
 
 	int * repeat_times; // repeate trace for each application
-	int64_t * last_times; // last time of each trace
+	int64_t last_times; // last time of each trace
 	int steady_state_counter;
 	int steady_state;
 
 	int64_t min_lsn;
 	int64_t max_lsn;
 
-	FILE * *tracefile;
+	FILE * tracefile;
 	FILE * statisticfile;
 	parameter_value *parameter;
 	dram_info *dram;
