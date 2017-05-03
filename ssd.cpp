@@ -427,6 +427,7 @@ void collect_statistics(ssd_info * ssd, request * req){
 		printf("1. the response time is 0?? %lld %lld \n", req->response_time, req->begin_time);
 		getchar();
 	}
+	
 	if (req->operation==READ)
 	{
 		ssd->stats->read_request_size[req->app_id] += req->size;
@@ -484,7 +485,6 @@ void print_epoch_statistics(ssd_info * ssd, int app_id){
 		ssd->stats->total_write_RT[app_id] = ((ssd->stats->total_write_RT[app_id] * (double)prev_total_w ) + ssd->stats->write_avg[app_id]) / next_total_w;
 	else
 		ssd->stats->total_write_RT[app_id] = 0;
-
 	fprintf(ssd->statisticfile, "Latency epoch: %d \n", epoch_num);
 	fprintf(ssd->statisticfile, "RT %lld ns, count  %lld\n", RT, rw_count);
 	fprintf(ssd->statisticfile, "read RT %lld ns, count %lld\n", read_RT, ssd->stats->read_request_count[app_id]);

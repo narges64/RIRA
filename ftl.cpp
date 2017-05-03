@@ -40,7 +40,6 @@ ssd_info * distribute(ssd_info *ssd){
 		ssd->dram->current_time=ssd->current_time;
 
 	request * req=ssd->request_tail; // The request we want to distribute
-
 	unsigned lsn=req->lsn;
 	unsigned last_lpn=(req->lsn+req->size-1)/ssd->parameter->subpage_page;
 	unsigned first_lpn=req->lsn/ssd->parameter->subpage_page;
@@ -120,8 +119,8 @@ STATE service_in_buffer(ssd_info * ssd, sub_request * sub){
 			return SUCCESS; 
 		}
 		buffer_entry * buf_ent = NULL;
-		if (ssd->parameter->dram_capacity == 0 || ssd->dram->map->map_entry[sub->lpn].buf_ent == NULL) {
-			if (ssd->parameter->dram_capacity == 0 || ssd->dram->buffer->is_full()) {
+		if (ssd->dram->map->map_entry[sub->lpn].buf_ent == NULL) {
+			if (ssd->dram->buffer->is_full()) {
 				sub->buf_entry = NULL;  // so this one has to be considered for RT
 				service_in_flash(ssd, sub);
 				return SUCCESS;
