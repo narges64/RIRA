@@ -203,7 +203,7 @@ public:
 /********************************************************
 *mapping information,state
 *********************************************************/
-
+class sub_request; 
 class buffer_entry{
 public:
 	bool modified;
@@ -212,6 +212,8 @@ public:
 	int read_hit;
 	int write_hit;
 	int trim_hit;
+	bool outlier; 
+	sub_request * sub; // if it has a waiting sub request 
 	buffer_entry(){
 		modified = false;
 		evicted = false;
@@ -221,6 +223,8 @@ public:
 		trim_hit = 0;
 		next_entry = NULL;
 		prev_entry = NULL;
+		outlier = false;
+		sub = NULL;  
 	}
 	buffer_entry(int l){
 		buffer_entry();
@@ -307,21 +311,25 @@ public:
 			return false;
 		}
 		buffer_entry * entry = buffer_head;
+		int outlier_count = 0; 
 		while (entry != NULL) {
 			count++;
+			if (entry->outlier) outlier_count++; 
 			entry = entry->next_entry;
 		}
-		if (count != entry_count || count > buffer_capacity) {
+		if (count != entry_count || ( count - outlier_count )> buffer_capacity) {
 			cout << "BUFFER count does not match " << count <<   " * "<< entry_count << " *  " << buffer_capacity  << endl;
 			return false;
 		}
 		count = 0;
+		outlier_count = 0; 
 		entry = buffer_tail;
 		while (entry != NULL) {
 			count++;
+			if (entry->outlier) outlier_count++; 
 			entry = entry->prev_entry;
 		}
-		if (count != entry_count || count > buffer_capacity) {
+		if (count != entry_count || (count - outlier_count )> buffer_capacity) {
 			cout << "BUFFER reverse count does not match " << endl;
 			return false;
 		}
@@ -346,8 +354,10 @@ public:
 	}
 
 	bool add_tail(buffer_entry * entry){
-		if (entry_count >= buffer_capacity){return false;}
 		if (entry == NULL) return false;
+		if (entry_count >= buffer_capacity){
+			entry->outlier = true; 
+		}
 		if (buffer_tail == NULL) {
 			if (buffer_head != NULL || entry_count != 0) {
 				cout << "some error in add tail  " << endl;
@@ -380,8 +390,10 @@ public:
 	}
 
 	bool add_head(buffer_entry * entry){
-		if (entry_count >= buffer_capacity){return false;}
 		if (entry == NULL) return false;
+		if (entry_count >= buffer_capacity){
+			entry->outlier = true;
+		}
 		if (buffer_head == NULL) {
 			if (buffer_tail != NULL || entry_count != 0){
 				cout << "error in add head " << endl;
@@ -445,7 +457,7 @@ public:
 			cout << "**** Buffer head and tail problem 2 8" << endl;
 
 		}
-
+		
 		return entry;
 	}
 	buffer_entry * remove_head(){
@@ -479,6 +491,20 @@ public:
 		}
 
 		return temp;
+	}
+	sub_request * find_and_fix_outlier(){
+		buffer_entry * temp = buffer_tail; 
+		sub_request * sub_temp = NULL; 
+		while (temp != NULL && temp->outlier == false)	temp = temp->next_entry; 
+		if (temp != NULL && temp->outlier == true) {
+			temp->outlier = false; 
+			sub_temp = temp->sub; 
+			temp->sub = NULL; 
+		} else {
+			sub_temp = NULL; 
+		}
+		return sub_temp; 
+		
 	}
 	buffer_entry * remove_tail(){
 		if (entry_count == 0) return NULL;

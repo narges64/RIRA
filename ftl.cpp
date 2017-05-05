@@ -121,8 +121,19 @@ STATE service_in_buffer(ssd_info * ssd, sub_request * sub){
 		buffer_entry * buf_ent = NULL;
 		if (ssd->dram->map->map_entry[sub->lpn].buf_ent == NULL) {
 			if (ssd->dram->buffer->is_full()) {
-				sub->buf_entry = NULL;  // so this one has to be considered for RT
-				service_in_flash(ssd, sub);
+				buf_ent = ssd->dram->buffer->add_head(sub->lpn);
+				ssd->dram->map->map_entry[sub->lpn].buf_ent = buf_ent; 
+
+				sub->buf_entry = buf_ent;
+				buf_ent->sub = sub;
+				buf_ent->outlier = true;   
+				unsigned int full_page = ~(0xffffffff<<(ssd->parameter->subpage_page)); 
+				sub_request * evict_sub = create_sub_request(ssd, sub->lpn, 
+									ssd->parameter->subpage_page, full_page, 
+									NULL, WRITE); 
+				evict_sub->buf_entry = buf_ent; 
+				service_in_flash(ssd, evict_sub); 
+
 				return SUCCESS;
 			}
 
@@ -142,17 +153,20 @@ STATE service_in_buffer(ssd_info * ssd, sub_request * sub){
 							ssd->parameter->subpage_page, full_page,
 							NULL, WRITE);
 			evict_sub->buf_entry = buf_ent;
-			
-			invalid_old_page(ssd, sub->lpn); 
-			evict_sub->ppn = get_new_ppn(ssd, sub->lpn);
-			find_location(ssd,evict_sub->ppn, evict_sub->location);
-			write_page(ssd, evict_sub->lpn, evict_sub->ppn);
+		
+			service_in_flash(ssd, evict_sub); 
 
-			ssd->channel_head[evict_sub->location->channel]->
-						lun_head[evict_sub->location->lun]->
-						wsubs_queue.push_tail(evict_sub);
+	
+			// invalid_old_page(ssd, sub->lpn); 
+			// evict_sub->ppn = get_new_ppn(ssd, sub->lpn);
+			// find_location(ssd,evict_sub->ppn, evict_sub->location);
+			// write_page(ssd, evict_sub->lpn, evict_sub->ppn);
 
-			Schedule_GC(ssd, evict_sub->location);
+			//ssd->channel_head[evict_sub->location->channel]->
+			//			lun_head[evict_sub->location->lun]->
+			//			wsubs_queue.push_tail(evict_sub);
+
+			//Schedule_GC(ssd, evict_sub->location);
 
 			return SUCCESS;
 
@@ -278,8 +292,23 @@ void services_2_io(ssd_info * ssd, unsigned int channel,
 						PLANE_MODE_IDLE, subs[i]->complete_time);
 				if (subs[i]->buf_entry != NULL){
 					ssd->dram->map->map_entry[subs[i]->buf_entry->lpn].buf_ent = NULL;
-					buffer_entry * buf_ent = NULL;
-					buf_ent = ssd->dram->buffer->remove_entry(subs[i]->buf_entry);
+					buffer_entry * buf_ent = subs[i]->buf_entry; 
+					if (buf_ent->outlier && buf_ent->sub != NULL ){
+						buf_ent->sub->complete_time = subs[i]->complete_time + 1000; 
+						change_subrequest_state (ssd, buf_ent->sub, 
+								SR_MODE_ST_S, ssd->current_time, 
+								SR_MODE_COMPLETE, buf_ent->sub->complete_time);
+						buf_ent->sub->buf_entry = NULL;  
+					}
+						 
+					ssd->dram->buffer->remove_entry(buf_ent);
+					sub_request * outlier_sub = ssd->dram->buffer->find_and_fix_outlier(); 
+					if (outlier_sub != NULL) {
+						outlier_sub->complete_time = subs[i]->complete_time; 
+						change_subrequest_state(ssd, outlier_sub, 
+								SR_MODE_ST_S, ssd->current_time, 
+								SR_MODE_COMPLETE, outlier_sub->complete_time);
+					} 
 					subs[i]->buf_entry = NULL;
 					delete subs[i];
 					if (buf_ent != NULL)
@@ -431,6 +460,14 @@ void services_2_gc(ssd_info * ssd, unsigned int channel,unsigned int * channel_b
 				subs[i]->buf_entry = NULL;
 				if (buf_ent != NULL)
 					delete buf_ent;
+
+				sub_request * outlier_sub = ssd->dram->buffer->find_and_fix_outlier(); 
+				if (outlier_sub != NULL) {
+					outlier_sub->complete_time = subs[i]->complete_time+1000; 
+					change_subrequest_state(ssd, outlier_sub, 
+							SR_MODE_ST_S, ssd->current_time, SR_MODE_COMPLETE,
+							outlier_sub->complete_time);  
+				}
 			}
 			if (operation == ERASE){
 				delete_gc_node(ssd, subs[i]->gc_node);
