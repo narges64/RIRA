@@ -10,7 +10,7 @@ void full_write_preconditioning(ssd_info * ssd, bool seq){
 	int lpn = 0;
 	for (int i = 0; i <  total_size; i++){
 
-		if ( (invalid_old_page(ssd, lpn) != SUCCESS)  && !seq) 
+		if ((invalid_old_page(ssd, lpn) != SUCCESS)  && !seq) 
 			cout << "fail in invalid old page" << endl; 
 		int ppn = get_new_ppn (ssd, lpn);
 		write_page(ssd, lpn, ppn);
@@ -39,19 +39,17 @@ ssd_info * distribute(ssd_info *ssd){
 	if (ssd->dram != NULL)
 		ssd->dram->current_time=ssd->current_time;
 
-	request * req=ssd->request_tail; // The request we want to distribute
-	unsigned lsn=req->lsn;
-	unsigned last_lpn=(req->lsn+req->size-1)/ssd->parameter->subpage_page;
-	unsigned first_lpn=req->lsn/ssd->parameter->subpage_page;
-	unsigned lpn = first_lpn;
+	request * req = ssd->request_tail; // The request we want to distribute
+	unsigned lsn  = req->lsn;
+	unsigned last_lpn  = (req->lsn+req->size-1)/ssd->parameter->subpage_page;
+	unsigned first_lpn = req->lsn/ssd->parameter->subpage_page;
+	unsigned lpn  = first_lpn;
 
-	if(req->operation==READ)
+	if (req->operation == READ)
 	{
 		while(lpn<=last_lpn)
 		{
-			uint64_t sub_state=(ssd->dram->map->map_entry[lpn].state&0x7fffffffffffffff);
-			unsigned int sub_size=size(sub_state);
-			sub_request * sub=create_sub_request(ssd,lpn,sub_size,sub_state,req,req->operation);
+			sub_request * sub     = create_sub_request(ssd,lpn, req,req->operation, req->io_num);
 			if (service_in_buffer(ssd, sub) != SUCCESS)
 				printf("Error in servicing a request in buffer \n");
 
@@ -60,32 +58,14 @@ ssd_info * distribute(ssd_info *ssd){
 	}
 	else if(req->operation==WRITE)
 	{
-		while(lpn<=last_lpn)
+		while (lpn<=last_lpn)
 		{
-			uint64_t mask=~(0xffffffffffffffff<<(ssd->parameter->subpage_page));
-			uint64_t state=mask;
-			if(lpn==first_lpn)
-			{
-				uint64_t offset1=ssd->parameter->subpage_page-((lpn+1)*ssd->parameter->subpage_page-req->lsn);
-				state=state&(0xffffffffffffffff<<offset1);
-
-			}
-			if(lpn==last_lpn)
-			{
-				uint64_t offset2=ssd->parameter->subpage_page-((lpn+1)*ssd->parameter->subpage_page-(req->lsn+req->size));
-				state=state&(~(0xffffffffffffffff<<offset2));
-			}
-
-			unsigned int sub_size=size(state);
-			if (sub_size > 32){
-				cout << state << "***************** " << endl;
-			}
-			sub_request * sub=create_sub_request(ssd,lpn,sub_size,state,req,req->operation);
+			sub_request * sub=create_sub_request(ssd,lpn, req,req->operation, req->io_num);
 			if (service_in_buffer(ssd, sub) != SUCCESS)
 				printf("Error in servicing write requset in buffer! \n");
 			lpn++;
 		}
-	}else {
+	} else {
 		// FIXME for TRIM
 	}
 	return ssd;
@@ -104,12 +84,11 @@ STATE service_in_buffer(ssd_info * ssd, sub_request * sub){
 			buf_ent = ssd->dram->map->map_entry[sub->lpn].buf_ent;
 			ssd->dram->buffer->hit_read(buf_ent);
 			sub->complete_time = ssd->current_time + 1000;
+			sub->buf_entry= buf_ent; 
 			change_subrequest_state(ssd, sub,SR_MODE_ST_S,
 				ssd->current_time,SR_MODE_COMPLETE,sub->complete_time);
-			return SUCCESS;
 		}else {
 			service_in_flash(ssd, sub);
-			return SUCCESS;
 		}
 	}
 	else if (sub->operation == WRITE){
@@ -120,55 +99,25 @@ STATE service_in_buffer(ssd_info * ssd, sub_request * sub){
 		}
 		buffer_entry * buf_ent = NULL;
 		if (ssd->dram->map->map_entry[sub->lpn].buf_ent == NULL) {
-			if (ssd->dram->buffer->is_full()) {
-				buf_ent = ssd->dram->buffer->add_head(sub->lpn);
+			// Add a new entry to buffer 
+			buf_ent = ssd->dram->buffer->add_head(sub->lpn); 
+			sub->buf_entry = NULL; 
+			
+			if (buf_ent->outlier) {
+				buf_ent->sub = sub; 	
+			}else {
 				ssd->dram->map->map_entry[sub->lpn].buf_ent = buf_ent; 
-
-				sub->buf_entry = buf_ent;
-				buf_ent->sub = sub;
-				buf_ent->outlier = true;   
-				unsigned int full_page = ~(0xffffffff<<(ssd->parameter->subpage_page)); 
-				sub_request * evict_sub = create_sub_request(ssd, sub->lpn, 
-									ssd->parameter->subpage_page, full_page, 
-									NULL, WRITE); 
-				evict_sub->buf_entry = buf_ent; 
-				service_in_flash(ssd, evict_sub); 
-
-				return SUCCESS;
+				// Mark the request as complete
+				sub->complete_time = ssd->current_time + 1000;
+				change_subrequest_state(ssd, sub,SR_MODE_ST_S,ssd->current_time,
+							SR_MODE_COMPLETE,sub->complete_time);
+				buf_ent->sub = NULL; 
 			}
 
-			// Add a new entry to buffer
-			buf_ent = ssd->dram->buffer->add_head(sub->lpn);
-			ssd->dram->map->map_entry[sub->lpn].buf_ent = buf_ent;
 
-			// Mark the request as complete
-			sub->complete_time = ssd->current_time + 1000;
-			change_subrequest_state(ssd, sub,SR_MODE_ST_S,ssd->current_time,
-							SR_MODE_COMPLETE,sub->complete_time);
-
-			sub->buf_entry = NULL;
-			// create and issue evict buffer subrequest
-			unsigned int full_page=~(0xffffffff<<(ssd->parameter->subpage_page));
-			sub_request * evict_sub = create_sub_request(ssd, sub->lpn,
-							ssd->parameter->subpage_page, full_page,
-							NULL, WRITE);
-			evict_sub->buf_entry = buf_ent;
-		
+			sub_request * evict_sub = create_sub_request(ssd, sub->lpn,NULL, WRITE, sub->io_num); 
+			evict_sub->buf_entry = buf_ent; 
 			service_in_flash(ssd, evict_sub); 
-
-	
-			// invalid_old_page(ssd, sub->lpn); 
-			// evict_sub->ppn = get_new_ppn(ssd, sub->lpn);
-			// find_location(ssd,evict_sub->ppn, evict_sub->location);
-			// write_page(ssd, evict_sub->lpn, evict_sub->ppn);
-
-			//ssd->channel_head[evict_sub->location->channel]->
-			//			lun_head[evict_sub->location->lun]->
-			//			wsubs_queue.push_tail(evict_sub);
-
-			//Schedule_GC(ssd, evict_sub->location);
-
-			return SUCCESS;
 
 		}else {	 // write to an entry in the buffer, just need to change the entry and make it dirty
 			buf_ent = ssd->dram->map->map_entry[sub->lpn].buf_ent;
@@ -177,11 +126,10 @@ STATE service_in_buffer(ssd_info * ssd, sub_request * sub){
 			change_subrequest_state(ssd, sub,SR_MODE_ST_S,
 					ssd->current_time,SR_MODE_COMPLETE,sub->complete_time);
 			sub->buf_entry = NULL;
-			return SUCCESS;
 		}
 
 	}
-	return FAIL;
+	return SUCCESS;
 }
 void service_in_flash(ssd_info * ssd, sub_request * sub){
 	if (sub->operation == READ) {
@@ -229,8 +177,7 @@ ssd_info *process( ssd_info *ssd)   {
 	return ssd;
 }
 
-void services_2_io(ssd_info * ssd, unsigned int channel,
-																		unsigned int * channel_busy_flag){
+void services_2_io(ssd_info * ssd, unsigned int channel, unsigned int * channel_busy_flag){
 	int64_t read_transfer_time = 7 * ssd->parameter->time_characteristics.tWC +
 			(ssd->parameter->subpage_page * ssd->parameter->subpage_capacity) *
 			ssd->parameter->time_characteristics.tRC;
@@ -256,25 +203,18 @@ void services_2_io(ssd_info * ssd, unsigned int channel,
 			int operation = -1;
 			subs_count = find_lun_io_requests(ssd, channel, lun, subs, &operation);
 			if ( subs_count  == 0 ) continue;
-	//		if ((subs_count < max_subs_count) && (ssd->parameter->plane_level_tech == IOGC))
-		//		subs_count = find_lun_gc_requests(ssd, channel, lun, subs, &operation);
+			
+			// Process collected sub requests 
 			switch (operation){
 				case READ:
 					if (subs_count > 1) ssd->stats->read_multiplane_count++;
 					channel_busy_time = subs_count * read_transfer_time;
 					lun_busy_time = channel_busy_time + read_time;
-
-		//			ssd->channel_head[channel]->lun_head[lun]->
-		//			update_stat(ssd->current_time , ssd->current_time +
-		// 			lun_busy_time, READ, subs_count, ssd->parameter->subpage_page );
 					break;
 				case WRITE:
 					if (subs_count > 1) ssd->stats->write_multiplane_count++;
 					channel_busy_time = subs_count * write_transfer_time;
 					lun_busy_time = channel_busy_time + write_time;
-		//			ssd->channel_head[channel]->lun_head[lun]->
-		//			update_stat(ssd->current_time, ssd->current_time +
-		//			lun_busy_time, WRITE, subs_count, ssd->parameter->subpage_page);
 					break;
 				default:
 					cout << "Error: wrong operation (cannot be erase) " << endl;
@@ -290,29 +230,44 @@ void services_2_io(ssd_info * ssd, unsigned int channel,
 						subs[i]->location->lun, subs[i]->location->plane,
 						PLANE_MODE_IO, ssd->current_time,
 						PLANE_MODE_IDLE, subs[i]->complete_time);
+	
 				if (subs[i]->buf_entry != NULL){
-					ssd->dram->map->map_entry[subs[i]->buf_entry->lpn].buf_ent = NULL;
-					buffer_entry * buf_ent = subs[i]->buf_entry; 
-					if (buf_ent->outlier && buf_ent->sub != NULL ){
-						buf_ent->sub->complete_time = subs[i]->complete_time + 1000; 
+
+					// remove the entry from the buffer since the request is done 
+					buffer_entry * buf_ent = subs[i]->buf_entry; 	
+					ssd->dram->buffer->remove_entry(buf_ent);
+					
+					int lpn = buf_ent->lpn; 
+					ssd->dram->map->map_entry[lpn].buf_ent = NULL;
+					
+					int64_t complete_time = subs[i]->complete_time; 	
+					if (buf_ent->outlier){
+						buf_ent->sub->complete_time = complete_time + 1000; 
 						change_subrequest_state (ssd, buf_ent->sub, 
 								SR_MODE_ST_S, ssd->current_time, 
-								SR_MODE_COMPLETE, buf_ent->sub->complete_time);
+								SR_MODE_COMPLETE, complete_time + 1000);
 						buf_ent->sub->buf_entry = NULL;  
+					}else {
+						delete buf_ent; 
+
+						// By removing one subrequest from buffer, we might put another sub request in the buffer 
+						buffer_entry * outlier_entry = ssd->dram->buffer->move_outlier(); 
+						if (outlier_entry != NULL) {
+							sub_request * outlier_sub = outlier_entry->sub;
+							if (outlier_sub == NULL) 
+								cout << "outlier sub cannot be null" << endl;  
+							outlier_entry->sub = NULL; 
+							ssd->dram->map->map_entry[outlier_sub->lpn].buf_ent = outlier_entry; 
+							
+							outlier_sub->complete_time = complete_time + 1000; 
+							change_subrequest_state(ssd, outlier_sub, 
+									SR_MODE_ST_S, ssd->current_time, 
+									SR_MODE_COMPLETE, complete_time+1000);
+							outlier_sub->buf_entry = NULL; 
+						}
+
 					}
-						 
-					ssd->dram->buffer->remove_entry(buf_ent);
-					sub_request * outlier_sub = ssd->dram->buffer->find_and_fix_outlier(); 
-					if (outlier_sub != NULL) {
-						outlier_sub->complete_time = subs[i]->complete_time; 
-						change_subrequest_state(ssd, outlier_sub, 
-								SR_MODE_ST_S, ssd->current_time, 
-								SR_MODE_COMPLETE, outlier_sub->complete_time);
-					} 
-					subs[i]->buf_entry = NULL;
 					delete subs[i];
-					if (buf_ent != NULL)
-						delete buf_ent;
 				}
 			}
 
@@ -454,29 +409,19 @@ void services_2_gc(ssd_info * ssd, unsigned int channel,unsigned int * channel_b
 				subs[i]->location->lun, subs[i]->location->plane,
 				PLANE_MODE_GC, ssd->current_time, PLANE_MODE_IDLE,
 				ssd->current_time + lun_busy_time);
-			if (subs[i]->buf_entry != NULL){
-				buffer_entry * buf_ent  = subs[i]->buf_entry;
-				buf_ent = ssd->dram->buffer->remove_entry(buf_ent);
-				subs[i]->buf_entry = NULL;
-				if (buf_ent != NULL)
-					delete buf_ent;
 
-				sub_request * outlier_sub = ssd->dram->buffer->find_and_fix_outlier(); 
-				if (outlier_sub != NULL) {
-					outlier_sub->complete_time = subs[i]->complete_time+1000; 
-					change_subrequest_state(ssd, outlier_sub, 
-							SR_MODE_ST_S, ssd->current_time, SR_MODE_COMPLETE,
-							outlier_sub->complete_time);  
-				}
+			if (subs[i]->buf_entry != NULL){
+				cout << "GC request should not be in the buffer " << endl; 
 			}
 			if (operation == ERASE){
 				delete_gc_node(ssd, subs[i]->gc_node);
-				erase_block(ssd,subs[i]->location);
+				// erase_block(ssd,subs[i]->location);
+			//	cout << "gc finished in " << lun_busy_time << endl; 
 			}
 			delete subs[i];
 		}
 		change_lun_state (ssd, channel, lun, LUN_MODE_GC, ssd->current_time ,
-					LUN_MODE_IDLE, ssd->current_time + lun_busy_time);
+					LUN_MODE_IDLE, ssd->current_time +  lun_busy_time);
 		change_channel_state(ssd, channel, CHANNEL_MODE_GC, ssd->current_time ,
 					CHANNEL_MODE_IDLE, ssd->current_time + channel_busy_time);
 	}
@@ -526,12 +471,10 @@ int find_lun_gc_requests(ssd_info * ssd, unsigned int channel, unsigned int lun,
 
 // =============================================================================
 
-sub_request * create_sub_request( ssd_info * ssd, int lpn,int size,
-				uint64_t state, request * req,unsigned int operation){
-	sub_request* sub=NULL,* sub_r=NULL;
-	channel_info * p_ch=NULL;
-	unsigned int flag=0;
-	sub = new sub_request(ssd->current_time, lpn, size,
+sub_request * create_sub_request( ssd_info * ssd, int lpn,
+				 request * req,unsigned int operation, int io_num = -1){
+
+	sub_request * sub = new sub_request(ssd->current_time, lpn, 
 				ssd->subrequest_sequence_number++, operation);
 
 	if(req!=NULL)
@@ -547,28 +490,28 @@ sub_request * create_sub_request( ssd_info * ssd, int lpn,int size,
 	}
 	else
 	{
+		sub->io_num = io_num; 	
 		sub->state_time[SR_MODE_WAIT] = 0;
 		sub->state_current_time = ssd->current_time;
 	}
 
-
 	if (operation == READ)
 	{
-		sub->ppn  = ssd->dram->map->map_entry[lpn].pn;
+		sub->ppn = ssd->dram->map->map_entry[lpn].pn;
 		if (sub->ppn >= 0) {
 			find_location(ssd,sub->ppn, sub->location);
 			if (ssd->dram->map->map_entry[lpn].state)
-				sub->state = 0x7fffffffffffffff;
+				sub->state = 1;
 			else
 				sub->state = 0;
 		}else {
-			sub->state = state;
+			sub->state = 0;
 		}
 	}
 	else if(operation == WRITE)
 	{
 		sub->ppn = -1; // ssd->dram->map->map_entry[lpn].pn;
-		sub->state=state;
+		sub->state=0;
 	}
 	else
 	{
@@ -727,7 +670,7 @@ void find_location(ssd_info * ssd, int ppn, local * location){
 	page_lun=page_plane*ssd->parameter->plane_lun;
 
 	int page = ppn % (page_lun * ssd->parameter->lun_num);
-	location->channel = 0;
+	int channel = 0;
 	while (true){
 		page_channel = page_lun * ssd->parameter->lun_channel[location->channel];
 		page = page - page_channel;
@@ -735,13 +678,23 @@ void find_location(ssd_info * ssd, int ppn, local * location){
 			page = page + page_channel;
 			break;
 		}else {
-			location->channel++;
+			channel++;
 		}
 	}
-	location->lun = page/page_lun;
-	location->plane = (page%page_lun)/page_plane;
-	location->block = ((page%page_lun)%page_plane)/ssd->parameter->page_block;
-	location->page = (((page%page_lun)%page_plane)%ssd->parameter->page_block)%ssd->parameter->page_block;
+	int lun = page/page_lun;
+	int plane = (page%page_lun)/page_plane;
+	int block = ((page%page_lun)%page_plane)/ssd->parameter->page_block;
+	int page_ = (((page%page_lun)%page_plane)%ssd->parameter->page_block)%ssd->parameter->page_block;
+
+	if (location == NULL) {
+		location = new local(channel, lun, plane, block, page_); 
+	}else {
+		location->channel = channel;
+		location->lun     = lun;
+		location->plane   = plane;
+		location->block   = block;
+		location->page    = page_;
+	}
 }
 int find_ppn(ssd_info * ssd,const local * location){
 	unsigned int channel = location->channel;

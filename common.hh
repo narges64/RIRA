@@ -211,7 +211,6 @@ public:
 	int lpn;
 	int read_hit;
 	int write_hit;
-	int trim_hit;
 	bool outlier; 
 	sub_request * sub; // if it has a waiting sub request 
 	buffer_entry(){
@@ -220,7 +219,6 @@ public:
 		lpn = -1;
 		read_hit = 0;
 		write_hit = 0;
-		trim_hit = 0;
 		next_entry = NULL;
 		prev_entry = NULL;
 		outlier = false;
@@ -228,6 +226,14 @@ public:
 	}
 	buffer_entry(int l){
 		buffer_entry();
+		read_hit = 0; 
+		write_hit = 0; 
+		modified = false; 
+		evicted = false ;
+		next_entry = NULL; 
+		prev_entry = NULL; 
+		outlier = false; 
+		sub = NULL; 
 		lpn = l;
 	}
 	buffer_entry * next_entry;
@@ -283,11 +289,13 @@ public:
 	int entry_count;
 	buffer_entry * buffer_head;
 	buffer_entry * buffer_tail;
+	buffer_entry * buffer_first_outlier; 
 	write_buffer(int size, int sector_page){ // size in MB , sector_page total number of sector in a page (16 means 8KB page)
 		buffer_capacity = size * 1024 * 2 / sector_page;
 		entry_count = 0;
 		buffer_head = NULL;
 		buffer_tail = NULL;
+		buffer_first_outlier = NULL; 
 	}
 	bool check_buffer(){
 		if (buffer_capacity == 0) return true;
@@ -312,13 +320,17 @@ public:
 		}
 		buffer_entry * entry = buffer_head;
 		int outlier_count = 0; 
+		int non_outlier = 0; 
 		while (entry != NULL) {
 			count++;
 			if (entry->outlier) outlier_count++; 
+			else non_outlier++; 
 			entry = entry->next_entry;
 		}
-		if (count != entry_count || ( count - outlier_count )> buffer_capacity) {
-			cout << "BUFFER count does not match " << count <<   " * "<< entry_count << " *  " << buffer_capacity  << endl;
+		if (count != entry_count || ( count - outlier_count ) > buffer_capacity) {
+			cout << "BUFFER count does not match  " << count <<   " * "<< entry_count << " *  " << buffer_capacity  << endl;
+			cout << "BUFFER outlier count " << outlier_count << endl;
+			cout << "BUFFER non-outlier count " << non_outlier << endl;  
 			return false;
 		}
 		count = 0;
@@ -357,6 +369,8 @@ public:
 		if (entry == NULL) return false;
 		if (entry_count >= buffer_capacity){
 			entry->outlier = true; 
+			if (buffer_first_outlier == NULL) 
+				buffer_first_outlier = entry; 
 		}
 		if (buffer_tail == NULL) {
 			if (buffer_head != NULL || entry_count != 0) {
@@ -393,6 +407,8 @@ public:
 		if (entry == NULL) return false;
 		if (entry_count >= buffer_capacity){
 			entry->outlier = true;
+			if (buffer_first_outlier == NULL) 
+				buffer_first_outlier = entry; 
 		}
 		if (buffer_head == NULL) {
 			if (buffer_tail != NULL || entry_count != 0){
@@ -437,6 +453,9 @@ public:
 	buffer_entry * remove_entry (buffer_entry * entry){
 		if (entry == NULL) return NULL;
 		if (entry_count == 0) return NULL;
+		if (entry == buffer_first_outlier) {
+			buffer_first_outlier = entry->prev_entry; 
+		} 
 		if (entry == buffer_head) {
 			return remove_head();
 		}
@@ -455,9 +474,8 @@ public:
 		}
 		if (buffer_head != NULL && buffer_tail == NULL){
 			cout << "**** Buffer head and tail problem 2 8" << endl;
-
 		}
-		
+	
 		return entry;
 	}
 	buffer_entry * remove_head(){
@@ -492,19 +510,20 @@ public:
 
 		return temp;
 	}
-	sub_request * find_and_fix_outlier(){
-		buffer_entry * temp = buffer_tail; 
-		sub_request * sub_temp = NULL; 
-		while (temp != NULL && temp->outlier == false)	temp = temp->next_entry; 
-		if (temp != NULL && temp->outlier == true) {
-			temp->outlier = false; 
-			sub_temp = temp->sub; 
-			temp->sub = NULL; 
-		} else {
-			sub_temp = NULL; 
+	buffer_entry * move_outlier(){
+		buffer_entry * temp = buffer_first_outlier;
+
+		if (temp == NULL) return NULL; 
+	
+		if (temp->outlier == false) {
+			cout << "error outlier is not outlier " << endl;
+			return NULL;  
 		}
-		return sub_temp; 
+
+		buffer_first_outlier = temp->prev_entry;  	
+		temp->outlier = false; 
 		
+		return temp; 
 	}
 	buffer_entry * remove_tail(){
 		if (entry_count == 0) return NULL;
@@ -548,20 +567,8 @@ public:
 			return;
 		}
 		entry->read_hit++;
-		if (entry->evicted) return;
-		buffer_entry * temp = remove_entry(entry);
-		if (!add_head(temp)) {
-				cout << "problem in hit read " << endl;
-		}
-
-		if (buffer_head == NULL && buffer_tail != NULL){
-			cout << "**** Buffer head and tail problem 1 11" << endl;
-
-		}
-		if (buffer_head != NULL && buffer_tail == NULL){
-			cout << "**** Buffer head and tail problem 2 11" << endl;
-
-		}
+		if (entry->outlier) 
+			cout << "outlier shouldn't get a hit in read " << endl; 
 	}
 	void hit_write(buffer_entry * entry){
 		if (entry == NULL){
@@ -570,21 +577,11 @@ public:
 		}
 		entry->write_hit++;
 		entry->modified = true;
-		if (entry->evicted) return;
-		buffer_entry * temp = remove_entry(entry);
-		if (!add_head(temp))
-				cout << "problem in hit write " << endl;
-
-		if (buffer_head == NULL && buffer_tail != NULL){
-			cout << "**** Buffer head and tail problem 1 12" << endl;
-
-		}
-		if (buffer_head != NULL && buffer_tail == NULL){
-			cout << "**** Buffer head and tail problem 2 12" << endl;
-
-		}
+		if (entry->outlier) 
+			cout << "outlier shouldn't get a hit in write " << endl; 
 	}
 	void hit_trim(buffer_entry * entry){
+		/*
 		if (entry == NULL){
 			cout << "Error in hit trim " << endl;
 		}
@@ -592,6 +589,7 @@ public:
 		if (entry->evicted) return;
 		buffer_entry * buf_ent = remove_entry(entry);
 		delete buf_ent; // useless to increase trim hit, but anyways
+		*/
 	}
 };
 
@@ -611,7 +609,7 @@ public:
 class sub_request{
 public:
 
-	sub_request(int64_t ct, int lpnum, int s, int sn, int op){
+	sub_request(int64_t ct, int lpnum, int sn, int op){
 		app_id = -1;
 		io_num = -1;
 		seq_num = sn;
@@ -619,7 +617,6 @@ public:
 		ppn = -1;
 		buf_entry = NULL;
 		operation = op;
-		size = s;
 		state = 0;
 		begin_time = ct;
 		wait_time = 0;
@@ -639,9 +636,8 @@ public:
 		next_state_predict_time = ct;
 	}
 	~sub_request(){
-		if (location != NULL) delete location;
+		if (location != NULL) delete location; 
 		if (update != NULL) delete update;
-		if (buf_entry != NULL) delete buf_entry;
 		if (state_time != NULL) delete [] state_time;
 	}
 
@@ -653,12 +649,11 @@ public:
 	int ppn;
 	buffer_entry * buf_entry;
 	unsigned int operation;
-	int size;
 	unsigned int current_state;
 	int64_t current_time;
 	unsigned int next_state;
 	int64_t next_state_predict_time;
-	uint64_t state;
+	int state;
 
 	int64_t begin_time;
 	int64_t wait_time;
@@ -989,16 +984,13 @@ public:
 	int lun_token;
 	int gc_request;
 	int request_queue_length;
-
+	int max_lsn; 
 	int64_t total_execution_time;
 
 	int * repeat_times; // repeate trace for each application
 	int64_t last_times; // last time of each trace
 	int steady_state_counter;
 	int steady_state;
-
-	int64_t min_lsn;
-	int64_t max_lsn;
 
 	FILE * tracefile;
 	FILE * statisticfile;

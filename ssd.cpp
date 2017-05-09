@@ -75,10 +75,13 @@ ssd_info *simulate(ssd_info *ssd){
 				second++;
 		}
 
+		#ifdef DEBUG 
+		cout << "is dubugging " << endl; 
 		if (!ssd->dram->buffer->check_buffer()) {
 			cout << "BUFFER FAIL " << endl;
 			break;
 		}
+		#endif 
 	}
 
 	return ssd;
@@ -206,164 +209,69 @@ void generate_trace_file(ssd_info * ssd, char * trace_filename){
 
 int get_requests_consolidation(ssd_info *ssd)  {
 	int64_t  nearest_event_time=find_nearest_event(ssd);
+	
 	struct request *request1;
-	bool trace_based = true;
-	if (trace_based) { // trace or synthetic
-
-//		restart_trace_files(ssd);
-//		int selected = select_trace_file(ssd);
-//		if (selected == -1 ){	// all files are done (including repeating files)
-//			if (nearest_event_time != MAX_INT64)
-//				ssd->total_execution_time = ssd->current_time;
-
-//			ssd->current_time = nearest_event_time;
-
-//			if (ssd->current_time == MAX_INT64)
-//				printf("1. HERE \n");
-//
-//			return 0;
-//		}
+	
+	// Trace-based 
+	if (true) { 
 
 		// read request before nearest_event_time, if any
 		request1 = read_request_from_file(ssd, nearest_event_time);
-//		if (request1 != NULL) request1->to_string(); 
 
-	} else {
+	}
+	// Synthetic  
+	else {
 		request1 = generate_next_request(ssd, nearest_event_time);
 	}
+
+	// Add request to the queue 
 	int ret = add_fetched_request(ssd, request1, nearest_event_time);
 	return ret;
 }
-/*
-int select_trace_file(ssd_info * ssd){
-	char buffer[200];
-	unsigned int lsn=0;
-	int device,  size, ope,large_lsn, i = 0,j=0;
-
-	long filepoint;
-	int64_t time_tt = MAX_INT64;
-	int app_id = 0;
-	int io_num = 0;
-	int file_desc;
-	char * type = new char[5];
-
-
-	int64_t min_time_tt = MAX_INT64;
-	int selected = -1;
-	for (int cd = 0; cd < ssd->parameter->consolidation_degree; cd++){
-
-		//if (feof(ssd->tracefile[cd])) {continue; }
-		time_tt = MAX_INT64;
-		filepoint = ftell(ssd->tracefile);
-		fgets(buffer, 200, ssd->tracefile[cd]);
-		sscanf(buffer,"%d %lld %d %d %s %d %d %d",&io_num,&time_tt,&device,&file_desc,type,&lsn,&size,&app_id);
-
-		if ((feof(ssd->tracefile[cd]) || time_tt == MAX_INT64) && (ssd->repeat_times[cd] < ssd->parameter->repeat_trace )){
-
-			restart_trace_files(ssd);
-
-			filepoint = ftell(ssd->tracefile[cd]);
-			fgets(buffer, 200, ssd->tracefile[cd]);
-			sscanf(buffer,"%d %lld %d %d %s %d %d %d",&io_num,&time_tt,&device,&file_desc,type,&lsn,&size,&app_id);
-
-		}
-
-		if (time_tt < MAX_INT64){
-			time_tt = time_tt * ssd->parameter->time_scale;
-			time_tt = time_tt + ssd->last_times[cd];
-			if (time_tt > MAX_INT64 || time_tt < 0)
-				time_tt = MAX_INT64;
-		}
-
-		if (time_tt < min_time_tt) {
-			min_time_tt = time_tt;
-			selected = cd;
-		}
-		if (time_tt != MAX_INT64)
-			fseek(ssd->tracefile[cd],filepoint,0);
-	}
-
-	return selected;
-
-}
-
-void restart_trace_files(ssd_info * ssd){
-	int cd;
-
-	// If we need to restart trace file
-	for (cd = 0; cd < ssd->parameter->consolidation_degree; cd++)
-	{
-		if(feof(ssd->tracefile) && (ssd->repeat_times[cd] < ssd->parameter->repeat_trace ))
-		{
-
-			ssd->total_execution_time = ssd->current_time;
-			printf("1. total time %0.1f sec , round %d of application %d \n", ssd->total_execution_time/1000000000.0, ssd->repeat_times[cd], cd);
-
-			ssd->repeat_times[cd]++;
-			ssd->last_times[cd] = ssd->current_time;
-			fseek(ssd->tracefile[cd],0,SEEK_SET);
-
-			collect_gc_statistics(ssd, cd);
-			//print_epoch_statistics(ssd, cd);
-			//print_statistics(ssd, cd);
-		}
-	}
-}
-*/
 request * read_request_from_file(ssd_info * ssd, int64_t nearest_event_time){
 
 	if (ssd->request_queue_length >= ssd->parameter->queue_length){
 		return NULL;
 	}	
 
-	char buffer[200];
-	unsigned int lsn=0;
-	long int size, ope,large_lsn, i = 0,j=0;
-	int device = 0;
-	request *request1;
-	long filepoint;
-	int64_t time_tt = MAX_INT64;
-	int app_id = 0;
 	int io_num = 0;
-	int file_desc;
+	int64_t time_tt = MAX_INT64;
+	int unused;
 	char * type = new char[5];
-
-	time_tt = MAX_INT64; lsn=0;
+	unsigned int lsn=0;
+	long int size = 0; 
+	int app_id = 0;
+	
+	long filepoint;
 	filepoint= ftell(ssd->tracefile);
+	
+	char buffer[200];
 	fgets(buffer, 200, ssd->tracefile);
-	sscanf(buffer,"%d %lld %d %d %s %d %ld %d",&io_num,&time_tt,&device,&file_desc,type,&lsn,&size,&app_id);
+	sscanf(buffer,"%d %lld %d %d %s %d %ld %d",&io_num,&time_tt,&unused,&unused,type,&lsn,&size,&app_id);
+	
 	if (time_tt != MAX_INT64){
-		time_tt = time_tt;
 		if (time_tt > MAX_INT64 || time_tt < 0)
 			time_tt = MAX_INT64;
 	}
-	
+
+	// if next request is not before the next event, we discard it 	
 	if (time_tt > nearest_event_time){
 		fseek(ssd->tracefile,filepoint,0);
 		return NULL;
 	}
 
+	int ope; 
 	if (strcasecmp(type, "Read") == 0)
 		ope = 1;
 	else
 		ope = 0;
 
-	if ((device<0)&&(size<0)&&(ope<0))
+	if ((lsn < 0) || (size < 0))
 	{
-
 		return NULL;
 	}
 
-
-	if (lsn<ssd->min_lsn)
-		ssd->min_lsn=lsn;
-	if (lsn>ssd->max_lsn)
-		ssd->max_lsn=lsn;
-
-	large_lsn=(long int)(((long int)ssd->parameter->subpage_page*ssd->parameter->page_block*ssd->parameter->block_plane*ssd->parameter->plane_lun*ssd->parameter->lun_num)*(1-ssd->parameter->overprovide));
-	lsn = lsn%large_lsn;
-
-	request1 = new request();
+	request * request1 = new request();
 
 	request1->app_id = app_id;
 	request1->time = time_tt;
@@ -372,12 +280,14 @@ request * read_request_from_file(ssd_info * ssd, int64_t nearest_event_time){
 	request1->io_num = io_num;
 	request1->operation = ope;
 	request1->begin_time = ssd->current_time;
+
 	return request1;
 
 }
+
 void add_to_request_queue(ssd_info * ssd, request * req){
 	req->begin_time = ssd->current_time;
-	if(ssd->request_queue == NULL)          //The queue is empty
+	if (ssd->request_queue == NULL)          // The queue is empty
 	{
 		ssd->request_queue = req;
 		ssd->request_tail = req;
@@ -385,7 +295,7 @@ void add_to_request_queue(ssd_info * ssd, request * req){
 	}
 	else
 	{
-		(ssd->request_tail)->next_node = req;
+		ssd->request_tail->next_node = req;
 		ssd->request_tail = req;
 		ssd->request_queue_length++;
 	}
@@ -432,24 +342,24 @@ void collect_statistics(ssd_info * ssd, request * req){
 	{
 		ssd->stats->read_request_size[req->app_id] += req->size;
 		ssd->stats->read_request_count[req->app_id]++;
-		ssd->stats->read_avg[req->app_id] += (req->response_time-req->begin_time);
-		ssd->stats->read_throughput.add_time(req->begin_time, req->response_time);
+		ssd->stats->read_avg[req->app_id] += (req->response_time-req->time); // begin_time);
+		ssd->stats->read_throughput.add_time(req->time, req->response_time); // changed 
 		ssd->stats->read_throughput.add_capacity(req->size);
 		ssd->stats->read_throughput.add_count(1);
 		if (req->response_time - req->begin_time > ssd->stats->read_worst_case_rt){
-			ssd->stats->read_worst_case_rt = req->response_time - req->begin_time;
+			ssd->stats->read_worst_case_rt = req->response_time - req->time; // begin_time;
 		}
 	}
 	else
 	{
 		ssd->stats->write_request_size[req->app_id] += req->size;
 		ssd->stats->write_request_count[req->app_id]++;
-		ssd->stats->write_avg[req->app_id]+=(req->response_time - req->begin_time);
-		ssd->stats->write_throughput.add_time(req->begin_time, req->response_time);
+		ssd->stats->write_avg[req->app_id]+=(req->response_time - req->time); // begin_time);
+		ssd->stats->write_throughput.add_time(req->time, req->response_time); // changed 
 		ssd->stats->write_throughput.add_capacity(req->size);
 		ssd->stats->write_throughput.add_count(1);
 		if (req->response_time - req->begin_time > ssd->stats->write_worst_case_rt){
-			ssd->stats->write_worst_case_rt = req->response_time - req->begin_time;
+			ssd->stats->write_worst_case_rt = req->response_time - req->time; // begin_time;
 		}
 	}
 

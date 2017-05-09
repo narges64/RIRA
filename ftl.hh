@@ -7,7 +7,7 @@
 
 ssd_info *process( ssd_info *);
 ssd_info *distribute(ssd_info *); 
-sub_request * create_sub_request( ssd_info * ssd, int lpn,int size,uint64_t state, request * req,unsigned int operation);
+sub_request * create_sub_request( ssd_info * ssd, int lpn, request * req,unsigned int operation, int io_num);
 void services_2_gc(ssd_info * ssd, unsigned int channel, unsigned int * channel_busy_flag);
 void services_2_io(ssd_info * ssd, unsigned int channel, unsigned int * channel_busy_flag);
 int find_lun_io_requests(ssd_info * ssd, unsigned int channel, unsigned int lun, sub_request ** subs, int * operation);

@@ -24,6 +24,8 @@ void launch_gc_for_plane(ssd_info * ssd, gc_operation * gc_node){
 	sub_request * erase_subreq = create_gc_sub_request( ssd, location, ERASE, gc_node);
 	ssd->channel_head[location->channel]->lun_head[location->lun]->GCSubs.push_tail(erase_subreq);
 	ssd->stats->gc_moved_page += page_move_count;
+	erase_block(ssd,location);
+// 	cout << "gc starts for lun " << location->channel << " " << location->lun << endl; 
 }
 
 STATE gc_for_lun(ssd_info *ssd, unsigned int channel, unsigned int lun){
@@ -43,8 +45,7 @@ STATE gc_for_lun(ssd_info *ssd, unsigned int channel, unsigned int lun){
 			launch_gc_for_plane(ssd, gc_node);
 			ssd->channel_head[channel]->lun_head[lun]->plane_head[plane]->GCMode = true;
 		}
-	}
-
+	} 
 	return SUCCESS;
 }
 void ProcessGC(ssd_info *ssd){ // send LUNs to GC mode, or return back to IO mode
@@ -143,7 +144,7 @@ sub_request * create_gc_sub_request( ssd_info * ssd,const local * location, int 
 		}
 	}
 
-	sub_request * sub = new sub_request(ssd->current_time, -1, ssd->parameter->subpage_page, ssd->subrequest_sequence_number++,operation);
+	sub_request * sub = new sub_request(ssd->current_time, -1, ssd->subrequest_sequence_number++,operation);
 
 	sub->gc_node = gc_node;
 	sub->begin_time=ssd->current_time;
@@ -151,7 +152,7 @@ sub_request * create_gc_sub_request( ssd_info * ssd,const local * location, int 
 	if (operation != ERASE) {
 		sub->lpn = ssd->channel_head[location->channel]->lun_head[location->lun]->plane_head[location->plane]->blk_head[location->block]->page_head[location->page]->lpn;
 		if (ssd->dram->map->map_entry[sub->lpn].state)
-			sub->state = 0x7fffffffffffffff;
+			sub->state = 1;
 		else
 			sub->state = 0;
 	}
@@ -260,7 +261,7 @@ bool Schedule_GC(ssd_info * ssd, local * location){
 	gc_node = new gc_operation(location, ssd->gc_sequence_number++);
 
 	if (free_page  < (all_page *ssd->parameter->gc_down_threshold)) gc_node->priority=GC_ONDEMAND;
-	else if (free_page < (all_page * ssd->parameter->gc_up_threshold)) gc_node->priority=GC_EARLY;
+	else if (free_page < (all_page * ssd->parameter->gc_up_threshold)) gc_node->priority=GC_ONDEMAND; // EARLY;
 
 	// Schedule GC
 	if (add_gc_node(ssd, gc_node) != SUCCESS){

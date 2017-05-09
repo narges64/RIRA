@@ -50,7 +50,6 @@ ssd_info::ssd_info(parameter_value * parameters, char * statistics_filename)
 	// }
 
 	lun_token = 0;
-	min_lsn=0;
 
 	request_sequence_number = 0;
 	subrequest_sequence_number = 0;
