@@ -1,8 +1,7 @@
 #include "garbage_collection.hh"
 
 
-void launch_gc_for_plane(ssd_info * ssd, gc_operation * gc_node){
-	if (gc_node == NULL) return;
+void gc_for_plane(ssd_info * ssd, gc_operation * gc_node){
 	unsigned int page_move_count = 0;
 	local * location = gc_node->location;
 	if (find_victim_block(ssd, location) != SUCCESS) {
@@ -21,67 +20,13 @@ void launch_gc_for_plane(ssd_info * ssd, gc_operation * gc_node){
 			page_move_count++;
 		}
 	}
+	ssd->stats->gc_moved_page += page_move_count;
+	
 	sub_request * erase_subreq = create_gc_sub_request( ssd, location, ERASE, gc_node);
 	ssd->channel_head[location->channel]->lun_head[location->lun]->GCSubs.push_tail(erase_subreq);
-	ssd->stats->gc_moved_page += page_move_count;
 	erase_block(ssd,location);
-// 	cout << "gc starts for lun " << location->channel << " " << location->lun << endl; 
 }
 
-STATE gc_for_lun(ssd_info *ssd, unsigned int channel, unsigned int lun){
-	bool launch_all_planes = false;
-	bool on_demand = false;
-	for (unsigned int plane = 0; plane < ssd->parameter->plane_lun; plane++){
-		gc_operation * gc_node = ssd->channel_head[channel]->lun_head[lun]->plane_head[plane]->scheduled_gc;
-		if ((gc_node != NULL) && (gc_node->priority == GC_ONDEMAND)) on_demand = true;
-	}
-
-	if ((on_demand && (ssd->parameter->plane_level_tech == GCGC)) || (!on_demand)) launch_all_planes = true;
-
-	for (unsigned int plane = 0; plane < ssd->parameter->plane_lun; plane++){
-		gc_operation * gc_node = ssd->channel_head[channel]->lun_head[lun]->plane_head[plane]->scheduled_gc;
-		if (gc_node == NULL) continue;
-		if (launch_all_planes || (gc_node->priority == GC_ONDEMAND)) {
-			launch_gc_for_plane(ssd, gc_node);
-			ssd->channel_head[channel]->lun_head[lun]->plane_head[plane]->GCMode = true;
-		}
-	} 
-	return SUCCESS;
-}
-void ProcessGC(ssd_info *ssd){ // send LUNs to GC mode, or return back to IO mode
-	gc_operation * gc_node = NULL;
-
-	for (unsigned int channel = 0; channel < ssd->parameter->channel_number; channel++){
-		for (unsigned int lun = 0; lun < ssd->parameter->lun_channel[channel]; lun++){
-			bool on_demand = update_priority (ssd, channel, lun );
-			bool any_gc = false;
-			for (unsigned int plane = 0; plane < ssd->parameter->plane_lun; plane++){
-				if (ssd->channel_head[channel]->lun_head[lun]->plane_head[plane]->scheduled_gc != NULL)
-					any_gc = true;
-			}
-			if (any_gc == false) continue;
-			if ( (ssd->channel_head[channel]->lun_head[lun]->GCMode == false) &&
-				( on_demand ||
-					(ssd->channel_head[channel]->lun_head[lun]->rsubs_queue.is_empty() &&
-					ssd->channel_head[channel]->lun_head[lun]->wsubs_queue.is_empty()))) {
-
-				ssd->channel_head[channel]->lun_head[lun]->GCMode = true;
-				gc_for_lun(ssd, channel, lun);
-			}
-		}
-	}
-
-	for (unsigned int channel = 0; channel < ssd->parameter->channel_number; channel++){
-		for (unsigned int lun = 0; lun < ssd->channel_head[channel]->lun_num; lun++){
-			if (ssd->channel_head[channel]->lun_head[lun]->GCMode == true &&
-				ssd->channel_head[channel]->lun_head[lun]->GCSubs.is_empty()){
-				ssd->channel_head[channel]->lun_head[lun]->GCMode = false;
-				for (unsigned int plane = 0; plane < ssd->parameter->plane_lun; plane++)
-					ssd->channel_head[channel]->lun_head[lun]->plane_head[plane]->GCMode = false;
-			}
-		}
-	}
-}
 STATE find_victim_block(ssd_info * ssd, local * location){
 
 	switch (ssd->parameter->gc_algorithm) {
@@ -227,47 +172,26 @@ int erase_block(ssd_info * ssd,const local * location){
 
 }
 
-bool update_priority(ssd_info * ssd, unsigned int channel, unsigned int lun){
-	bool on_demand = false;
-	unsigned int all_page = ssd->parameter->page_block*ssd->parameter->block_plane;
-	unsigned int free_page = 0;
-	gc_operation * gc_node = NULL;
-	for (int plane = 0; plane < ssd->parameter->plane_lun; plane++){
-		free_page = ssd->channel_head[channel]->lun_head[lun]->plane_head[plane]->free_page;
-		gc_node = ssd->channel_head[channel]->lun_head[lun]->plane_head[plane]->scheduled_gc;
-		if (gc_node == NULL) continue;
-		if (free_page > (all_page * ssd->parameter->gc_up_threshold)) {
-			if (gc_node != NULL)
-				cout << "GC is no longer needed, FIXME  " << endl;
-			continue;
-		}
-		if (free_page < (all_page * ssd->parameter->gc_down_threshold)) {
-			gc_node->priority = GC_ONDEMAND;
-			on_demand = true;
-		}else if (free_page < (all_page * ssd->parameter->gc_up_threshold)) gc_node->priority = GC_EARLY;
-	}
 
-	return on_demand;
-}
-
-bool Schedule_GC(ssd_info * ssd, local * location){
+bool Schedule_GC(ssd_info * ssd, sub_request * sub){
+		
+	local * location = sub->location; 
 	unsigned int free_page = ssd->channel_head[location->channel]->lun_head[location->lun]->plane_head[location->plane]->free_page;
 	unsigned int all_page = ssd->parameter->page_block*ssd->parameter->block_plane;
 	gc_operation * gc_node = NULL;
 
-	if (free_page > (all_page * ssd->parameter->gc_up_threshold)){
+	if (free_page > (all_page * ssd->parameter->gc_down_threshold)){
 		return false;
 	}
 	gc_node = new gc_operation(location, ssd->gc_sequence_number++);
 
-	if (free_page  < (all_page *ssd->parameter->gc_down_threshold)) gc_node->priority=GC_ONDEMAND;
-	else if (free_page < (all_page * ssd->parameter->gc_up_threshold)) gc_node->priority=GC_ONDEMAND; // EARLY;
-
-	// Schedule GC
 	if (add_gc_node(ssd, gc_node) != SUCCESS){
 		delete gc_node;
 		return false;
 	}
+
+	sub->trigger_gc = true; 	
+	gc_for_plane(ssd, gc_node);
 
 	return true;
 }
@@ -306,14 +230,15 @@ STATE add_gc_node(ssd_info * ssd, gc_operation * gc_node){
 
 	if (gc == NULL){
 		ssd->channel_head[gc_node->location->channel]->lun_head[gc_node->location->lun]->plane_head[gc_node->location->plane]->scheduled_gc = gc_node;
-		return SUCCESS;
+	}else {
+		gc->next_node = gc_node; 
 	}
-	return FAIL;
+	return SUCCESS;
 }
 STATE delete_gc_node(ssd_info * ssd, gc_operation * gc_node){
 	if (gc_node == NULL) return FAIL;
 	if (ssd->channel_head[gc_node->location->channel]->lun_head[gc_node->location->lun]->plane_head[gc_node->location->plane]->scheduled_gc == NULL) return FAIL;
-	ssd->channel_head[gc_node->location->channel]->lun_head[gc_node->location->lun]->plane_head[gc_node->location->plane]->scheduled_gc = NULL;
+	ssd->channel_head[gc_node->location->channel]->lun_head[gc_node->location->lun]->plane_head[gc_node->location->plane]->scheduled_gc = gc_node->next_node;
 	delete gc_node;
 	return SUCCESS;
 }

@@ -622,7 +622,7 @@ public:
 		wait_time = 0;
 		complete_time = MAX_INT64;
 		gc_node = NULL;
-
+		trigger_gc = false; 
 		next_node = NULL;
 		next_subs = NULL;
 		update = NULL;
@@ -666,6 +666,7 @@ public:
 	int64_t * state_time;
 	int64_t state_current_time;
 	gc_operation * gc_node;
+	bool trigger_gc; 
 };
 
 class request{

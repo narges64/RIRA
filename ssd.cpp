@@ -8,7 +8,7 @@ int  main(int argc, char * argv[]){
 		return 0;
 	}
 	parameter_value * parameters = new parameter_value(argc, argv);
-	ssd_info * ssd = new ssd_info(parameters, argv[2]);
+	ssd_info * ssd = new ssd_info(parameters, argv[2]); 
 	
 	char trace_filename[50]; 
 	sprintf(trace_filename, "trace_%.1f_%d_%d_%d", ssd->parameter->syn_rd_ratio , 
@@ -26,23 +26,26 @@ int  main(int argc, char * argv[]){
 	fseek(ssd->tracefile, 0 ,SEEK_SET);
 
 	cerr << "start pre-conditioning " << endl;
-	full_write_preconditioning(ssd, true);
-	full_write_preconditioning(ssd, false);
+	full_write_preconditioning(ssd, true);   // sequential 
+	full_write_preconditioning(ssd, false);  // random 
 
-	ssd->stats->print_all(); // does nothing now
+	ssd->stats->print_all(); // does nothing now 
 	ssd->stats->reset_all();
-	ssd->reset_ssd_stats();
+	
+	ssd->reset_ssd_stats(); // reset read, write, erase number to zero 
+
 	simulate(ssd);
 
-//	for (int cd = 0; cd < ssd->parameter->consolidation_degree; cd++){
-		collect_gc_statistics(ssd, 1);
-		print_epoch_statistics(ssd, 1);
-		print_statistics(ssd, 1);
-//	}
+	collect_gc_statistics(ssd, 1);
+	print_epoch_statistics(ssd, 1);
+	print_statistics(ssd, 1);
 
 	close_files(ssd);
-	free_all_node(ssd);
+				
+	delete ssd; 
+
 	printf("\nthe simulation is completed!\n");
+
 	return 1;
 }
 ssd_info *simulate(ssd_info *ssd){
@@ -69,19 +72,15 @@ ssd_info *simulate(ssd_info *ssd){
 			flag = 100;
 		}
 		if (ssd->current_time / (EPOCH_LENGTH) > second){
-		//		for (int cd = 0; cd < ssd->parameter->consolidation_degree; cd++)
 			print_epoch_statistics(ssd, 1);
 			while (ssd->current_time / (EPOCH_LENGTH) > second)
 				second++;
 		}
 
-		#ifdef DEBUG 
-		cout << "is dubugging " << endl; 
 		if (!ssd->dram->buffer->check_buffer()) {
 			cout << "BUFFER FAIL " << endl;
 			break;
 		}
-		#endif 
 	}
 
 	return ssd;
@@ -114,7 +113,7 @@ int add_fetched_request(ssd_info * ssd, request * request1, uint64_t nearest_eve
 			printf("3. HERE \n");
 	}
 	add_to_request_queue(ssd, request1);
-	if (request1->io_num % 100000 == 0){
+	if (request1->io_num % 10000 == 0){
 		ssd->stats->total_flash_erase_count += ssd->stats->flash_erase_count;
 		ssd->stats->flash_erase_count = 0;
 		cout << "fetching io request number: " << request1->io_num ;
@@ -342,20 +341,20 @@ void collect_statistics(ssd_info * ssd, request * req){
 	{
 		ssd->stats->read_request_size[req->app_id] += req->size;
 		ssd->stats->read_request_count[req->app_id]++;
-		ssd->stats->read_avg[req->app_id] += (req->response_time-req->time); // begin_time);
-		ssd->stats->read_throughput.add_time(req->time, req->response_time); // changed 
+		ssd->stats->read_avg[req->app_id] += (req->response_time-req->begin_time); // begin_time);
+		ssd->stats->read_throughput.add_time(req->begin_time, req->response_time); // changed 
 		ssd->stats->read_throughput.add_capacity(req->size);
 		ssd->stats->read_throughput.add_count(1);
 		if (req->response_time - req->begin_time > ssd->stats->read_worst_case_rt){
-			ssd->stats->read_worst_case_rt = req->response_time - req->time; // begin_time;
+			ssd->stats->read_worst_case_rt = req->response_time - req->begin_time; // begin_time;
 		}
 	}
 	else
 	{
 		ssd->stats->write_request_size[req->app_id] += req->size;
 		ssd->stats->write_request_count[req->app_id]++;
-		ssd->stats->write_avg[req->app_id]+=(req->response_time - req->time); // begin_time);
-		ssd->stats->write_throughput.add_time(req->time, req->response_time); // changed 
+		ssd->stats->write_avg[req->app_id]+=(req->response_time - req->begin_time);
+		ssd->stats->write_throughput.add_time(req->begin_time, req->response_time); // changed 
 		ssd->stats->write_throughput.add_capacity(req->size);
 		ssd->stats->write_throughput.add_count(1);
 		if (req->response_time - req->begin_time > ssd->stats->write_worst_case_rt){
@@ -725,8 +724,6 @@ void free_all_node(ssd_info *ssd){
 		delete ssd;
 }
 void close_files(ssd_info * ssd) {
-//	for (int cd = 0; cd < ssd->parameter->consolidation_degree; cd++)
-//		fclose(ssd->tracefile[cd]);
 
 	fflush(ssd->statisticfile);
 	fclose(ssd->statisticfile);
