@@ -109,7 +109,7 @@ STATE service_in_buffer(ssd_info * ssd, sub_request * sub){
 				ssd->dram->map->map_entry[sub->lpn].buf_ent = buf_ent; 
 				// Mark the request as complete
 				sub->complete_time = ssd->current_time + 1000;
-				cout << "Delay buffer add (" << sub->lpn << "," << sub->location->plane << ")  " << sub->complete_time - sub->begin_time << endl; 
+				// cout << "Delay buffer add (" << sub->lpn << "," << sub->location->plane << ")  " << sub->complete_time - sub->begin_time << endl; 
 				change_subrequest_state(ssd, sub,SR_MODE_ST_S,ssd->current_time,
 							SR_MODE_COMPLETE,sub->complete_time);
 				buf_ent->sub = NULL; 
@@ -124,7 +124,7 @@ STATE service_in_buffer(ssd_info * ssd, sub_request * sub){
 			buf_ent = ssd->dram->map->map_entry[sub->lpn].buf_ent;
 			ssd->dram->buffer->hit_write(buf_ent);
 			sub->complete_time = ssd->current_time + 1000;
-			cout << "Delay buffer hit (" << sub->lpn << "," << sub->location->plane << ")  " << sub->complete_time - sub->begin_time << endl; 
+			// cout << "Delay buffer hit (" << sub->lpn << "," << sub->location->plane << ")  " << sub->complete_time - sub->begin_time << endl; 
 			change_subrequest_state(ssd, sub,SR_MODE_ST_S,
 					ssd->current_time,SR_MODE_COMPLETE,sub->complete_time);
 			sub->buf_entry = NULL;
@@ -267,7 +267,7 @@ void services_2_io(ssd_info * ssd, unsigned int channel, unsigned int * channel_
 							ssd->dram->map->map_entry[outlier_sub->lpn].buf_ent = outlier_entry; 
 							
 							outlier_sub->complete_time = complete_time + 1000; 
-							cout << "Delay outlier sub release (" << outlier_sub->lpn << ","<<outlier_sub->location->plane << ")  " << outlier_sub->complete_time - outlier_sub->begin_time << endl; 
+							// cout << "Delay outlier sub release (" << outlier_sub->lpn << ","<<outlier_sub->location->plane << ")  " << outlier_sub->complete_time - outlier_sub->begin_time << endl; 
 							
 							change_subrequest_state(ssd, outlier_sub, 
 									SR_MODE_ST_S, ssd->current_time, 
