@@ -8,7 +8,8 @@ void gc_for_plane(ssd_info * ssd, gc_operation * gc_node){
 		printf("Error: invalid block selected for gc \n");
 		return;
 	}
-	for(unsigned int i=0;i<ssd->parameter->page_block;i++)
+	int last_write = ssd->channel_head[location->channel]->lun_head[location->lun]->plane_head[location->plane]->blk_head[location->block]->last_write_page; 
+	for(int i=0;i<=last_write;i++)
 	{
 		if(ssd->channel_head[location->channel]->lun_head[location->lun]->plane_head[location->plane]->blk_head[location->block]->page_head[i]->valid_state == true)
 		{
@@ -72,8 +73,10 @@ STATE find_victim_block(ssd_info * ssd, local * location){
 
 	}
 
-	if (ssd->channel_head[location->channel]->lun_head[location->lun]->plane_head[location->plane]->blk_head[location->block]->free_page_num >= ssd->parameter->page_block){
+	if (ssd->channel_head[location->channel]->lun_head[location->lun]->	
+								plane_head[location->plane]->blk_head[location->block]->free_page_num >= ssd->parameter->page_block){
 		cout << "Error: too much free page in selected victim \n";
+		
 		cout << ssd->channel_head[location->channel]->lun_head[location->lun]->plane_head[location->plane]->blk_head[location->block]->free_page_num << endl;
 		return FAIL;
 	}
@@ -96,10 +99,15 @@ sub_request * create_gc_sub_request( ssd_info * ssd,const local * location, int 
 
 	if (operation != ERASE) {
 		sub->lpn = ssd->channel_head[location->channel]->lun_head[location->lun]->plane_head[location->plane]->blk_head[location->block]->page_head[location->page]->lpn;
-		if (ssd->dram->map->map_entry[sub->lpn].state)
+		if (ssd->dram->map->map_entry[sub->lpn].state){
 			sub->state = 1;
-		else
+			if (sub->lpn == -1) 
+				cout << "Error in state of physical page " << endl; 
+		}else{
 			sub->state = 0;
+			if (sub->lpn != -1) 
+				cout << "Error in state of invalid physical page " << endl; 
+		} 
 	}
 
 	if (operation == READ)
@@ -134,8 +142,12 @@ STATE move_page(ssd_info * ssd,  const local * location, gc_operation * gc_node)
 	sub_request * wsub = create_gc_sub_request(ssd, location, WRITE, gc_node);
 	invalid_old_page(ssd, wsub->lpn);
 	wsub->location = new local(location->channel, location->lun, location->plane);
-	wsub->ppn = get_new_ppn(ssd, wsub->lpn, location);
-	write_page(ssd, wsub->lpn, wsub->ppn);
+	wsub->ppn = get_new_ppn(ssd, wsub->lpn); // location);
+	if( wsub->ppn == -1 || write_page(ssd, wsub->lpn, wsub->ppn) == FAIL) {
+		cout << "error in move page " << endl; 
+		return FAIL; 
+	}
+		
 	find_location(ssd, wsub->ppn, wsub->location);
 	ssd->channel_head[wsub->location->channel]->lun_head[wsub->location->lun]->GCSubs.push_tail(wsub);
 
@@ -144,6 +156,7 @@ STATE move_page(ssd_info * ssd,  const local * location, gc_operation * gc_node)
 
 int erase_block(ssd_info * ssd,const local * location){
 
+	
 	unsigned int channel = location->channel;
 	unsigned int lun = location->lun;
 	unsigned int plane = location->plane;
@@ -165,7 +178,8 @@ int erase_block(ssd_info * ssd,const local * location){
 	ssd->channel_head[channel]->erase_count++;
 	ssd->channel_head[channel]->lun_head[lun]->erase_count++;
 	ssd->channel_head[channel]->lun_head[lun]->plane_head[plane]->erase_count++;
-	ssd->channel_head[channel]->lun_head[lun]->plane_head[plane]->free_page += ssd->parameter->page_block; //  - initial_free);
+	ssd->channel_head[channel]->lun_head[lun]->plane_head[plane]->free_page += ssd->parameter->page_block;
+	ssd->channel_head[channel]->lun_head[lun]->plane_head[plane]->invalid_page -= ssd->parameter->page_block;
 
 //	cout << "erase block " << channel << " "<< lun << " "<< plane << " "<< block << endl;
 	return SUCCESS;
@@ -177,8 +191,11 @@ bool Schedule_GC(ssd_info * ssd, sub_request * sub){
 		
 	local * location = sub->location; 
 	unsigned int free_page = ssd->channel_head[location->channel]->lun_head[location->lun]->plane_head[location->plane]->free_page;
+	unsigned int invalid_page = ssd->channel_head[location->channel]->lun_head[location->lun]->plane_head[location->plane]->invalid_page;
 	unsigned int all_page = ssd->parameter->page_block*ssd->parameter->block_plane;
 	gc_operation * gc_node = NULL;
+
+
 
 	if (free_page > (all_page * ssd->parameter->gc_down_threshold)){
 		return false;
@@ -191,6 +208,12 @@ bool Schedule_GC(ssd_info * ssd, sub_request * sub){
 	}
 
 	sub->trigger_gc = true; 	
+	
+	//int invalid_00 = ssd->channel_head[0]->lun_head[0]->plane_head[location->plane]->invalid_page;
+	//int invalid_01 = ssd->channel_head[0]->lun_head[1]->plane_head[location->plane]->invalid_page;
+	//int invalid_10 = ssd->channel_head[1]->lun_head[0]->plane_head[location->plane]->invalid_page;
+	//int invalid_11 = ssd->channel_head[1]->lun_head[1]->plane_head[location->plane]->invalid_page;
+	//cout << "GC starts for planes " << location->channel << location->lun << " with (" << invalid_00 << "," << invalid_01 << "," << invalid_10 << "," << invalid_11 << ")\n";
 	gc_for_plane(ssd, gc_node);
 
 	return true;
@@ -214,8 +237,12 @@ void pre_process_gc(ssd_info * ssd, const local * location){
 
 			int lpn = ssd->channel_head[gc_location->channel]->lun_head[gc_location->lun]->plane_head[gc_location->plane]->blk_head[gc_location->block]->page_head[gc_location->page]->lpn;
 			invalid_old_page(ssd, lpn);
-			int ppn = get_new_ppn(ssd, lpn, gc_location);
-			write_page(ssd, lpn, ppn);
+			int ppn = get_new_ppn(ssd, lpn);// gc_location);
+			if (ppn ==-1 || write_page(ssd, lpn, ppn) == FAIL) {
+				cout << "error in pre-process " << endl; 
+				return; 
+			}
+				
 			pre_process_move++;
 		}
 	}
@@ -243,54 +270,25 @@ STATE delete_gc_node(ssd_info * ssd, gc_operation * gc_node){
 	return SUCCESS;
 }
 // =============== GC ALGORITHMS ================================
-unsigned int best_cost(ssd_info * ssd, plane_info * the_plane, int * block_numbers, int number, int order /*which best, first best, second best, etc. */, int active_block /*not this one*/){
-	int i, j;
-	bool delete_blocks = false;
-	if (block_numbers == NULL) // means all block in the plane
-	{
-		delete_blocks = true;
-		block_numbers = new int[number];
-		for (i = 0; i < number; i++){
-			block_numbers[i] = i;
-		}
-	}
-
-	/* FASTER CODE */
-
-	for (i = 0; i < 3; i++){
-		for (j = i + 1; j < number; j++){
-			int first_block = block_numbers[i];
-			int second_block = block_numbers[j];
-			if ( the_plane->blk_head[first_block]->invalid_page_num  < the_plane->blk_head[second_block]->invalid_page_num) {
-				// swap
-				block_numbers[i] = second_block;
-				block_numbers[j] = first_block;
-			}
-		}
-	}
-
-	while (block_numbers[order] == active_block)
-		order++;
-
-	unsigned int b = block_numbers[order];
-//	if (the_plane->blk_head[b]->invalid_page_num == 18) {
-//		for (int bl = 0; bl < 256; bl++)
-//		for (int i = 0; i < 64; i++){
-//			cout << "LPN " << bl << "   " << i << "  " << the_plane->blk_head[bl]->page_head[i]->lpn << endl; 
-//		} 
-
-//		cout << "selected block " << the_plane->blk_head[b]->invalid_page_num << endl; 
-//	}
-	if (delete_blocks) delete [] block_numbers;
-
-	if (order < 3){
-		return b;
-	}
-	return -1;
+unsigned int best_cost(ssd_info * ssd, plane_info * the_plane, int active_block){
+	int max_invalid = -1; // ssd->parameter->page_block; 
+	int selected_block = -1; 
+	for (int i = 0; i < ssd->parameter->block_plane; i++){
+		if (i == active_block) continue; 
+		int free_count = the_plane->blk_head[i]->free_page_num; 
+		int invalid_count = the_plane->blk_head[i]->invalid_page_num; 
+		
+		if (free_count > 0) continue; 
+		if (invalid_count > max_invalid) {
+			max_invalid = invalid_count; 
+			selected_block = i; 
+		} 
+	}	
+	return selected_block; 
 }
 STATE greedy_algorithm(ssd_info * ssd,  local * location){
 	int active_block = get_active_block(ssd,location);
-	location->block = best_cost(ssd, ssd->channel_head[location->channel]->lun_head[location->lun]->plane_head[location->plane], NULL , ssd->parameter->block_plane, 0/* first best option*/, active_block);
+	location->block = best_cost(ssd, ssd->channel_head[location->channel]->lun_head[location->lun]->plane_head[location->plane], active_block);
 	return SUCCESS;
 }
 STATE fifo_algorithm(ssd_info * ssd,  local * location){
@@ -314,7 +312,6 @@ STATE windowed_algorithm(ssd_info * ssd, local * location){
 	unsigned int window_size = 100; // FIXME make it parameter
 
 	int * blocks = new int[window_size];
-	//cout << "new blocks" << endl;
 	for (int i = 0; i < window_size; i++)
 		blocks[i] = -1;
 
@@ -348,7 +345,7 @@ STATE windowed_algorithm(ssd_info * ssd, local * location){
 
 	unsigned int block = -1;
 
-	block= best_cost(ssd, the_plane, blocks, temp+1, 0 /*which best, first best, second best, etc. */, active_block);
+	block= 1; // FIXME best_cost(ssd, the_plane, blocks, temp+1, 0 /*which best, first best, second best, etc. */, active_block);
 
 	location->block = block;
 
@@ -397,7 +394,7 @@ STATE RGA_algorithm(ssd_info * ssd, local * location, int valid_number){
 	} else {
 		int block = -1;
 
-		block = best_cost(ssd, p, blocks, window_size, 0, active_block); // which best, first best, second best, etc.
+		block = 1; // best_cost(ssd, p, blocks, window_size, 0, active_block); // which best, first best, second best, etc.
 		location->block = block;
 	}
 	delete blocks;

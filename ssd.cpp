@@ -77,10 +77,10 @@ ssd_info *simulate(ssd_info *ssd){
 				second++;
 		}
 
-		if (!ssd->dram->buffer->check_buffer()) {
-			cout << "BUFFER FAIL " << endl;
-			break;
-		}
+//		if (!ssd->dram->buffer->check_buffer()) {
+//			cout << "BUFFER FAIL " << endl;
+//			break;
+//		}
 	}
 
 	return ssd;
@@ -116,7 +116,7 @@ int add_fetched_request(ssd_info * ssd, request * request1, uint64_t nearest_eve
 	if (request1->io_num % 10000 == 0){
 		ssd->stats->total_flash_erase_count += ssd->stats->flash_erase_count;
 		ssd->stats->flash_erase_count = 0;
-		cout << "fetching io request number: " << request1->io_num ;
+		cout << ssd->current_time << " fetching io request number: " << request1->io_num ;
 		cout << "\terase: " << ssd->stats->total_flash_erase_count ;
 		cout << "\tq length: " << ssd->request_queue_length  << "  " << ssd->parameter->queue_length;
 		cout << "\tmove count: " << ssd->stats->gc_moved_page << endl;

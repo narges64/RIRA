@@ -13,7 +13,11 @@ void full_write_preconditioning(ssd_info * ssd, bool seq){
 		if ((invalid_old_page(ssd, lpn) != SUCCESS)  && !seq) 
 			cout << "fail in invalid old page" << endl; 
 		int ppn = get_new_ppn (ssd, lpn);
-		write_page(ssd, lpn, ppn);
+		if (ppn == -1) {
+			cout << "fail in precondition " << endl; 
+		}
+		if (write_page(ssd, lpn, ppn) == FAIL) 
+			cout << "full write precondition fail in write_page " << endl; 
 		bool gc = check_need_gc(ssd, ppn);
 		if (gc) {
 			if (seq) cerr << "should not have GC in sequential preconditioning " << endl;
@@ -151,12 +155,19 @@ void service_in_flash(ssd_info * ssd, sub_request * sub){
 					rsubs_queue.push_tail(sub);
 		}
 	} else if (sub->operation == WRITE){
-		invalid_old_page(ssd, sub->lpn);
+		if(invalid_old_page(ssd, sub) == FAIL) {
+			cout << "error in invaliding the old page " << endl; 
+		}
 		sub->ppn = get_new_ppn(ssd, sub->lpn);
-		write_page(ssd, sub->lpn, sub->ppn);
+		
+		if(sub->ppn == -1 || write_page(ssd, sub->lpn, sub->ppn) == FAIL) {
+			cout << "there is problem "<< sub->ppn << endl; 
+			return; 
+		}
 		find_location(ssd, sub->ppn, sub->location);
 		ssd->channel_head[sub->location->channel]->lun_head[sub->location->lun]->
 			wsubs_queue.push_tail(sub);
+
 		Schedule_GC(ssd, sub);
 	}
 }
@@ -535,17 +546,18 @@ sub_request * create_sub_request( ssd_info * ssd, int lpn,
 }
 
 STATE write_page(ssd_info * ssd, const int lpn, const int  ppn){
-	update_map_entry(ssd, lpn, ppn);
-	update_physical_page(ssd, ppn, lpn);
+	if(update_map_entry(ssd, lpn, ppn) == FAIL) return FAIL; 
+	if (update_physical_page(ssd, ppn, lpn) == FAIL) return FAIL; 
 	return SUCCESS;
 }
-void update_map_entry(ssd_info * ssd, int lpn, int ppn){
+STATE update_map_entry(ssd_info * ssd, int lpn, int ppn){
 	bool full_page= true;
 	if (ppn == -1) full_page = false;
 	ssd->dram->map->map_entry[lpn].pn=ppn;
 	ssd->dram->map->map_entry[lpn].state = full_page;
+	return SUCCESS; 
 }
-void update_physical_page(ssd_info * ssd, const int ppn, const int lpn){
+STATE update_physical_page(ssd_info * ssd, const int ppn, const int lpn){
 	local * location = new local(0,0,0);
 	find_location(ssd, ppn, location);
 
@@ -555,7 +567,13 @@ void update_physical_page(ssd_info * ssd, const int ppn, const int lpn){
 	int b = location->block;
 	int pg = location->page;
 
+	blk_info * block = ssd->channel_head[c]->lun_head[l]->plane_head[p]->blk_head[b];
+
 	if (lpn != -1) {
+		if (block->last_write_page > pg) {
+			cout << "update physical page, writing backward " << block->last_write_page  << "  "  << pg<< endl; 
+			return FAIL; 
+		}
 		ssd->channel_head[c]->lun_head[l]->plane_head[p]->blk_head[b]->page_head[pg]->lpn=lpn;
 		ssd->channel_head[c]->lun_head[l]->plane_head[p]->blk_head[b]->page_head[pg]->valid_state=true;
 
@@ -565,15 +583,22 @@ void update_physical_page(ssd_info * ssd, const int ppn, const int lpn){
 		ssd->channel_head[c]->lun_head[l]->program_count++;
 		ssd->channel_head[c]->lun_head[l]->plane_head[p]->program_count++;
 	}else {
-		blk_info * block = ssd->channel_head[c]->lun_head[l]->plane_head[p]->blk_head[b];
+
+		if (block->page_head[pg]->lpn == -1 || block->page_head[pg]->valid_state == false) {
+			cout << "invalidating has problem, the page is already invalid or free " << endl; 
+			return FAIL; 
+		} 
 
 		block->page_head[pg]->lpn=-1;
-		if (block->page_head[pg]->valid_state)
-			ssd->channel_head[c]->lun_head[l]->plane_head[p]->blk_head[b]->invalid_page_num++;
+		if (block->page_head[pg]->valid_state){
+			block->invalid_page_num++;
+		} 
 		block->page_head[pg]->valid_state=false;
+		ssd->channel_head[c]->lun_head[l]->plane_head[p]->invalid_page++; 
+			
 	}
 	delete location;
-
+	return SUCCESS; 
 }
 uint64_t set_entry_state(ssd_info *ssd, int lsn,unsigned int size){
 	uint64_t temp,state,move;
@@ -588,8 +613,18 @@ uint64_t set_entry_state(ssd_info *ssd, int lsn,unsigned int size){
 STATE invalid_old_page(ssd_info * ssd, const int lpn){
 	if (ssd->dram->map->map_entry[lpn].state == false) return FAIL;
 	int old_ppn = ssd->dram->map->map_entry[lpn].pn;
-	update_map_entry(ssd, lpn, -1);
-	update_physical_page(ssd, old_ppn, -1);
+	if( update_physical_page(ssd, old_ppn, -1) == FAIL) return FAIL; 
+	if (update_map_entry(ssd, lpn, -1) == FAIL ) return FAIL; 
+	return SUCCESS;
+}
+
+STATE invalid_old_page(ssd_info * ssd, sub_request * sub){ // const int lpn){
+	int lpn = sub->lpn; 
+	if (ssd->dram->map->map_entry[lpn].state == false) return FAIL;
+	int old_ppn = ssd->dram->map->map_entry[lpn].pn;
+	find_location(ssd, old_ppn, sub->location); 
+	if( update_map_entry(ssd, lpn, -1) == FAIL) return FAIL; 
+	if (update_physical_page(ssd, old_ppn, -1)  == FAIL) return FAIL; 
 	return SUCCESS;
 }
 
@@ -650,6 +685,10 @@ int get_active_block(ssd_info *ssd, local * location){
 					plane_head[plane]->blk_head[active_block]->free_page_num;
 		count++;
 	}
+	if (count == ssd->parameter->block_plane) {
+		cout << "could not find active_block " << endl; 
+		return -1; 
+	} 
 	ssd->channel_head[channel]->lun_head[lun]->plane_head[plane]->active_block=active_block;
 
 	return active_block;
@@ -659,6 +698,7 @@ STATE allocate_page_in_plane( ssd_info *ssd, local * location){
 	int lun = location->lun;
 	int plane = location->plane;
 	int active_block=get_active_block(ssd, location);
+	if (active_block == -1) return FAIL; 
 	int active_page = ssd->channel_head[channel]->lun_head[lun]->plane_head[plane]->
 					blk_head[active_block]->last_write_page + 1;
 

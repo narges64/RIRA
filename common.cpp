@@ -228,9 +228,9 @@ blk_info::blk_info(parameter_value * parameters)
 }
 plane_info::plane_info(parameter_value  * parameters)
 {
-	add_reg_ppn = -1;
 	free_page=parameters->block_plane*parameters->page_block;
-
+	invalid_page = 0; 
+	
 	blk_head = new blk_info*[parameters->block_plane];
 	for(int i = 0; i<parameters->block_plane; i++)
 	{

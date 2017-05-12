@@ -788,11 +788,9 @@ public:
 		delete state_time;
 	}
 	void reset_plane_stats();
-	int64_t add_reg_ppn;
 	int64_t free_page;
-	int64_t ers_invalid;
+	int64_t invalid_page;
 	int64_t active_block;
-	int64_t can_erase_block;
 	blk_info **blk_head;
 	int64_t block_num;
 	int64_t erase_count;
