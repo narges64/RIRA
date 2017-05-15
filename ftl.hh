@@ -24,7 +24,7 @@ int get_target_plane(ssd_info * ssd, unsigned int channel, unsigned int lun);
 bool check_need_gc(ssd_info * ssd, int ppn);
 void full_write_preconditioning(ssd_info * ssd, bool seq);
 STATE invalid_old_page(ssd_info * ssd, sub_request * sub ); // const int lpn);
-STATE invalid_old_page(ssd_info * ssd, const int lpn);
+STATE invalid_old_page(ssd_info * ssd, const int lpn, local * location);
 STATE write_page(ssd_info * ssd, const int lpn, const int  ppn);
 int get_active_block(ssd_info * ssd, local * location);
 STATE service_in_buffer(ssd_info * ssd, sub_request * sub);

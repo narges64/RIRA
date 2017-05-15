@@ -8,13 +8,22 @@ void full_write_preconditioning(ssd_info * ssd, bool seq){
 	cerr << "full write for total size " << total_size << " page ";
 	// add write to table
 	int lpn = 0;
+	int ppn = -1; 
+	local * location = new local(0,0,0,0,0); 
 	for (int i = 0; i <  total_size; i++){
-
-		if ((invalid_old_page(ssd, lpn) != SUCCESS)  && !seq) 
-			cout << "fail in invalid old page" << endl; 
-		int ppn = get_new_ppn (ssd, lpn);
-		if (ppn == -1) {
-			cout << "fail in precondition " << endl; 
+		if (!seq){
+			if ((invalid_old_page(ssd, lpn, location) != SUCCESS)) 
+				cout << "fail in invalid old page" << endl; 
+			ppn = get_new_ppn (ssd, lpn, location);
+			if (ppn == -1) {
+				cout << "fail in precondition " << endl; 
+			}
+		}else {
+			if ((invalid_old_page(ssd, lpn, location) == SUCCESS))
+				cout << "seqential should not see the old page " << endl; 
+			ppn = get_new_ppn(ssd, lpn, NULL); 
+			if (ppn == -1) 
+				cout << "fail in precondition 2" << endl; 
 		}
 		if (write_page(ssd, lpn, ppn) == FAIL) 
 			cout << "full write precondition fail in write_page " << endl; 
@@ -158,7 +167,7 @@ void service_in_flash(ssd_info * ssd, sub_request * sub){
 		if(invalid_old_page(ssd, sub) == FAIL) {
 			cout << "error in invaliding the old page " << endl; 
 		}
-		sub->ppn = get_new_ppn(ssd, sub->lpn);
+		sub->ppn = get_new_ppn(ssd, sub->lpn, sub->location);
 		
 		if(sub->ppn == -1 || write_page(ssd, sub->lpn, sub->ppn) == FAIL) {
 			cout << "there is problem "<< sub->ppn << endl; 
@@ -610,9 +619,10 @@ uint64_t set_entry_state(ssd_info *ssd, int lsn,unsigned int size){
 	return state;
 }
 
-STATE invalid_old_page(ssd_info * ssd, const int lpn){
+STATE invalid_old_page(ssd_info * ssd, const int lpn, local * location){
 	if (ssd->dram->map->map_entry[lpn].state == false) return FAIL;
 	int old_ppn = ssd->dram->map->map_entry[lpn].pn;
+	find_location(ssd, old_ppn, location); 
 	if( update_physical_page(ssd, old_ppn, -1) == FAIL) return FAIL; 
 	if (update_map_entry(ssd, lpn, -1) == FAIL ) return FAIL; 
 	return SUCCESS;
