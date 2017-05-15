@@ -140,15 +140,15 @@ STATE move_page(ssd_info * ssd,  const local * location, gc_operation * gc_node)
 
 
 	sub_request * wsub = create_gc_sub_request(ssd, location, WRITE, gc_node);
-	invalid_old_page(ssd, wsub->lpn);
 	wsub->location = new local(location->channel, location->lun, location->plane);
-	wsub->ppn = get_new_ppn(ssd, wsub->lpn); // location);
+	invalid_old_page(ssd, wsub);
+	wsub->ppn = get_new_ppn(ssd, wsub->lpn, wsub->location);
 	if( wsub->ppn == -1 || write_page(ssd, wsub->lpn, wsub->ppn) == FAIL) {
 		cout << "error in move page " << endl; 
 		return FAIL; 
 	}
 		
-	find_location(ssd, wsub->ppn, wsub->location);
+	find_location(ssd, wsub->ppn, wsub->location);	
 	ssd->channel_head[wsub->location->channel]->lun_head[wsub->location->lun]->GCSubs.push_tail(wsub);
 
 	return SUCCESS;
@@ -236,8 +236,9 @@ void pre_process_gc(ssd_info * ssd, const local * location){
 			gc_location->page=i;
 
 			int lpn = ssd->channel_head[gc_location->channel]->lun_head[gc_location->lun]->plane_head[gc_location->plane]->blk_head[gc_location->block]->page_head[gc_location->page]->lpn;
-			invalid_old_page(ssd, lpn);
-			int ppn = get_new_ppn(ssd, lpn);// gc_location);
+			local * location = new local(0,0,0,0,0); 
+			invalid_old_page(ssd, lpn, location);
+			int ppn = get_new_ppn(ssd, lpn, location);
 			if (ppn ==-1 || write_page(ssd, lpn, ppn) == FAIL) {
 				cout << "error in pre-process " << endl; 
 				return; 
