@@ -1,38 +1,38 @@
 #include "common.hh"
 
 parameter_value::parameter_value(int argc, char ** argv){
-	strcpy(filename, argv[1]);
-	load_parameters(argv[1]);
+		strcpy(filename, argv[1]);
+		load_parameters(argv[1]);
 
-	load_inline_parameters(argc, argv);
+		load_inline_parameters(argc, argv);
 
-	// distribute luns between channels
-	for (int i = 0; i < channel_number; i++){
-		lun_channel[i] = 0;
-	}
-	int channel = 0;
-	for (int i = 0; i < lun_num; i++){
-		lun_channel[channel]++;
-		channel = (channel + 1) % channel_number;
-	}
-
-	channel = 0;
-	for (int i = 0; i < channel_number; i++){
-		if (lun_channel[i] != 0){
-			channel++;
+		// distribute luns between channels
+		for (int i = 0; i < channel_number; i++){
+				lun_channel[i] = 0;
 		}
-	}
-	channel_number = channel;
+		int channel = 0;
+		for (int i = 0; i < lun_num; i++){
+				lun_channel[channel]++;
+				channel = (channel + 1) % channel_number;
+		}
+
+		channel = 0;
+		for (int i = 0; i < channel_number; i++){
+				if (lun_channel[i] != 0){
+						channel++;
+				}
+		}
+		channel_number = channel;
 }
 
 void parameter_value::print_all_parameters(FILE * stat_file){
-	FILE * fp = fopen(filename, "r");
-	char buffer[300];
-	while (fgets(buffer, 300, fp)){
-		fprintf(stat_file, "%s", buffer);
-		fflush(stat_file);
-	}
-	fclose(fp);
+		FILE * fp = fopen(filename, "r");
+		char buffer[300];
+		while (fgets(buffer, 300, fp)){
+				fprintf(stat_file, "%s", buffer);
+				fflush(stat_file);
+		}
+		fclose(fp);
 }
 
 ssd_info::ssd_info(parameter_value * parameters, char * statistics_filename)
@@ -42,8 +42,7 @@ ssd_info::ssd_info(parameter_value * parameters, char * statistics_filename)
 	int over_provide = 100.0 * parameters->overprovide;
 
 	// repeat_times = new int[parameters->consolidation_degree];
-	// last_times = new int64_t [parameters->consolidation_degree];
-	// tracefile = new FILE* [parameters->consolidation_degree];
+	last_times = 0; // new int64_t [parameters->consolidation_degree];
 	// for (int cd = 0; cd < parameters->consolidation_degree; cd++){
 	//	repeat_times[cd]=0; // do not repeat the trace (just once)
 	//	last_times[cd]=0;
@@ -51,8 +50,6 @@ ssd_info::ssd_info(parameter_value * parameters, char * statistics_filename)
 	// }
 
 	lun_token = 0;
-	min_lsn=0;
-	max_lsn= parameters->lun_num * parameters->plane_lun * parameters->block_plane * parameters->page_block * parameters->subpage_page * parameters->overprovide;
 
 	request_sequence_number = 0;
 	subrequest_sequence_number = 0;
@@ -231,9 +228,9 @@ blk_info::blk_info(parameter_value * parameters)
 }
 plane_info::plane_info(parameter_value  * parameters)
 {
-	add_reg_ppn = -1;
 	free_page=parameters->block_plane*parameters->page_block;
-
+	invalid_page = 0; 
+	
 	blk_head = new blk_info*[parameters->block_plane];
 	for(int i = 0; i<parameters->block_plane; i++)
 	{

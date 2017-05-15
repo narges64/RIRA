@@ -44,6 +44,8 @@ void change_plane_state (ssd_info * ssd, unsigned int channel, unsigned int lun,
 	ssd->channel_head[channel]->lun_head[lun]->plane_head[plane]->current_time=current_time;
 	ssd->channel_head[channel]->lun_head[lun]->plane_head[plane]->next_state=next_state; 	
 	ssd->channel_head[channel]->lun_head[lun]->plane_head[plane]->next_state_predict_time=next_time;
+
+/*
 	sub_request * rhead = ssd->channel_head[channel]->lun_head[lun]->rsubs_queue.queue_head; 
 	while(rhead != NULL){
 		if (rhead->location->plane == plane){
@@ -96,7 +98,7 @@ void change_plane_state (ssd_info * ssd, unsigned int channel, unsigned int lun,
 		}
 		gchead = gchead->next_node; 
 	}	
-
+*/
 }
 
 void change_channel_state(ssd_info * ssd, unsigned int channel, unsigned int current_state, int64_t current_time, unsigned int next_state, int64_t next_time){	
@@ -124,16 +126,17 @@ unsigned int find_subrequest_state(ssd_info * ssd, sub_request * sub){
 	return sub->current_state; 	
 }
 void change_subrequest_state(ssd_info * ssd, sub_request * sub, unsigned int current_state, int64_t current_time, unsigned int next_state , int64_t next_time){
-	int state1 = sub->current_state; 
+/*	int state1 = sub->current_state; 
 	int state2 = sub->next_state; 
 	int64_t state1_time = sub->current_time; 
 	int64_t state2_time = sub->next_state_predict_time; 
 	
 	sub->state_time[state1] += (state2_time - state1_time)>0? state2_time - state1_time : 0; 
 	sub->state_time[state2] += (current_time - state2_time)>0? current_time - state2_time : 0;  
-	
+*/	
 	sub->current_state = current_state; 
 	sub->current_time = current_time; 
 	sub->next_state = next_state; 
 	sub->next_state_predict_time = next_time; 
+
 }
