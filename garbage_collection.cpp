@@ -148,7 +148,7 @@ STATE move_page(ssd_info * ssd,  const local * location, gc_operation * gc_node)
 		return FAIL; 
 	}
 		
-	find_location(ssd, wsub->ppn, wsub->location);
+	find_location(ssd, wsub->ppn, wsub->location);	
 	ssd->channel_head[wsub->location->channel]->lun_head[wsub->location->lun]->GCSubs.push_tail(wsub);
 
 	return SUCCESS;
