@@ -31,4 +31,5 @@ STATE service_in_buffer(ssd_info * ssd, sub_request * sub);
 void service_in_flash(ssd_info * ssd, sub_request * sub);
 STATE update_map_entry(ssd_info * ssd, int lpn, int ppn);
 STATE update_physical_page(ssd_info * ssd, const int ppn, const int lpn);
+void write_cleanup(ssd_info * ssd, sub_request * sub); 
 #endif

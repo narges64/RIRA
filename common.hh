@@ -206,6 +206,7 @@ public:
 class sub_request; 
 class buffer_entry{
 public:
+	bool gc; 
 	bool modified;
 	bool evicted;
 	int lpn;
@@ -223,6 +224,7 @@ public:
 		prev_entry = NULL;
 		outlier = false;
 		sub = NULL;  
+		gc = false; 
 	}
 	buffer_entry(int l){
 		buffer_entry();
@@ -235,6 +237,7 @@ public:
 		outlier = false; 
 		sub = NULL; 
 		lpn = l;
+		gc = false; 
 	}
 	buffer_entry * next_entry;
 	buffer_entry * prev_entry;
@@ -572,7 +575,7 @@ public:
 	}
 	void hit_write(buffer_entry * entry){
 		if (entry == NULL){
-			cout << "Error in hit write " << endl;
+		//	cout << "Error in hit write " << endl;
 			return;
 		}
 		entry->write_hit++;
@@ -604,6 +607,7 @@ public:
 	int64_t current_time;
 	map_info *map;
 	write_buffer * buffer;
+	write_buffer * gc_buffer;
 };
 
 class sub_request{

@@ -206,6 +206,7 @@ dram_info::dram_info(parameter_value * parameters)
 
 	dram_capacity = parameters->dram_capacity;
 	buffer = new write_buffer(dram_capacity, parameters->subpage_page);
+	gc_buffer = new write_buffer(dram_capacity, parameters->subpage_page);
 }
 
 page_info::page_info(){

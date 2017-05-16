@@ -256,45 +256,8 @@ void services_2_io(ssd_info * ssd, unsigned int channel, unsigned int * channel_
 					ssd->channel_head[channel]->lun_head[lun]->GCMode = true; 
 				}
 				if (subs[i]->buf_entry != NULL){
-					// if (operation == 0) 
-					//	cout << "Delay flash subrequest (" << subs[i]->lpn << ","<< subs[i]->location->plane << ")  " << subs[i]->complete_time - subs[i]->begin_time << endl; 
+					write_cleanup(ssd, subs[i]); 
 
-					// remove the entry from the buffer since the request is done 
-					buffer_entry * buf_ent = subs[i]->buf_entry; 	
-					ssd->dram->buffer->remove_entry(buf_ent);
-					
-					int lpn = buf_ent->lpn; 
-					ssd->dram->map->map_entry[lpn].buf_ent = NULL;
-					
-					int64_t complete_time = subs[i]->complete_time; 	
-					if (buf_ent->outlier){
-						buf_ent->sub->complete_time = complete_time; 
-				//		cout << "Delay outlier sub ("  << subs[i]->lpn << ","<< subs[i]->location->plane << ")  "<< buf_ent->sub->complete_time - buf_ent->sub->begin_time << endl; 
-						change_subrequest_state (ssd, buf_ent->sub, 
-								SR_MODE_ST_S, ssd->current_time, 
-								SR_MODE_COMPLETE, complete_time + 1000);
-						buf_ent->sub->buf_entry = NULL;  
-					}else {
-						delete buf_ent; 
-
-						// By removing one subrequest from buffer, we might put another sub request in the buffer 
-						buffer_entry * outlier_entry = ssd->dram->buffer->move_outlier(); 
-						if (outlier_entry != NULL) {
-							sub_request * outlier_sub = outlier_entry->sub;
-							if (outlier_sub == NULL) 
-								cout << "outlier sub cannot be null" << endl;  
-							outlier_entry->sub = NULL; 
-							ssd->dram->map->map_entry[outlier_sub->lpn].buf_ent = outlier_entry; 
-							
-							outlier_sub->complete_time = complete_time + 1000; 
-							// cout << "Delay outlier sub release (" << outlier_sub->lpn << ","<<outlier_sub->location->plane << ")  " << outlier_sub->complete_time - outlier_sub->begin_time << endl; 
-							
-							change_subrequest_state(ssd, outlier_sub, 
-									SR_MODE_ST_S, ssd->current_time, 
-									SR_MODE_COMPLETE, complete_time+1000);
-							outlier_sub->buf_entry = NULL; 
-						}
-					}
 					delete subs[i];
 				}
 			}
@@ -314,6 +277,64 @@ void services_2_io(ssd_info * ssd, unsigned int channel, unsigned int * channel_
 	delete [] subs;
 
 }
+
+void write_cleanup(ssd_info * ssd, sub_request * sub){
+	// remove the entry from the buffer since the request is done 
+	buffer_entry * buf_ent = sub->buf_entry; 
+	if (buf_ent == NULL) return; 
+
+	if (buf_ent->gc) 
+		ssd->dram->gc_buffer->remove_entry(buf_ent); 
+	else 	
+		ssd->dram->buffer->remove_entry(buf_ent);
+				
+	int lpn = buf_ent->lpn; 
+	ssd->dram->map->map_entry[lpn].buf_ent = NULL;			
+					
+	int64_t complete_time = sub->complete_time; 	
+
+	if (buf_ent->outlier){
+		if (buf_ent->sub != sub) {
+			buf_ent->sub->complete_time = complete_time; 
+ 
+			change_subrequest_state (ssd, buf_ent->sub, 
+				SR_MODE_ST_S, ssd->current_time, 
+				SR_MODE_COMPLETE, complete_time + 1000);
+		}
+		buf_ent->sub->buf_entry = NULL;  
+		
+		delete buf_ent; 
+	}else {
+		if (buf_ent->sub != NULL) 
+			cout << "there is a problem here " << endl; 
+
+		// By removing one subrequest from buffer, we might put another sub request in the buffer 
+		buffer_entry * outlier_entry = NULL; 
+		if (buf_ent->gc)
+			outlier_entry = ssd->dram->gc_buffer->move_outlier(); 
+		else 
+			outlier_entry = ssd->dram->buffer->move_outlier(); 
+			
+		delete buf_ent; 
+
+		if (outlier_entry != NULL) {
+			sub_request * outlier_sub = outlier_entry->sub;
+			if (outlier_sub == NULL) 
+				cout << "outlier sub cannot be null" << endl;  
+			outlier_entry->sub = NULL; 
+			ssd->dram->map->map_entry[outlier_sub->lpn].buf_ent = outlier_entry; 
+							
+			outlier_sub->complete_time = complete_time + 1000; 
+							
+			change_subrequest_state(ssd, outlier_sub, 
+				SR_MODE_ST_S, ssd->current_time, 
+				SR_MODE_COMPLETE, complete_time+1000);
+			outlier_sub->buf_entry = NULL; 
+			
+		}
+	}
+}
+
 
 int find_lun_io_requests(ssd_info * ssd, unsigned int channel,
 				unsigned int lun, sub_request ** subs, int * operation){
@@ -345,6 +366,7 @@ int find_lun_io_requests(ssd_info * ssd, unsigned int channel,
 
 	if ((*operation) == READ) return subs_count;
 
+	
 	for (unsigned plane = 0; plane < ssd->parameter->plane_lun; plane++){
 		if (subs[plane] != NULL ) continue;
 
@@ -359,6 +381,7 @@ int find_lun_io_requests(ssd_info * ssd, unsigned int channel,
 			}
 		}
 	}
+
 	return subs_count;
 }
 
@@ -418,15 +441,11 @@ void services_2_gc(ssd_info * ssd, unsigned int channel,unsigned int * channel_b
 				cout << "Error in the operation: " << operation << endl;
 		}
 
-		//channel_busy_time = 1; 
-		//lun_busy_time = 1; 
 		// service all sub_requests 
 		for (int i = 0; i < ssd->parameter->plane_lun; i++){
 			if (subs[i] == NULL) continue;
 			
 			subs[i]->complete_time = ssd->current_time + lun_busy_time;
-//			if (operation == 0 )
-//				cout << "GC Writes in plane (" << subs[i]->lpn << "," << subs[i]->location->plane << ") " << subs[i]->complete_time - subs[i]->begin_time << endl; 			
 			change_subrequest_state(ssd, subs[i],
 				SR_MODE_ST_S, ssd->current_time, SR_MODE_COMPLETE ,
 				ssd->current_time + lun_busy_time);
@@ -436,13 +455,15 @@ void services_2_gc(ssd_info * ssd, unsigned int channel,unsigned int * channel_b
 				PLANE_MODE_GC, ssd->current_time, PLANE_MODE_IDLE,
 				ssd->current_time + lun_busy_time);
 
-			if (subs[i]->buf_entry != NULL){
-				cout << "GC request should not be in the buffer " << endl; 
-			}
 			if (operation == ERASE){
 				delete_gc_node(ssd, subs[i]->gc_node);
 				ssd->channel_head[subs[i]->location->channel]->lun_head[subs[i]->location->lun]->GCMode = false; 
 			}
+
+			if (subs[i]->buf_entry != NULL){
+				write_cleanup(ssd, subs[i]); 
+			}
+
 			delete subs[i];
 		}
 
@@ -454,7 +475,9 @@ void services_2_gc(ssd_info * ssd, unsigned int channel,unsigned int * channel_b
 					CHANNEL_MODE_IDLE, ssd->current_time + channel_busy_time);
 			*channel_busy_flag = 1;
 			break; 
-		} 
+		}
+
+	 
 	}
 	delete [] subs;
 }
@@ -482,10 +505,55 @@ int find_lun_gc_requests(ssd_info * ssd, unsigned int channel, unsigned int lun,
 		if (temp == NULL ||
 			((*operation) != -1 && temp->operation != (*operation)))
 			continue;  // can be improved
-		subs[i] = temp;
 		ssd->channel_head[channel]->lun_head[lun]->GCSubs.remove_node(temp);
-		(*operation) = subs[i]->operation;
-		subs_count++;
+		if (find_subrequest_state(ssd, temp) == SR_MODE_COMPLETE) {
+			i--; 
+			continue; 	
+		}
+		if (temp->operation == ERASE || temp->operation == READ) {
+			subs[i] = temp; 
+			(*operation) = subs[i]->operation;
+			subs_count++;
+			continue; 
+		}
+		// If it's write 
+
+		int lpn = temp->lpn; 	
+		buffer_entry * buf_ent = ssd->dram->map->map_entry[lpn].buf_ent; 
+		if (buf_ent != NULL) {
+			if (buf_ent->gc){ 
+				subs[i] = temp; 
+				(*operation) = subs[i]->operation; 
+				subs_count++; 
+				continue; 
+			}else 
+				ssd->dram->buffer->hit_write(buf_ent); 
+			i--; 
+			continue;
+		}else {
+			if (temp->buf_entry != NULL) {
+				buf_ent = temp->buf_entry; 
+			}else {
+				buf_ent = ssd->dram->gc_buffer->add_head(lpn);
+				temp->buf_entry = buf_ent; 
+				buf_ent->gc = true; 
+			}
+		 
+			if (!buf_ent->outlier) {
+				ssd->dram->map->map_entry[lpn].buf_ent= buf_ent; 
+				ssd->channel_head[channel]->lun_head[lun]->GCSubs.push_tail(temp); 
+				i--; 
+				continue; 
+			}else {
+				temp->buf_entry = buf_ent; 
+				buf_ent->sub = temp; 
+				subs[i] = temp; 
+				(*operation) = subs[i]->operation;
+				subs_count++;
+			}	
+
+		}
+		
 		if (ssd->parameter->plane_level_tech != GCGC)
 			return subs_count; // NOT FOR GCGC
 	}

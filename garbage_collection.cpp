@@ -107,7 +107,7 @@ sub_request * create_gc_sub_request( ssd_info * ssd,const local * location, int 
 			sub->state = 0;
 			if (sub->lpn != -1) 
 				cout << "Error in state of invalid physical page " << endl; 
-		} 
+		}
 	}
 
 	if (operation == READ)
@@ -149,7 +149,17 @@ STATE move_page(ssd_info * ssd,  const local * location, gc_operation * gc_node)
 	}
 		
 	find_location(ssd, wsub->ppn, wsub->location);	
-	ssd->channel_head[wsub->location->channel]->lun_head[wsub->location->lun]->GCSubs.push_tail(wsub);
+
+	buffer_entry * buf_ent = ssd->dram->map->map_entry[wsub->lpn].buf_ent; 
+	if (buf_ent == NULL){
+		ssd->channel_head[wsub->location->channel]->lun_head[wsub->location->lun]->GCSubs.push_tail(wsub);
+	} else {
+		if (!buf_ent->gc) 
+			ssd->dram->buffer->hit_write(buf_ent); 
+		else 
+			ssd->dram->gc_buffer->hit_write(buf_ent); 	
+		delete wsub; 
+	}	
 
 	return SUCCESS;
 }
