@@ -406,8 +406,8 @@ void services_2_gc(ssd_info * ssd, unsigned int channel,unsigned int * channel_b
 		// select the order of luns randomly 
 		lun = (c + random) % ssd->channel_head[channel]->lun_num;
 		
-		if (find_lun_state(ssd , channel, lun) != LUN_MODE_IDLE ||
-			ssd->channel_head[channel]->lun_head[lun]->GCMode != true) continue;
+		if (find_lun_state(ssd , channel, lun) != LUN_MODE_IDLE ) continue; 
+			// ssd->channel_head[channel]->lun_head[lun]->GCMode != true) continue;
 		// collect sub_requests for different planes 
 		for (int i = 0; i < ssd->parameter->plane_lun; i++) subs[i] = NULL;
 		subs_count = 0;
@@ -518,34 +518,30 @@ int find_lun_gc_requests(ssd_info * ssd, unsigned int channel, unsigned int lun,
 		}
 		// If it's write 
 
+		if (temp->buf_entry != NULL){
+			subs[i] = temp; 
+			(*operation) = subs[i]->operation; 
+			subs_count++; 
+			continue; 
+		}
+
 		int lpn = temp->lpn; 	
 		buffer_entry * buf_ent = ssd->dram->map->map_entry[lpn].buf_ent; 
 		if (buf_ent != NULL) {
-			if (buf_ent->gc){ 
-				subs[i] = temp; 
-				(*operation) = subs[i]->operation; 
-				subs_count++; 
-				continue; 
-			}else 
-				ssd->dram->buffer->hit_write(buf_ent); 
+			ssd->dram->buffer->hit_write(buf_ent); 
 			i--; 
 			continue;
 		}else {
-			if (temp->buf_entry != NULL) {
-				buf_ent = temp->buf_entry; 
-			}else {
-				buf_ent = ssd->dram->gc_buffer->add_head(lpn);
-				temp->buf_entry = buf_ent; 
-				buf_ent->gc = true; 
-			}
-		 
+			buf_ent = ssd->dram->gc_buffer->add_head(lpn);
+			temp->buf_entry = buf_ent; 
+			buf_ent->gc = true; 
+
 			if (!buf_ent->outlier) {
 				ssd->dram->map->map_entry[lpn].buf_ent= buf_ent; 
 				ssd->channel_head[channel]->lun_head[lun]->GCSubs.push_tail(temp); 
 				i--; 
 				continue; 
 			}else {
-				temp->buf_entry = buf_ent; 
 				buf_ent->sub = temp; 
 				subs[i] = temp; 
 				(*operation) = subs[i]->operation;
