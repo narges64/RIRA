@@ -351,6 +351,8 @@ void collect_statistics(ssd_info * ssd, request * req){
 	}
 	else
 	{
+		if (ssd->current_time > 10000000000 && ssd->current_time < 15000000000) 
+			cout << "DELAY " << req->response_time - req->begin_time  << "  " << ssd->stats->total_flash_erase_count + ssd->stats->flash_erase_count<< endl; 
 		ssd->stats->write_request_size[req->app_id] += req->size;
 		ssd->stats->write_request_count[req->app_id]++;
 		ssd->stats->write_avg[req->app_id]+=(req->response_time - req->begin_time);
