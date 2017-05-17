@@ -351,10 +351,9 @@ void collect_statistics(ssd_info * ssd, request * req){
 	}
 	else
 	{
-		ssd->stats->write_request_size[req->app_id] += req->size;
-		ssd->stats->write_request_count[req->app_id]++;
+		if (ssd->current_time > 10000000000 && ssd->current_time < 15000000000) 
+			cout << "DELAY " << req->response_time - req->begin_time << "  " << endl;  
 		ssd->stats->write_avg[req->app_id]+=(req->response_time - req->begin_time);
-		ssd->stats->write_throughput.add_time(req->begin_time, req->response_time); // changed 
 		ssd->stats->write_throughput.add_capacity(req->size);
 		ssd->stats->write_throughput.add_count(1);
 		if (req->response_time - req->begin_time > ssd->stats->write_worst_case_rt){
