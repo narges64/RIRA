@@ -321,7 +321,7 @@ void write_cleanup(ssd_info * ssd, sub_request * sub){
 			sub_request * outlier_sub = outlier_entry->sub;
 			if (outlier_sub == NULL) 
 				cout << "outlier sub cannot be null" << endl;  
-			outlier_entry->sub = NULL; 
+			outlier_entry->sub = NULL;
 			ssd->dram->map->map_entry[outlier_sub->lpn].buf_ent = outlier_entry; 
 							
 			outlier_sub->complete_time = complete_time + 1000; 

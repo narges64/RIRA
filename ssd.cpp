@@ -351,8 +351,6 @@ void collect_statistics(ssd_info * ssd, request * req){
 	}
 	else
 	{
-		if (ssd->current_time > 10000000000 && ssd->current_time < 15000000000) 
-			cout << "DELAY " << req->response_time - req->begin_time << "  " << endl;  
 		ssd->stats->write_avg[req->app_id]+=(req->response_time - req->begin_time);
 		ssd->stats->write_throughput.add_capacity(req->size);
 		ssd->stats->write_throughput.add_count(1);
