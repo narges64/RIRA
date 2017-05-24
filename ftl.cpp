@@ -53,6 +53,10 @@ ssd_info * distribute(ssd_info *ssd){
 		ssd->dram->current_time=ssd->current_time;
 
 	request * req = ssd->request_tail; // The request we want to distribute
+	if (req->size == 0) {
+		cout << "size zero " << endl; 
+		return ssd; 
+	}
 	unsigned lsn  = req->lsn;
 	unsigned last_lpn  = (req->lsn+req->size-1)/ssd->parameter->subpage_page;
 	unsigned first_lpn = req->lsn/ssd->parameter->subpage_page;
@@ -691,7 +695,8 @@ uint64_t set_entry_state(ssd_info *ssd, int lsn,unsigned int size){
 
 STATE invalid_old_page(ssd_info * ssd, const int lpn, local * location){
 	if (ssd->dram->map->map_entry[lpn].state == false) {
-		cout << "state of lpn in the mapping is false " << endl;
+		if (ssd->current_time > 0) 
+			cout << "error in invalid old page error 1 " << endl;
 		return FAIL;
 	}
 	int old_ppn = ssd->dram->map->map_entry[lpn].pn;
@@ -709,11 +714,20 @@ STATE invalid_old_page(ssd_info * ssd, const int lpn, local * location){
 
 STATE invalid_old_page(ssd_info * ssd, sub_request * sub){ // const int lpn){
 	int lpn = sub->lpn;
-	if (ssd->dram->map->map_entry[lpn].state == false) return FAIL;
+	if (ssd->dram->map->map_entry[lpn].state == false){
+		cout << "error 1 " << sub->lpn  << endl; 	
+		 return FAIL;
+	}
 	int old_ppn = ssd->dram->map->map_entry[lpn].pn;
 	find_location(ssd, old_ppn, sub->location);
-	if( update_map_entry(ssd, lpn, -1) == FAIL) return FAIL;
-	if (update_physical_page(ssd, old_ppn, -1)  == FAIL) return FAIL;
+	if( update_map_entry(ssd, lpn, -1) == FAIL) {
+		cout << "error 2" << endl; 
+		return FAIL;
+	}
+	if (update_physical_page(ssd, old_ppn, -1)  == FAIL) {
+		cout << "error 3 " << endl; 
+		return FAIL;
+	} 
 	return SUCCESS;
 }
 

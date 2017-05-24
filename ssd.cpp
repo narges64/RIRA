@@ -71,7 +71,7 @@ ssd_info *simulate(ssd_info *ssd){
 		if(flag == 0 && ssd->request_queue == NULL){
 			flag = 100;
 		}
-		if (ssd->current_time / (EPOCH_LENGTH) > second){
+		if (ssd->current_time != MAX_INT64 && ssd->current_time / EPOCH_LENGTH  > second){
 			print_epoch_statistics(ssd, 1);
 			while (ssd->current_time / (EPOCH_LENGTH) > second)
 				second++;
@@ -88,6 +88,8 @@ ssd_info *simulate(ssd_info *ssd){
 
 int add_fetched_request(ssd_info * ssd, request * request1, uint64_t nearest_event_time) {
 	if (request1 == NULL){	// no request before nearest_event_time
+		if (ssd->current_time == MAX_INT64)
+			return 0;  
 		if (ssd->current_time <= nearest_event_time){
 			if ((ssd->request_queue_length >= ssd->parameter->queue_length) &&
 			 	(nearest_event_time == MAX_INT64)){
@@ -97,6 +99,7 @@ int add_fetched_request(ssd_info * ssd, request * request1, uint64_t nearest_eve
 				ssd->current_time = nearest_event_time;
 			}
 		}
+		if (nearest_event_time == MAX_INT64) return 0; 
 		return -1;
 	}
 
@@ -253,8 +256,14 @@ request * read_request_from_file(ssd_info * ssd, int64_t nearest_event_time){
 			time_tt = MAX_INT64;
 	}
 
+	if ((lsn < 0) || (size <= 0))
+	{
+		return NULL;
+	}
+
+
 	// if next request is not before the next event, we discard it 	
-	if (time_tt > nearest_event_time){
+	if (time_tt > nearest_event_time ){
 		fseek(ssd->tracefile,filepoint,0);
 		return NULL;
 	}
@@ -264,11 +273,6 @@ request * read_request_from_file(ssd_info * ssd, int64_t nearest_event_time){
 		ope = 1;
 	else
 		ope = 0;
-
-	if ((lsn < 0) || (size < 0))
-	{
-		return NULL;
-	}
 
 	request * request1 = new request();
 
@@ -351,7 +355,10 @@ void collect_statistics(ssd_info * ssd, request * req){
 	}
 	else
 	{
+		ssd->stats->write_request_size[req->app_id] += req->size; 
+		ssd->stats->write_request_count[req->app_id]++; 
 		ssd->stats->write_avg[req->app_id]+=(req->response_time - req->begin_time);
+		ssd->stats->write_throughput.add_time(req->begin_time, req->response_time); 
 		ssd->stats->write_throughput.add_capacity(req->size);
 		ssd->stats->write_throughput.add_count(1);
 		if (req->response_time - req->begin_time > ssd->stats->write_worst_case_rt){
