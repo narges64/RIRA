@@ -71,7 +71,7 @@ ssd_info *simulate(ssd_info *ssd){
 		if(flag == 0 && ssd->request_queue == NULL){
 			flag = 100;
 		}
-		if (ssd->current_time / (EPOCH_LENGTH) > second){
+		if (ssd->current_time != MAX_INT64 && ssd->current_time / EPOCH_LENGTH > second){
 			print_epoch_statistics(ssd, 1);
 			while (ssd->current_time / (EPOCH_LENGTH) > second)
 				second++;
@@ -97,6 +97,8 @@ int add_fetched_request(ssd_info * ssd, request * request1, uint64_t nearest_eve
 				ssd->current_time = nearest_event_time;
 			}
 		}
+		if (nearest_event_time == MAX_INT64) 
+			return 0; 
 		return -1;
 	}
 
@@ -252,6 +254,7 @@ request * read_request_from_file(ssd_info * ssd, int64_t nearest_event_time){
 		if (time_tt > MAX_INT64 || time_tt < 0)
 			time_tt = MAX_INT64;
 	}
+	
 
 	// if next request is not before the next event, we discard it
 	if (time_tt > nearest_event_time){

@@ -10,7 +10,7 @@ using namespace std;
 
 #define BUFSIZE 200
 #define PG_SUB 0xffffffff
-#define EPOCH_LENGTH (int64_t) 100000000000
+#define EPOCH_LENGTH (int64_t) 1000000000
 #define MAX(A,B) (A>B)?A:B;
 #define NSEC 1000000000
 
