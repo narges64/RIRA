@@ -1,0 +1,2247 @@
+-----------------------parameter file----------------------
+#parameter file
+dram capacity = 1;     #the unit is MB
+channel number = 2;   #the number of channel
+lun number = 4;
+plane number = 1;
+block number = 256; #1024
+page number = 64; #256
+subpage page = 4; # NARGES  subpage is the sector, and subpage page means how many sector a page has
+page capacity = 2048;
+subpage capacity = 512;
+t_PROG = 300000;             #the unit is ns
+t_DBSY = 50;
+t_BERS = 3800000;
+t_WC = 3;
+t_R = 25000;
+t_RC = 3;
+erase limit=100000;                          #record the erasure number of block
+address mapping=1;                    #mapping schemes��1��page��2��block��3��fast
+wear leveling=1;                      #record WL algorithm mode
+gc=1;                                 #record garbage collection mode
+overprovide=0.2;                     #reserved area percentage, unavailable to users
+gc up threshold=0.06;                    #GC operation stops reaching to this point
+gc down threshold=0.05;          #GC operation starts reaching to this point
+gc mplane threshold=0.5;		#if free pages in the twin-plane is less than this threshold, we are doing mplane gc
+scheduling algorithm=1;               #1:FCFS recordscheduling algorithm mode, 1 means FCFS
+
+advanced command=31;             #advanced command indicator, 0 for no advanced command, bin number 00001 for random, 00010 for copyback, 00100 for two-plane-program, 01000 for interleave, 10000 for two-plane-read, 11111 for using all��
+consolidation degree = 1;
+repeat trace=0; # how many times repeating the trace (for activating garbage collection)
+mplane gc = 0; # doing multiplane gc or not, 1:yes, 0:no
+pargc approach=0; # approaches: 0: BLIND, 1: PATTERN 2: COST_AWARE, 3: DYN_COST_AWARE, 4: PREEMPTIVE, 5:CACHE_INVOLVED 6:SIMILARITY
+gc algorithm = 0; # garbage collection algorithm, 0: greedy, 1: fifo, 2: windowed, 3: RGA, 4: RANDOM, 5: RANDOM+ 6: RANDOM++
+syn rd ratio = 1.0
+syn interarrival mean = 10000 # ns
+syn req size = 4 # request size (sector)
+syn req count = 1000000 # number of request generated
+time scale = 1
+queue length = 32
+plane level tech = 0 # BASE = 0, GCIO = 1, IOGC = 2, GCGC = 3 
+
+-----------------------simulation output----------------------
+epoch 1 , current_time 1000002660 
+Latency epoch: 1 
+RT 651573 ns, count  44156
+read RT 1067678 ns, count 26931
+write RT 1000 ns, count 17225
+read worst case 19327720 ns
+write worst case 1000 ns
+erase(gc) count 82 , total 870
+Total RT 651573 ns, count 44156 
+Total read RT 1067678 ns, count 26931 
+Total write RT 1000 ns, count 17225 
+GC move count 38437 
+SUBREQ ep: 1 time:	386778641310	0	0	0	0	0	0	0	0	0	
+lun ep: 1 (0,0): 74665	598247770	401660030	
+plane ep: 1 (0,0,0) 74665	598247770	401660030	
+lun ep: 1 (1,0): 137862	593862480	405979500	
+plane ep: 1 (1,0,0) 137862	593862480	405979500	
+lun ep: 1 (0,1): 741415	597910440	401344640	
+plane ep: 1 (0,1,0) 741415	597910440	401344640	
+lun ep: 1 (1,1): 113497	598922430	400963430	
+plane ep: 1 (1,1,0) 113497	598922430	400963430	
+Multiplane ep: 1 read 0 , write 0 , erase 0 
+epoch 2 , current_time 2000019202 
+Latency epoch: 2 
+RT 1158205 ns, count  26688
+read RT 1901405 ns, count 16251
+write RT 1000 ns, count 10437
+read worst case 19364815 ns
+write worst case 1000 ns
+erase(gc) count 18 , total 1393
+Total RT 842428 ns, count 70844 
+Total read RT 1381440 ns, count 43182 
+Total write RT 1000 ns, count 27662 
+GC move count 61452 
+SUBREQ ep: 2 time:	1683305753186	0	0	0	0	0	0	0	0	0	
+lun ep: 2 (0,0): 89210	650495910	349205350	
+plane ep: 2 (0,0,0) 89210	650495910	349205350	
+lun ep: 2 (1,0): 80870	656230520	343685155	
+plane ep: 2 (1,0,0) 80870	656230520	343685155	
+lun ep: 2 (0,1): 37465	658223335	341507095	
+plane ep: 2 (0,1,0) 37465	658223335	341507095	
+lun ep: 2 (1,1): 61785	665338430	334619630	
+plane ep: 2 (1,1,0) 61785	665338430	334619630	
+Multiplane ep: 2 read 0 , write 0 , erase 0 
+epoch 3 , current_time 3000077195 
+Latency epoch: 3 
+RT 3101960 ns, count  10198
+read RT 5055115 ns, count 6257
+write RT 1000 ns, count 3941
+read worst case 19364815 ns
+write worst case 1000 ns
+erase(gc) count 20 , total 1590
+Total RT 1126758 ns, count 81042 
+Total read RT 1846380 ns, count 49439 
+Total write RT 1000 ns, count 31603 
+GC move count 70138 
+SUBREQ ep: 3 time:	7852008928203	0	0	0	0	0	0	0	0	0	
+lun ep: 3 (0,0): 75475	720222880	279799400	
+plane ep: 3 (0,0,0) 75475	720222880	279799400	
+lun ep: 3 (1,0): 14800	722890355	276543530	
+plane ep: 3 (1,0,0) 14800	722890355	276543530	
+lun ep: 3 (0,1): 37465	717186910	283088430	
+plane ep: 3 (0,1,0) 37465	717186910	283088430	
+lun ep: 3 (1,1): 28150	718842395	278287025	
+plane ep: 3 (1,1,0) 28150	718842395	278287025	
+Multiplane ep: 3 read 0 , write 0 , erase 0 
+epoch 4 , current_time 4000005437 
+Latency epoch: 4 
+RT 3821184 ns, count  8417
+read RT 6192891 ns, count 5193
+write RT 1000 ns, count 3224
+read worst case 19364815 ns
+write worst case 1000 ns
+erase(gc) count 162 , total 1752
+Total RT 1380270 ns, count 89459 
+Total read RT 2259534 ns, count 54632 
+Total write RT 1000 ns, count 34827 
+GC move count 77274 
+SUBREQ ep: 4 time:	13455482162180	0	0	0	0	0	0	0	0	0	
+lun ep: 4 (0,0): 15435	724022895	275878345	
+plane ep: 4 (0,0,0) 15435	724022895	275878345	
+lun ep: 4 (1,0): 3105	729451340	271102620	
+plane ep: 4 (1,0,0) 3105	729451340	271102620	
+lun ep: 4 (0,1): 28150	722704740	276971115	
+plane ep: 4 (0,1,0) 28150	722704740	276971115	
+lun ep: 4 (1,1): 41115	721661585	281119800	
+plane ep: 4 (1,1,0) 41115	721661585	281119800	
+Multiplane ep: 4 read 0 , write 0 , erase 0 
+epoch 5 , current_time 5000005067 
+Latency epoch: 5 
+RT 3581452 ns, count  8967
+read RT 5872601 ns, count 5468
+write RT 1000 ns, count 3499
+read worst case 19364815 ns
+write worst case 1000 ns
+erase(gc) count 166 , total 1928
+Total RT 1580806 ns, count 98426 
+Total read RT 2588257 ns, count 60100 
+Total write RT 1000 ns, count 38326 
+GC move count 85038 
+SUBREQ ep: 5 time:	21711774776902	0	0	0	0	0	0	0	0	0	
+lun ep: 5 (0,0): 8590	726938315	270513975	
+plane ep: 5 (0,0,0) 8590	726938315	270513975	
+lun ep: 5 (1,0): 25770	726015710	273912955	
+plane ep: 5 (1,0,0) 25770	726015710	273912955	
+lun ep: 5 (0,1): 41500	725003720	275146840	
+plane ep: 5 (0,1,0) 41500	725003720	275146840	
+lun ep: 5 (1,1): 51450	716601635	283352710	
+plane ep: 5 (1,1,0) 51450	716601635	283352710	
+Multiplane ep: 5 read 0 , write 0 , erase 0 
+epoch 6 , current_time 6000009622 
+Latency epoch: 6 
+RT 2976476 ns, count  10708
+read RT 4833611 ns, count 6593
+write RT 1000 ns, count 4115
+read worst case 19364815 ns
+write worst case 1000 ns
+erase(gc) count 177 , total 2136
+Total RT 1717746 ns, count 109134 
+Total read RT 2810223 ns, count 66693 
+Total write RT 1000 ns, count 42441 
+GC move count 94225 
+SUBREQ ep: 6 time:	34515985307889	0	0	0	0	0	0	0	0	0	
+lun ep: 6 (0,0): 25045	715620810	287013475	
+plane ep: 6 (0,0,0) 25045	715620810	287013475	
+lun ep: 6 (1,0): 17180	718230065	281564835	
+plane ep: 6 (1,0,0) 17180	718230065	281564835	
+lun ep: 6 (0,1): 50725	708110165	291844300	
+plane ep: 6 (0,1,0) 50725	708110165	291844300	
+lun ep: 6 (1,1): 17180	717892735	282094640	
+plane ep: 6 (1,1,0) 17180	717892735	282094640	
+Multiplane ep: 6 read 0 , write 0 , erase 0 
+epoch 7 , current_time 7000061092 
+Latency epoch: 7 
+RT 2193231 ns, count  14603
+read RT 3620760 ns, count 8844
+write RT 1000 ns, count 5759
+read worst case 19364815 ns
+write worst case 1000 ns
+erase(gc) count 77 , total 2426
+Total RT 1773861 ns, count 123737 
+Total read RT 2905122 ns, count 75537 
+Total write RT 1000 ns, count 48200 
+GC move count 107040 
+SUBREQ ep: 7 time:	56763590480302	0	0	0	0	0	0	0	0	0	
+lun ep: 7 (0,0): 53285	703235830	295352480	
+plane ep: 7 (0,0,0) 53285	703235830	295352480	
+lun ep: 7 (1,0): 78240	701301235	298932965	
+plane ep: 7 (1,0,0) 78240	701301235	298932965	
+lun ep: 7 (0,1): 43675	702223840	296683350	
+plane ep: 7 (0,1,0) 43675	702223840	296683350	
+lun ep: 7 (1,1): 56935	702987885	296808010	
+plane ep: 7 (1,1,0) 56935	702987885	296808010	
+Multiplane ep: 7 read 0 , write 0 , erase 0 
+epoch 8 , current_time 8000131882 
+Latency epoch: 8 
+RT 2607708 ns, count  12262
+read RT 4266778 ns, count 7493
+write RT 1000 ns, count 4769
+read worst case 19364815 ns
+write worst case 1000 ns
+erase(gc) count 116 , total 2666
+Total RT 1849042 ns, count 135999 
+Total read RT 3028003 ns, count 83030 
+Total write RT 1000 ns, count 52969 
+GC move count 117620 
+SUBREQ ep: 8 time:	56528572721611	0	0	0	0	0	0	0	0	0	
+lun ep: 8 (0,0): 84360	710777640	287106720	
+plane ep: 8 (0,0,0) 84360	710777640	287106720	
+lun ep: 8 (1,0): 67890	712126960	287706085	
+plane ep: 8 (1,0,0) 67890	712126960	287706085	
+lun ep: 8 (0,1): 11695	704368370	295615015	
+plane ep: 8 (0,1,0) 11695	704368370	295615015	
+lun ep: 8 (1,1): 43955	707741670	292483805	
+plane ep: 8 (1,1,0) 43955	707741670	292483805	
+Multiplane ep: 8 read 0 , write 0 , erase 0 
+epoch 9 , current_time 9000045465 
+Latency epoch: 9 
+RT 2682709 ns, count  11910
+read RT 4425933 ns, count 7218
+write RT 1000 ns, count 4692
+read worst case 19364815 ns
+write worst case 1000 ns
+erase(gc) count 157 , total 2901
+Total RT 1916171 ns, count 147909 
+Total read RT 3139808 ns, count 90248 
+Total write RT 1000 ns, count 57661 
+GC move count 127986 
+SUBREQ ep: 9 time:	63693264928867	0	0	0	0	0	0	0	0	0	
+lun ep: 9 (0,0): 105190	708843045	294579340	
+plane ep: 9 (0,0,0) 105190	708843045	294579340	
+lun ep: 9 (1,0): 8590	712158125	287702595	
+plane ep: 9 (1,0,0) 8590	712158125	287702595	
+lun ep: 9 (0,1): 14800	706729680	291075895	
+plane ep: 9 (0,1,0) 14800	706729680	291075895	
+lun ep: 9 (1,1): 8590	708079000	291730360	
+plane ep: 9 (1,1,0) 8590	708079000	291730360	
+Multiplane ep: 9 read 0 , write 0 , erase 0 
+epoch 10 , current_time 10000143372 
+Latency epoch: 10 
+RT 3028946 ns, count  10517
+read RT 4934372 ns, count 6455
+write RT 1000 ns, count 4062
+read worst case 19364815 ns
+write worst case 1000 ns
+erase(gc) count 163 , total 3104
+Total RT 1990041 ns, count 158426 
+Total read RT 3259596 ns, count 96703 
+Total write RT 1000 ns, count 61723 
+GC move count 136878 
+SUBREQ ep: 10 time:	63798878311070	0	0	0	0	0	0	0	0	0	
+lun ep: 10 (0,0): 34360	716206085	283552165	
+plane ep: 10 (0,0,0) 34360	716206085	283552165	
+lun ep: 10 (1,0): 11695	723596180	276503140	
+plane ep: 10 (1,0,0) 11695	723596180	276503140	
+lun ep: 10 (0,1): 42225	715620810	287480950	
+plane ep: 10 (0,1,0) 42225	715620810	287480950	
+lun ep: 10 (1,1): 17180	713476280	286700080	
+plane ep: 10 (1,1,0) 17180	713476280	286700080	
+Multiplane ep: 10 read 0 , write 0 , erase 0 
+epoch 11 , current_time 11000003820 
+Latency epoch: 11 
+RT 3360184 ns, count  9577
+read RT 5354311 ns, count 5783
+write RT 320639 ns, count 3794
+read worst case 19364815 ns
+write worst case 7074274861 ns
+erase(gc) count 158 , total 3292
+Total RT 2068145 ns, count 168003 
+Total read RT 3377794 ns, count 102486 
+Total write RT 19509 ns, count 65517 
+GC move count 145128 
+SUBREQ ep: 11 time:	65511505225855	0	0	0	0	0	0	0	0	0	
+lun ep: 11 (0,0): 44605	723317070	276804070	
+plane ep: 11 (0,0,0) 44605	723317070	276804070	
+lun ep: 11 (1,0): 8590	720955760	279069890	
+plane ep: 11 (1,0,0) 8590	720955760	279069890	
+lun ep: 11 (0,1): 17180	721541035	278538340	
+plane ep: 11 (0,1,0) 17180	721541035	278538340	
+lun ep: 11 (1,1): 57955	713228335	286441785	
+plane ep: 11 (1,1,0) 57955	713228335	286441785	
+Multiplane ep: 11 read 0 , write 0 , erase 0 
+epoch 12 , current_time 12000121500 
+Latency epoch: 12 
+RT 3897542 ns, count  8145
+read RT 5387001 ns, count 4943
+write RT 1598231 ns, count 3202
+read worst case 19364815 ns
+write worst case 7074274861 ns
+erase(gc) count 116 , total 3445
+Total RT 2152735 ns, count 176148 
+Total read RT 3470241 ns, count 107429 
+Total write RT 93070 ns, count 68719 
+GC move count 151867 
+SUBREQ ep: 12 time:	62466675542486	0	0	0	0	0	0	0	0	0	
+lun ep: 12 (0,0): 17180	724302005	275548495	
+plane ep: 12 (0,0,0) 17180	724302005	275548495	
+lun ep: 12 (1,0): 14075	730005450	266455295	
+plane ep: 12 (1,0,0) 14075	730005450	266455295	
+lun ep: 12 (0,1): 31255	721324255	278780680	
+plane ep: 12 (0,1,0) 31255	721324255	278780680	
+lun ep: 12 (1,1): 28150	725034885	275059080	
+plane ep: 12 (1,1,0) 28150	725034885	275059080	
+Multiplane ep: 12 read 0 , write 0 , erase 0 
+epoch 13 , current_time 13000002622 
+Latency epoch: 13 
+RT 3762473 ns, count  8530
+read RT 4834388 ns, count 5169
+write RT 2113938 ns, count 3361
+read worst case 19364815 ns
+write worst case 7074274861 ns
+erase(gc) count 84 , total 3599
+Total RT 2227086 ns, count 184678 
+Total read RT 3532864 ns, count 112598 
+Total write RT 187300 ns, count 72080 
+GC move count 158589 
+SUBREQ ep: 13 time:	72339663239527	0	0	0	0	0	0	0	0	0	
+lun ep: 13 (0,0): 9950	726384205	273431020	
+plane ep: 13 (0,0,0) 9950	726384205	273431020	
+lun ep: 13 (1,0): 3105	734817455	267887140	
+plane ep: 13 (1,0,0) 3105	734817455	267887140	
+lun ep: 13 (0,1): 33635	722367410	277304955	
+plane ep: 13 (0,1,0) 33635	722367410	277304955	
+lun ep: 13 (1,1): 17815	725709545	274281700	
+plane ep: 13 (1,1,0) 17815	725709545	274281700	
+Multiplane ep: 13 read 0 , write 0 , erase 0 
+epoch 14 , current_time 14000080395 
+Latency epoch: 14 
+RT 3454569 ns, count  9182
+read RT 3731878 ns, count 5578
+write RT 3025374 ns, count 3604
+read worst case 19364815 ns
+write worst case 7074274861 ns
+erase(gc) count 62 , total 3748
+Total RT 2285224 ns, count 193860 
+Total read RT 3542257 ns, count 118176 
+Total write RT 322446 ns, count 75684 
+GC move count 165057 
+SUBREQ ep: 14 time:	85249270049780	0	0	0	0	0	0	0	0	0	
+lun ep: 14 (0,0): 3105	729420175	270803935	
+plane ep: 14 (0,0,0) 3105	729420175	270803935	
+lun ep: 14 (1,0): 14075	726752700	273894755	
+plane ep: 14 (1,0,0) 14075	726752700	273894755	
+lun ep: 14 (0,1): 3105	717245130	283004660	
+plane ep: 14 (0,1,0) 3105	717245130	283004660	
+lun ep: 14 (1,1): 41500	726663315	273244030	
+plane ep: 14 (1,1,0) 41500	726663315	273244030	
+Multiplane ep: 14 read 0 , write 0 , erase 0 
+epoch 15 , current_time 15000002722 
+Latency epoch: 15 
+RT 3295385 ns, count  9735
+read RT 3665720 ns, count 5922
+write RT 2720216 ns, count 3813
+read worst case 19364815 ns
+write worst case 7074274861 ns
+erase(gc) count 53 , total 3893
+Total RT 2333525 ns, count 203595 
+Total read RT 3548148 ns, count 124098 
+Total write RT 437452 ns, count 79497 
+GC move count 171237 
+SUBREQ ep: 15 time:	98190986501957	0	0	0	0	0	0	0	0	0	
+lun ep: 15 (0,0): 8590	727365030	272699515	
+plane ep: 15 (0,0,0) 8590	727365030	272699515	
+lun ep: 15 (1,0): 13070	728714350	271454660	
+plane ep: 15 (1,0,0) 13070	728714350	271454660	
+lun ep: 15 (0,1): 30530	723042070	276668690	
+plane ep: 15 (0,1,0) 30530	723042070	276668690	
+lun ep: 15 (1,1): 56950	719974935	279963205	
+plane ep: 15 (1,1,0) 56950	719974935	279963205	
+Multiplane ep: 15 read 0 , write 0 , erase 0 
+epoch 16 , current_time 16000000600 
+Latency epoch: 16 
+RT 3205120 ns, count  9991
+read RT 3686356 ns, count 6013
+write RT 2477703 ns, count 3978
+read worst case 19364815 ns
+write worst case 7074274861 ns
+erase(gc) count 50 , total 4034
+Total RT 2374296 ns, count 213586 
+Total read RT 3554535 ns, count 130111 
+Total write RT 534680 ns, count 83475 
+GC move count 177174 
+SUBREQ ep: 16 time:	108585786674910	0	0	0	0	0	0	0	0	0	
+lun ep: 16 (0,0): 30530	732793475	267179570	
+plane ep: 16 (0,0,0) 30530	732793475	267179570	
+lun ep: 16 (1,0): 14445	730463330	269298790	
+plane ep: 16 (1,0,0) 14445	730463330	269298790	
+lun ep: 16 (0,1): 0	731106825	269003595	
+plane ep: 16 (0,1,0) 0	731106825	269003595	
+lun ep: 16 (1,1): 20935	720986925	278837525	
+plane ep: 16 (1,1,0) 20935	720986925	278837525	
+Multiplane ep: 16 read 0 , write 0 , erase 0 
+epoch 17 , current_time 17000023010 
+Latency epoch: 17 
+RT 3025314 ns, count  10564
+read RT 3550401 ns, count 6382
+write RT 2223998 ns, count 4182
+read worst case 19364815 ns
+write worst case 7074274861 ns
+erase(gc) count 55 , total 4173
+Total RT 2404977 ns, count 224150 
+Total read RT 3554341 ns, count 136493 
+Total write RT 615275 ns, count 87657 
+GC move count 182997 
+SUBREQ ep: 17 time:	122932783760595	0	0	0	0	0	0	0	0	0	
+lun ep: 17 (0,0): 32910	727058865	272930635	
+plane ep: 17 (0,0,0) 32910	727058865	272930635	
+lun ep: 17 (1,0): 0	726353040	273695050	
+plane ep: 17 (1,0,0) 0	726353040	273695050	
+lun ep: 17 (0,1): 3105	728714350	271317285	
+plane ep: 17 (0,1,0) 3105	728714350	271317285	
+lun ep: 17 (1,1): 31905	726384205	273656655	
+plane ep: 17 (1,1,0) 31905	726384205	273656655	
+Multiplane ep: 17 read 0 , write 0 , erase 0 
+epoch 18 , current_time 18000041257 
+Latency epoch: 18 
+RT 2800515 ns, count  11395
+read RT 3570294 ns, count 7002
+write RT 1573566 ns, count 4393
+read worst case 19364815 ns
+write worst case 7074274861 ns
+erase(gc) count 69 , total 4317
+Total RT 2424112 ns, count 235545 
+Total read RT 3555119 ns, count 143495 
+Total write RT 661008 ns, count 92050 
+GC move count 189150 
+SUBREQ ep: 18 time:	141250725731996	0	0	0	0	0	0	0	0	0	
+lun ep: 18 (0,0): 14075	730769495	269150195	
+plane ep: 18 (0,0,0) 14075	730769495	269150195	
+lun ep: 18 (1,0): 20935	730094835	270098110	
+plane ep: 18 (1,0,0) 20935	730094835	270098110	
+lun ep: 18 (0,1): 5485	724608170	272077960	
+plane ep: 18 (0,1,0) 5485	724608170	272077960	
+lun ep: 18 (1,1): 9965	718288285	281620435	
+plane ep: 18 (1,1,0) 9965	718288285	281620435	
+Multiplane ep: 18 read 0 , write 0 , erase 0 
+epoch 19 , current_time 19000133907 
+Latency epoch: 19 
+RT 2787506 ns, count  11416
+read RT 3432068 ns, count 6952
+write RT 1783700 ns, count 4464
+read worst case 19364815 ns
+write worst case 7074274861 ns
+erase(gc) count 95 , total 4472
+Total RT 2440910 ns, count 246961 
+Total read RT 3549432 ns, count 150447 
+Total write RT 712935 ns, count 96514 
+GC move count 195940 
+SUBREQ ep: 19 time:	149913168649344	0	0	0	0	0	0	0	0	0	
+lun ep: 19 (0,0): 15435	726969480	272092670	
+plane ep: 19 (0,0,0) 15435	726969480	272092670	
+lun ep: 19 (1,0): 15450	727644140	270851555	
+plane ep: 19 (1,0,0) 15450	727644140	270851555	
+lun ep: 19 (0,1): 22665	723010905	280161165	
+plane ep: 19 (0,1,0) 22665	723010905	280161165	
+lun ep: 19 (1,1): 43880	726690370	273616265	
+plane ep: 19 (1,1,0) 43880	726690370	273616265	
+Multiplane ep: 19 read 0 , write 0 , erase 0 
+epoch 20 , current_time 20000002017 
+Latency epoch: 20 
+RT 2659181 ns, count  12046
+read RT 3361204 ns, count 7372
+write RT 1551928 ns, count 4674
+read worst case 19364815 ns
+write worst case 7074274861 ns
+erase(gc) count 122 , total 4631
+Total RT 2451061 ns, count 259007 
+Total read RT 3540639 ns, count 157819 
+Total write RT 751689 ns, count 101188 
+GC move count 202980 
+SUBREQ ep: 20 time:	167024858280616	0	0	0	0	0	0	0	0	0	
+lun ep: 20 (0,0): 21940	718962945	281957765	
+plane ep: 20 (0,0,0) 21940	718962945	281957765	
+lun ep: 20 (1,0): 34005	722367410	279048200	
+plane ep: 20 (1,0,0) 34005	722367410	279048200	
+lun ep: 20 (0,1): 3105	715283480	284625240	
+plane ep: 20 (0,1,0) 3105	715283480	284625240	
+lun ep: 20 (1,1): 33000	728745515	270796455	
+plane ep: 20 (1,1,0) 33000	728745515	270796455	
+Multiplane ep: 20 read 0 , write 0 , erase 0 
+epoch 21 , current_time 21000110050 
+Latency epoch: 21 
+RT 2728556 ns, count  11601
+read RT 3314613 ns, count 6980
+write RT 1843318 ns, count 4621
+read worst case 19364815 ns
+write worst case 7074274861 ns
+erase(gc) count 9 , total 4790
+Total RT 2462957 ns, count 270608 
+Total read RT 3531065 ns, count 164799 
+Total write RT 799363 ns, count 105809 
+GC move count 210026 
+SUBREQ ep: 21 time:	169392419814965	0	0	0	0	0	0	0	0	0	
+lun ep: 21 (0,0): 3105	714946150	285013930	
+plane ep: 21 (0,0,0) 3105	714946150	285013930	
+lun ep: 21 (1,0): 48360	727733525	272142285	
+plane ep: 21 (1,0,0) 48360	727733525	272142285	
+lun ep: 21 (0,1): 10970	718931780	281402280	
+plane ep: 21 (0,1,0) 10970	718931780	281402280	
+lun ep: 21 (1,1): 14075	723258850	275486165	
+plane ep: 21 (1,1,0) 14075	723258850	275486165	
+Multiplane ep: 21 read 0 , write 0 , erase 0 
+epoch 22 , current_time 22000033282 
+Latency epoch: 22 
+RT 2814673 ns, count  11390
+read RT 3295990 ns, count 6925
+write RT 2068174 ns, count 4465
+read worst case 19364815 ns
+write worst case 7074274861 ns
+erase(gc) count 29 , total 4949
+Total RT 2477162 ns, count 281998 
+Total read RT 3521585 ns, count 171724 
+Total write RT 850737 ns, count 110274 
+GC move count 217084 
+SUBREQ ep: 22 time:	174817500487788	0	0	0	0	0	0	0	0	0	
+lun ep: 22 (0,0): 0	717950955	282055000	
+plane ep: 22 (0,0,0) 0	717950955	282055000	
+lun ep: 22 (1,0): 19930	727733525	272248495	
+plane ep: 22 (1,0,0) 19930	727733525	272248495	
+lun ep: 22 (0,1): 14075	725740710	273874810	
+plane ep: 22 (0,1,0) 14075	725740710	273874810	
+lun ep: 22 (1,1): 65185	726046875	275453255	
+plane ep: 22 (1,1,0) 65185	726046875	275453255	
+Multiplane ep: 22 read 0 , write 0 , erase 0 
+epoch 23 , current_time 23000009552 
+Latency epoch: 23 
+RT 2817379 ns, count  11356
+read RT 3835067 ns, count 6929
+write RT 1224527 ns, count 4427
+read worst case 19364815 ns
+write worst case 7074274861 ns
+erase(gc) count 47 , total 5105
+Total RT 2490332 ns, count 293354 
+Total read RT 3533743 ns, count 178653 
+Total write RT 865163 ns, count 114701 
+GC move count 223960 
+SUBREQ ep: 23 time:	182779065664085	0	0	0	0	0	0	0	0	0	
+lun ep: 23 (0,0): 36015	723685565	276298450	
+plane ep: 23 (0,0,0) 36015	723685565	276298450	
+lun ep: 23 (1,0): 29895	725341050	274541990	
+plane ep: 23 (1,0,0) 29895	725341050	274541990	
+lun ep: 23 (0,1): 10970	724360225	275599855	
+plane ep: 23 (0,1,0) 10970	724360225	275599855	
+lun ep: 23 (1,1): 36385	718319450	281620435	
+plane ep: 23 (1,1,0) 36385	718319450	281620435	
+Multiplane ep: 23 read 0 , write 0 , erase 0 
+epoch 24 , current_time 24000062122 
+Latency epoch: 24 
+RT 2874128 ns, count  11132
+read RT 4023966 ns, count 6702
+write RT 1134577 ns, count 4430
+read worst case 19364815 ns
+write worst case 7074274861 ns
+erase(gc) count 63 , total 5265
+Total RT 2504363 ns, count 304486 
+Total read RT 3551468 ns, count 185355 
+Total write RT 875181 ns, count 119131 
+GC move count 231013 
+SUBREQ ep: 24 time:	187563730675678	0	0	0	0	0	0	0	0	0	
+lun ep: 24 (0,0): 32910	720312265	279552575	
+plane ep: 24 (0,0,0) 32910	720312265	279552575	
+lun ep: 24 (1,0): 5485	720312265	279834805	
+plane ep: 24 (1,0,0) 5485	720312265	279834805	
+lun ep: 24 (0,1): 0	722305080	277898835	
+plane ep: 24 (0,1,0) 0	722305080	277898835	
+lun ep: 24 (1,1): 31905	715558480	284462185	
+plane ep: 24 (1,1,0) 31905	715558480	284462185	
+Multiplane ep: 24 read 0 , write 0 , erase 0 
+epoch 25 , current_time 25000040850 
+Latency epoch: 25 
+RT 2866965 ns, count  11080
+read RT 4648725 ns, count 6801
+write RT 35057 ns, count 4279
+read worst case 19364815 ns
+write worst case 7074274861 ns
+erase(gc) count 84 , total 5425
+Total RT 2517094 ns, count 315566 
+Total read RT 3590303 ns, count 192156 
+Total write RT 846051 ns, count 123410 
+GC move count 238054 
+SUBREQ ep: 25 time:	195009792083191	0	0	0	0	0	0	0	0	0	
+lun ep: 25 (0,0): 36015	717919790	281926600	
+plane ep: 25 (0,0,0) 36015	717919790	281926600	
+lun ep: 25 (1,0): 34375	710440310	288667715	
+plane ep: 25 (1,0,0) 34375	710440310	288667715	
+lun ep: 25 (0,1): 14075	715252315	284859850	
+plane ep: 25 (0,1,0) 14075	715252315	284859850	
+lun ep: 25 (1,1): 40865	704151590	295725965	
+plane ep: 25 (1,1,0) 40865	704151590	295725965	
+Multiplane ep: 25 read 0 , write 0 , erase 0 
+epoch 26 , current_time 26000206547 
+Latency epoch: 26 
+RT 2870423 ns, count  11138
+read RT 4388662 ns, count 6797
+write RT 493213 ns, count 4341
+read worst case 19364815 ns
+write worst case 7074274861 ns
+erase(gc) count 108 , total 5600
+Total RT 2529139 ns, count 326704 
+Total read RT 3617578 ns, count 198953 
+Total write RT 834061 ns, count 127751 
+GC move count 245871 
+SUBREQ ep: 26 time:	204317583546043	0	0	0	0	0	0	0	0	0	
+lun ep: 26 (0,0): 25415	704705700	293128050	
+plane ep: 26 (0,0,0) 25415	704705700	293128050	
+lun ep: 26 (1,0): 56315	701421785	299592420	
+plane ep: 26 (1,0,0) 56315	701421785	299592420	
+lun ep: 26 (0,1): 24410	702712885	297144845	
+plane ep: 26 (0,1,0) 24410	702712885	297144845	
+lun ep: 26 (1,1): 33370	693632030	306335280	
+plane ep: 26 (1,1,0) 33370	693632030	306335280	
+Multiplane ep: 26 read 0 , write 0 , erase 0 
+epoch 27 , current_time 27000005792 
+Latency epoch: 27 
+RT 2970746 ns, count  10788
+read RT 4174957 ns, count 6554
+write RT 1106692 ns, count 4234
+read worst case 19364815 ns
+write worst case 7074274861 ns
+erase(gc) count 123 , total 5779
+Total RT 2543255 ns, count 337492 
+Total read RT 3635353 ns, count 205507 
+Total write RT 842806 ns, count 131985 
+GC move count 253923 
+SUBREQ ep: 27 time:	206066259918620	0	0	0	0	0	0	0	0	0	
+lun ep: 27 (0,0): 15450	694706350	307517805	
+plane ep: 27 (0,0,0) 15450	694706350	307517805	
+lun ep: 27 (1,0): 30900	694706350	304850330	
+plane ep: 27 (1,0,0) 30900	694706350	304850330	
+lun ep: 27 (0,1): 26420	700409795	299555770	
+plane ep: 27 (0,1,0) 26420	700409795	299555770	
+lun ep: 27 (1,1): 36385	699060475	300921545	
+plane ep: 27 (1,1,0) 36385	699060475	300921545	
+Multiplane ep: 27 read 0 , write 0 , erase 0 
+epoch 28 , current_time 28000001505 
+Latency epoch: 28 
+RT 2940705 ns, count  10828
+read RT 4018390 ns, count 6639
+write RT 1232720 ns, count 4189
+read worst case 19364815 ns
+write worst case 7074274861 ns
+erase(gc) count 136 , total 5957
+Total RT 2555610 ns, count 348320 
+Total read RT 3647339 ns, count 212146 
+Total write RT 854800 ns, count 136174 
+GC move count 261908 
+SUBREQ ep: 28 time:	215094571493968	0	0	0	0	0	0	0	0	0	
+lun ep: 28 (0,0): 9965	696024505	304041785	
+plane ep: 28 (0,0,0) 9965	696024505	304041785	
+lun ep: 28 (1,0): 52840	692988535	307002710	
+plane ep: 28 (1,0,0) 52840	692988535	307002710	
+lun ep: 28 (0,1): 19560	706819065	293241740	
+plane ep: 28 (0,1,0) 19560	706819065	293241740	
+lun ep: 28 (1,1): 14445	704062205	295747905	
+plane ep: 28 (1,1,0) 14445	704062205	295747905	
+Multiplane ep: 28 read 0 , write 0 , erase 0 
+epoch 29 , current_time 29000003040 
+Latency epoch: 29 
+RT 3188848 ns, count  10051
+read RT 4285731 ns, count 6153
+write RT 1457415 ns, count 3898
+read worst case 19364815 ns
+write worst case 7074274861 ns
+erase(gc) count 132 , total 6117
+Total RT 2573370 ns, count 358371 
+Total read RT 3665332 ns, count 218299 
+Total write RT 871569 ns, count 140072 
+GC move count 268975 
+SUBREQ ep: 29 time:	207442761012764	0	0	0	0	0	0	0	0	0	
+lun ep: 29 (0,0): 19560	718625615	281261165	
+plane ep: 29 (0,0,0) 19560	718625615	281261165	
+lun ep: 29 (1,0): 14445	721630420	278487230	
+plane ep: 29 (1,0,0) 14445	721630420	278487230	
+lun ep: 29 (0,1): 5485	720955760	279046455	
+plane ep: 29 (0,1,0) 5485	720955760	279046455	
+lun ep: 29 (1,1): 58325	720649595	279382040	
+plane ep: 29 (1,1,0) 58325	720649595	279382040	
+Multiplane ep: 29 read 0 , write 0 , erase 0 
+epoch 30 , current_time 30000110562 
+Latency epoch: 30 
+RT 3562025 ns, count  8966
+read RT 5805547 ns, count 5414
+write RT 142424 ns, count 3552
+read worst case 19364815 ns
+write worst case 7074274861 ns
+erase(gc) count 115 , total 6256
+Total RT 2597501 ns, count 367337 
+Total read RT 3717126 ns, count 223713 
+Total write RT 853536 ns, count 143624 
+GC move count 275038 
+SUBREQ ep: 30 time:	191986693323331	0	0	0	0	0	0	0	0	0	
+lun ep: 30 (0,0): 42875	730094835	269845300	
+plane ep: 30 (0,0,0) 42875	730094835	269845300	
+lun ep: 30 (1,0): 14445	734142795	265821025	
+plane ep: 30 (1,0,0) 14445	734142795	265821025	
+lun ep: 30 (0,1): 4480	728408185	271482335	
+plane ep: 30 (0,1,0) 4480	728408185	271482335	
+lun ep: 30 (1,1): 52840	728039690	272103890	
+plane ep: 30 (1,1,0) 52840	728039690	272103890	
+Multiplane ep: 30 read 0 , write 0 , erase 0 
+epoch 31 , current_time 31000011357 
+Latency epoch: 31 
+RT 3918816 ns, count  8144
+read RT 6475575 ns, count 4928
+write RT 1000 ns, count 3216
+read worst case 19364815 ns
+write worst case 7074274861 ns
+erase(gc) count 87 , total 6386
+Total RT 2626159 ns, count 375481 
+Total read RT 3776580 ns, count 228641 
+Total write RT 834864 ns, count 146840 
+GC move count 280684 
+SUBREQ ep: 31 time:	181016379512382	0	0	0	0	0	0	0	0	0	
+lun ep: 31 (0,0): 37390	732118815	267810350	
+plane ep: 31 (0,0,0) 37390	732118815	267810350	
+lun ep: 31 (1,0): 14445	733805465	266242875	
+plane ep: 31 (1,0,0) 14445	733805465	266242875	
+lun ep: 31 (0,1): 8960	728408185	271517240	
+plane ep: 31 (0,1,0) 8960	728408185	271517240	
+lun ep: 31 (1,1): 26420	737547260	262121615	
+plane ep: 31 (1,1,0) 26420	737547260	262121615	
+Multiplane ep: 31 read 0 , write 0 , erase 0 
+epoch 32 , current_time 32000008752 
+Latency epoch: 32 
+RT 4062725 ns, count  7861
+read RT 6630822 ns, count 4816
+write RT 1000 ns, count 3045
+read worst case 19364815 ns
+write worst case 7074274861 ns
+erase(gc) count 58 , total 6512
+Total RT 2655617 ns, count 383342 
+Total read RT 3835460 ns, count 233457 
+Total write RT 817923 ns, count 149885 
+GC move count 286200 
+SUBREQ ep: 32 time:	181215196257304	0	0	0	0	0	0	0	0	0	
+lun ep: 32 (0,0): 40865	728408185	271676805	
+plane ep: 32 (0,0,0) 40865	728408185	271676805	
+lun ep: 32 (1,0): 14445	730769495	269082630	
+plane ep: 32 (1,0,0) 14445	730769495	269082630	
+lun ep: 32 (0,1): 40865	732118815	267960690	
+plane ep: 32 (0,1,0) 40865	732118815	267960690	
+lun ep: 32 (1,1): 24410	736810270	263368215	
+plane ep: 32 (1,1,0) 24410	736810270	263368215	
+Multiplane ep: 32 read 0 , write 0 , erase 0 
+epoch 33 , current_time 33000003782 
+Latency epoch: 33 
+RT 4102497 ns, count  7774
+read RT 6787940 ns, count 4698
+write RT 1000 ns, count 3076
+read worst case 19364815 ns
+write worst case 7074274861 ns
+erase(gc) count 21 , total 6650
+Total RT 2684375 ns, count 391116 
+Total read RT 3893702 ns, count 238155 
+Total write RT 801494 ns, count 152961 
+GC move count 292346 
+SUBREQ ep: 33 time:	185697626683218	0	0	0	0	0	0	0	0	0	
+lun ep: 33 (0,0): 29895	737516095	262501080	
+plane ep: 33 (0,0,0) 29895	737516095	262501080	
+lun ep: 33 (1,0): 18925	732118815	267988115	
+plane ep: 33 (1,0,0) 18925	732118815	267988115	
+lun ep: 33 (0,1): 18925	727058865	272719960	
+plane ep: 33 (0,1,0) 18925	727058865	272719960	
+lun ep: 33 (1,1): 36385	725709545	272450445	
+plane ep: 33 (1,1,0) 36385	725709545	272450445	
+Multiplane ep: 33 read 0 , write 0 , erase 0 
+epoch 34 , current_time 34000207682 
+Latency epoch: 34 
+RT 4384262 ns, count  7286
+read RT 7185805 ns, count 4445
+write RT 1000 ns, count 2841
+read worst case 19364815 ns
+write worst case 7074274861 ns
+erase(gc) count 138 , total 6788
+Total RT 2715462 ns, count 398402 
+Total read RT 3954021 ns, count 242600 
+Total write RT 786897 ns, count 155802 
+GC move count 298568 
+SUBREQ ep: 34 time:	180020681753474	0	0	0	0	0	0	0	0	0	
+lun ep: 34 (0,0): 9965	732793475	267155885	
+plane ep: 34 (0,0,0) 9965	732793475	267155885	
+lun ep: 34 (1,0): 30900	729757505	270415495	
+plane ep: 34 (1,0,0) 30900	729757505	270415495	
+lun ep: 34 (0,1): 26420	726752700	273398360	
+plane ep: 34 (0,1,0) 26420	726752700	273398360	
+lun ep: 34 (1,1): 35380	727733525	270565835	
+plane ep: 34 (1,1,0) 35380	727733525	270565835	
+Multiplane ep: 34 read 0 , write 0 , erase 0 
+epoch 35 , current_time 35000001692 
+Latency epoch: 35 
+RT 4213363 ns, count  7620
+read RT 6963735 ns, count 4610
+write RT 1000 ns, count 3010
+read worst case 19364815 ns
+write worst case 7074274861 ns
+erase(gc) count 119 , total 6938
+Total RT 2743573 ns, count 406022 
+Total read RT 4010146 ns, count 247210 
+Total write RT 772001 ns, count 158812 
+GC move count 305358 
+SUBREQ ep: 35 time:	194674859604586	0	0	0	0	0	0	0	0	0	
+lun ep: 35 (0,0): 15450	726721535	273308355	
+plane ep: 35 (0,0,0) 15450	726721535	273308355	
+lun ep: 35 (1,0): 18925	725403380	274371705	
+plane ep: 35 (1,0,0) 18925	725403380	274371705	
+lun ep: 35 (0,1): 43880	729420175	270395300	
+plane ep: 35 (0,1,0) 43880	729420175	270395300	
+lun ep: 35 (1,1): 35380	733894850	269363115	
+plane ep: 35 (1,1,0) 35380	733894850	269363115	
+Multiplane ep: 35 read 0 , write 0 , erase 0 
+epoch 36 , current_time 36000006627 
+Latency epoch: 36 
+RT 4669605 ns, count  6831
+read RT 7683787 ns, count 4151
+write RT 1000 ns, count 2680
+read worst case 19364815 ns
+write worst case 7074274861 ns
+erase(gc) count 60 , total 7074
+Total RT 2775440 ns, count 412853 
+Total read RT 4070812 ns, count 251361 
+Total write RT 759206 ns, count 161492 
+GC move count 311492 
+SUBREQ ep: 36 time:	180272786074981	0	0	0	0	0	0	0	0	0	
+lun ep: 36 (0,0): 35380	729757505	270098360	
+plane ep: 36 (0,0,0) 35380	729757505	270098360	
+lun ep: 36 (1,0): 40865	737178765	262785305	
+plane ep: 36 (1,0,0) 40865	737178765	262785305	
+lun ep: 36 (0,1): 29895	741564055	258453120	
+plane ep: 36 (0,1,0) 29895	741564055	258453120	
+lun ep: 36 (1,1): 24410	730432165	269553845	
+plane ep: 36 (1,1,0) 24410	730432165	269553845	
+Multiplane ep: 36 read 0 , write 0 , erase 0 
+epoch 37 , current_time 37000121837 
+Latency epoch: 37 
+RT 4597588 ns, count  6944
+read RT 7534329 ns, count 4237
+write RT 1000 ns, count 2707
+read worst case 19654525 ns
+write worst case 7074274861 ns
+erase(gc) count 137 , total 7211
+Total RT 2805580 ns, count 419797 
+Total read RT 4128226 ns, count 255598 
+Total write RT 746706 ns, count 164199 
+GC move count 317633 
+SUBREQ ep: 37 time:	189062447293555	0	0	0	0	0	0	0	0	0	
+lun ep: 37 (0,0): 10970	741532890	257981905	
+plane ep: 37 (0,0,0) 10970	741532890	257981905	
+lun ep: 37 (1,0): 15450	742576045	257329185	
+plane ep: 37 (1,0,0) 15450	742576045	257329185	
+lun ep: 37 (0,1): 9965	744262695	255739770	
+plane ep: 37 (0,1,0) 9965	744262695	255739770	
+lun ep: 37 (1,1): 37390	731781485	268459330	
+plane ep: 37 (1,1,0) 37390	731781485	268459330	
+Multiplane ep: 37 read 0 , write 0 , erase 0 
+epoch 38 , current_time 38000031280 
+Latency epoch: 38 
+RT 4268683 ns, count  7533
+read RT 6982208 ns, count 4605
+write RT 1000 ns, count 2928
+read worst case 19654525 ns
+write worst case 7074274861 ns
+erase(gc) count 143 , total 7357
+Total RT 2831371 ns, count 427330 
+Total read RT 4178734 ns, count 260203 
+Total write RT 733641 ns, count 167127 
+GC move count 324099 
+SUBREQ ep: 38 time:	211420414625455	0	0	0	0	0	0	0	0	0	
+lun ep: 38 (0,0): 15450	738190755	262453210	
+plane ep: 38 (0,0,0) 15450	738190755	262453210	
+lun ep: 38 (1,0): 35380	737853425	262002190	
+plane ep: 38 (1,0,0) 35380	737853425	262002190	
+lun ep: 38 (0,1): 43880	737516095	262576125	
+plane ep: 38 (0,1,0) 43880	737516095	262576125	
+lun ep: 38 (1,1): 30900	736841435	262911460	
+plane ep: 38 (1,1,0) 30900	736841435	262911460	
+Multiplane ep: 38 read 0 , write 0 , erase 0 
+epoch 39 , current_time 39000069822 
+Latency epoch: 39 
+RT 4674621 ns, count  6824
+read RT 7654657 ns, count 4167
+write RT 1000 ns, count 2657
+read worst case 19654525 ns
+write worst case 7074274861 ns
+erase(gc) count 79 , total 7488
+Total RT 2860343 ns, count 434154 
+Total read RT 4233521 ns, count 264370 
+Total write RT 722175 ns, count 169784 
+GC move count 329847 
+SUBREQ ep: 39 time:	197279015671629	0	0	0	0	0	0	0	0	0	
+lun ep: 39 (0,0): 14075	740920560	258916855	
+plane ep: 39 (0,0,0) 14075	740920560	258916855	
+lun ep: 39 (1,0): 30900	738496920	261723700	
+plane ep: 39 (1,0,0) 30900	738496920	261723700	
+lun ep: 39 (0,1): 39120	730432165	269465835	
+plane ep: 39 (0,1,0) 39120	730432165	269465835	
+lun ep: 39 (1,1): 18925	735492115	264365495	
+plane ep: 39 (1,1,0) 18925	735492115	264365495	
+Multiplane ep: 39 read 0 , write 0 , erase 0 
+epoch 40 , current_time 40000015177 
+Latency epoch: 40 
+RT 4671704 ns, count  6843
+read RT 7630897 ns, count 4189
+write RT 1000 ns, count 2654
+read worst case 19654525 ns
+write worst case 7074274861 ns
+erase(gc) count 20 , total 7621
+Total RT 2888450 ns, count 440997 
+Total read RT 4286513 ns, count 268559 
+Total write RT 711075 ns, count 172438 
+GC move count 335708 
+SUBREQ ep: 40 time:	203585037372351	0	0	0	0	0	0	0	0	0	
+lun ep: 40 (0,0): 12330	732118815	267707630	
+plane ep: 40 (0,0,0) 12330	732118815	267707630	
+lun ep: 40 (1,0): 36385	728102020	271806950	
+plane ep: 40 (1,0,0) 36385	728102020	271806950	
+lun ep: 40 (0,1): 38395	724697555	275059330	
+plane ep: 40 (0,1,0) 38395	724697555	275059330	
+lun ep: 40 (1,1): 20935	731106825	268818600	
+plane ep: 40 (1,1,0) 20935	731106825	268818600	
+Multiplane ep: 40 read 0 , write 0 , erase 0 
+epoch 41 , current_time 41000050597 
+Latency epoch: 41 
+RT 4563084 ns, count  6999
+read RT 7594349 ns, count 4205
+write RT 1000 ns, count 2794
+read worst case 19654525 ns
+write worst case 7074274861 ns
+erase(gc) count 142 , total 7763
+Total RT 2914612 ns, count 447996 
+Total read RT 4337507 ns, count 272764 
+Total write RT 699753 ns, count 175232 
+GC move count 342006 
+SUBREQ ep: 41 time:	214133686601451	0	0	0	0	0	0	0	0	0	
+lun ep: 41 (0,0): 10970	717919790	281532675	
+plane ep: 41 (0,0,0) 10970	717919790	281532675	
+lun ep: 41 (1,0): 35380	724022895	275682630	
+plane ep: 41 (1,0,0) 35380	724022895	275682630	
+lun ep: 41 (0,1): 8590	718594450	281065200	
+plane ep: 41 (0,1,0) 8590	718594450	281065200	
+lun ep: 41 (1,1): 35380	725709545	274577145	
+plane ep: 41 (1,1,0) 35380	725709545	274577145	
+Multiplane ep: 41 read 0 , write 0 , erase 0 
+epoch 42 , current_time 42000192945 
+Latency epoch: 42 
+RT 4818685 ns, count  6606
+read RT 7957408 ns, count 4000
+write RT 1000 ns, count 2606
+read worst case 19654525 ns
+write worst case 7074274861 ns
+erase(gc) count 92 , total 7895
+Total RT 2942280 ns, count 454602 
+Total read RT 4389824 ns, count 276764 
+Total write RT 689513 ns, count 177838 
+GC move count 347853 
+SUBREQ ep: 42 time:	207777631922719	0	0	0	0	0	0	0	0	0	
+lun ep: 42 (0,0): 19560	724449610	276538795	
+plane ep: 42 (0,0,0) 19560	724449610	276538795	
+lun ep: 42 (1,0): 36385	719974935	280190835	
+plane ep: 42 (1,0,0) 36385	719974935	280190835	
+lun ep: 42 (0,1): 8590	728070855	270109330	
+plane ep: 42 (0,1,0) 8590	728070855	270109330	
+lun ep: 42 (1,1): 25415	729788670	270107585	
+plane ep: 42 (1,1,0) 25415	729788670	270107585	
+Multiplane ep: 42 read 0 , write 0 , erase 0 
+epoch 43 , current_time 43000040952 
+Latency epoch: 43 
+RT 4704285 ns, count  6846
+read RT 7748520 ns, count 4156
+write RT 1000 ns, count 2690
+read worst case 19656308 ns
+write worst case 7074274861 ns
+erase(gc) count 27 , total 8030
+Total RT 2968420 ns, count 461448 
+Total read RT 4439513 ns, count 280920 
+Total write RT 679253 ns, count 180528 
+GC move count 353786 
+SUBREQ ep: 43 time:	221165854881289	0	0	0	0	0	0	0	0	0	
+lun ep: 43 (0,0): 14075	726384205	273260735	
+plane ep: 43 (0,0,0) 14075	726384205	273260735	
+lun ep: 43 (1,0): 23405	729051680	271007630	
+plane ep: 43 (1,0,0) 23405	729051680	271007630	
+lun ep: 43 (0,1): 8590	738190755	261853845	
+plane ep: 43 (0,1,0) 8590	738190755	261853845	
+lun ep: 43 (1,1): 39860	737516095	262376420	
+plane ep: 43 (1,1,0) 39860	737516095	262376420	
+Multiplane ep: 43 read 0 , write 0 , erase 0 
+epoch 44 , current_time 44000005490 
+Latency epoch: 44 
+RT 4798863 ns, count  6667
+read RT 7816136 ns, count 4093
+write RT 1000 ns, count 2574
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 129 , total 8159
+Total RT 2994489 ns, count 468115 
+Total read RT 4488003 ns, count 285013 
+Total write RT 669718 ns, count 183102 
+GC move count 359459 
+SUBREQ ep: 44 time:	220993383588016	0	0	0	0	0	0	0	0	0	
+lun ep: 44 (0,0): 19560	738190755	261930885	
+plane ep: 44 (0,0,0) 19560	738190755	261930885	
+lun ep: 44 (1,0): 39860	737547260	262347000	
+plane ep: 44 (1,0,0) 39860	737547260	262347000	
+lun ep: 44 (0,1): 8590	749749360	252615790	
+plane ep: 44 (0,1,0) 8590	749749360	252615790	
+lun ep: 44 (1,1): 55310	738528085	261443215	
+plane ep: 44 (1,1,0) 55310	738528085	261443215	
+Multiplane ep: 44 read 0 , write 0 , erase 0 
+epoch 45 , current_time 45000080620 
+Latency epoch: 45 
+RT 4792352 ns, count  6680
+read RT 7857219 ns, count 4074
+write RT 1000 ns, count 2606
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 93 , total 8287
+Total RT 3019783 ns, count 474795 
+Total read RT 4535484 ns, count 289087 
+Total write RT 660334 ns, count 185708 
+GC move count 365083 
+SUBREQ ep: 45 time:	227086059235492	0	0	0	0	0	0	0	0	0	
+lun ep: 45 (0,0): 11695	744937355	255138410	
+plane ep: 45 (0,0,0) 11695	744937355	255138410	
+lun ep: 45 (1,0): 14445	749659975	250342490	
+plane ep: 45 (1,0,0) 14445	749659975	250342490	
+lun ep: 45 (0,1): 17180	741901385	257961710	
+plane ep: 45 (0,1,0) 17180	741901385	257961710	
+lun ep: 45 (1,1): 14445	738865415	261012390	
+plane ep: 45 (1,1,0) 14445	738865415	261012390	
+Multiplane ep: 45 read 0 , write 0 , erase 0 
+epoch 46 , current_time 46000052772 
+Latency epoch: 46 
+RT 4637057 ns, count  6897
+read RT 7694669 ns, count 4156
+write RT 1000 ns, count 2741
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 35 , total 8425
+Total RT 3042939 ns, count 481692 
+Total read RT 4580257 ns, count 293243 
+Total write RT 650743 ns, count 188449 
+GC move count 371161 
+SUBREQ ep: 46 time:	240390153123825	0	0	0	0	0	0	0	0	0	
+lun ep: 46 (0,0): 19560	744262695	255396955	
+plane ep: 46 (0,0,0) 19560	744262695	255396955	
+lun ep: 46 (1,0): 30900	742882210	257147680	
+plane ep: 46 (1,0,0) 30900	742882210	257147680	
+lun ep: 46 (0,1): 0	741226725	258740835	
+plane ep: 46 (0,1,0) 0	741226725	258740835	
+lun ep: 46 (1,1): 41870	741226725	258880205	
+plane ep: 46 (1,1,0) 41870	741226725	258880205	
+Multiplane ep: 46 read 0 , write 0 , erase 0 
+epoch 47 , current_time 47000033720 
+Latency epoch: 47 
+RT 3830653 ns, count  8292
+read RT 6179110 ns, count 5140
+write RT 1000 ns, count 3152
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 0 , total 8584
+Total RT 3056269 ns, count 489984 
+Total read RT 4607799 ns, count 298383 
+Total write RT 640054 ns, count 191601 
+GC move count 378187 
+SUBREQ ep: 47 time:	295819040340985	0	0	0	0	0	0	0	0	0	
+lun ep: 47 (0,0): 39120	732704090	265793350	
+plane ep: 47 (0,0,0) 39120	732704090	265793350	
+lun ep: 47 (1,0): 19930	732824640	267045435	
+plane ep: 47 (1,0,0) 19930	732824640	267045435	
+lun ep: 47 (0,1): 22665	725620160	274543735	
+plane ep: 47 (0,1,0) 22665	725620160	274543735	
+lun ep: 47 (1,1): 36385	724360225	275586890	
+plane ep: 47 (1,1,0) 36385	724360225	275586890	
+Multiplane ep: 47 read 0 , write 0 , erase 0 
+epoch 48 , current_time 48000012355 
+Latency epoch: 48 
+RT 3908037 ns, count  8229
+read RT 6394123 ns, count 5029
+write RT 1000 ns, count 3200
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 160 , total 8744
+Total RT 3070337 ns, count 498213 
+Total read RT 4637407 ns, count 303412 
+Total write RT 629556 ns, count 194801 
+GC move count 385228 
+SUBREQ ep: 48 time:	300349536358246	0	0	0	0	0	0	0	0	0	
+lun ep: 48 (0,0): 19560	730126000	271370390	
+plane ep: 48 (0,0,0) 19560	730126000	271370390	
+lun ep: 48 (1,0): 23655	727702360	272266695	
+plane ep: 48 (1,0,0) 23655	727702360	272266695	
+lun ep: 48 (0,1): 13070	721018090	278947475	
+plane ep: 48 (0,1,0) 13070	721018090	278947475	
+lun ep: 48 (1,1): 17180	724666390	275170775	
+plane ep: 48 (1,1,0) 17180	724666390	275170775	
+Multiplane ep: 48 read 0 , write 0 , erase 0 
+epoch 49 , current_time 49000035617 
+Latency epoch: 49 
+RT 4427061 ns, count  7209
+read RT 7195472 ns, count 4435
+write RT 1000 ns, count 2774
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 106 , total 8884
+Total RT 3089688 ns, count 505422 
+Total read RT 4674259 ns, count 307847 
+Total write RT 620730 ns, count 197575 
+GC move count 391410 
+SUBREQ ep: 49 time:	268875946707310	0	0	0	0	0	0	0	0	0	
+lun ep: 49 (0,0): 36385	728408185	271735395	
+plane ep: 49 (0,0,0) 36385	728408185	271735395	
+lun ep: 49 (1,0): 16455	725034885	274969325	
+plane ep: 49 (1,0,0) 16455	725034885	274969325	
+lun ep: 49 (0,1): 4480	724360225	275447770	
+plane ep: 49 (0,1,0) 4480	724360225	275447770	
+lun ep: 49 (1,1): 30530	727733525	272461415	
+plane ep: 49 (1,1,0) 30530	727733525	272461415	
+Multiplane ep: 49 read 0 , write 0 , erase 0 
+epoch 50 , current_time 50000152452 
+Latency epoch: 50 
+RT 4946989 ns, count  6437
+read RT 8065168 ns, count 3948
+write RT 1000 ns, count 2489
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 37 , total 9011
+Total RT 3113044 ns, count 511859 
+Total read RT 4717195 ns, count 311795 
+Total write RT 613019 ns, count 200064 
+GC move count 397043 
+SUBREQ ep: 50 time:	245695456308735	0	0	0	0	0	0	0	0	0	
+lun ep: 50 (0,0): 31905	729051680	268794915	
+plane ep: 50 (0,0,0) 31905	729051680	268794915	
+lun ep: 50 (1,0): 8590	732456145	267731565	
+plane ep: 50 (1,0,0) 8590	732456145	267731565	
+lun ep: 50 (0,1): 8960	734142795	265874380	
+plane ep: 50 (0,1,0) 8960	734142795	265874380	
+lun ep: 50 (1,1): 16455	727090030	272718215	
+plane ep: 50 (1,1,0) 16455	727090030	272718215	
+Multiplane ep: 50 read 0 , write 0 , erase 0 
+epoch 51 , current_time 51000079237 
+Latency epoch: 51 
+RT 5006949 ns, count  6410
+read RT 8110209 ns, count 3957
+write RT 1000 ns, count 2453
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 123 , total 9134
+Total RT 3136468 ns, count 518269 
+Total read RT 4759716 ns, count 315752 
+Total write RT 605605 ns, count 202517 
+GC move count 402478 
+SUBREQ ep: 51 time:	250156102050835	0	0	0	0	0	0	0	0	0	
+lun ep: 51 (0,0): 68290	737942810	264030160	
+plane ep: 51 (0,0,0) 68290	737942810	264030160	
+lun ep: 51 (1,0): 8590	736841435	263076760	
+plane ep: 51 (1,0,0) 8590	736841435	263076760	
+lun ep: 51 (0,1): 8960	734480125	265584670	
+plane ep: 51 (0,1,0) 8960	734480125	265584670	
+lun ep: 51 (1,1): 19560	727733525	272298360	
+plane ep: 51 (1,1,0) 19560	727733525	272298360	
+Multiplane ep: 51 read 0 , write 0 , erase 0 
+epoch 52 , current_time 52000001950 
+Latency epoch: 52 
+RT 4829893 ns, count  6601
+read RT 7926293 ns, count 4022
+write RT 1000 ns, count 2579
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 96 , total 9265
+Total RT 3157765 ns, count 524870 
+Total read RT 4799544 ns, count 319774 
+Total write RT 598002 ns, count 205096 
+GC move count 408260 
+SUBREQ ep: 52 time:	263191603706456	0	0	0	0	0	0	0	0	0	
+lun ep: 52 (0,0): 24410	730769495	269289815	
+plane ep: 52 (0,0,0) 24410	730769495	269289815	
+lun ep: 52 (1,0): 25045	730800660	269018555	
+plane ep: 52 (1,0,0) 25045	730800660	269018555	
+lun ep: 52 (0,1): 62805	725709545	274067535	
+plane ep: 52 (0,1,0) 62805	725709545	274067535	
+lun ep: 52 (1,1): 25045	727058865	272853845	
+plane ep: 52 (1,1,0) 25045	727058865	272853845	
+Multiplane ep: 52 read 0 , write 0 , erase 0 
+epoch 53 , current_time 53000016435 
+Latency epoch: 53 
+RT 4970950 ns, count  6412
+read RT 8149126 ns, count 3911
+write RT 1000 ns, count 2501
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 25 , total 9391
+Total RT 3179648 ns, count 531282 
+Total read RT 4840016 ns, count 323685 
+Total write RT 590809 ns, count 207597 
+GC move count 413808 
+SUBREQ ep: 53 time:	261086989528108	0	0	0	0	0	0	0	0	0	
+lun ep: 53 (0,0): 14445	731137990	268868215	
+plane ep: 53 (0,0,0) 14445	731137990	268868215	
+lun ep: 53 (1,0): 16455	730401000	269651080	
+plane ep: 53 (1,0,0) 16455	730401000	269651080	
+lun ep: 53 (0,1): 41870	723654400	272863070	
+plane ep: 53 (0,1,0) 41870	723654400	272863070	
+lun ep: 53 (1,1): 0	736841435	263258265	
+plane ep: 53 (1,1,0) 0	736841435	263258265	
+Multiplane ep: 53 read 0 , write 0 , erase 0 
+epoch 54 , current_time 54000019927 
+Latency epoch: 54 
+RT 4301632 ns, count  7442
+read RT 7063071 ns, count 4532
+write RT 1000 ns, count 2910
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 142 , total 9533
+Total RT 3195147 ns, count 538724 
+Total read RT 4870711 ns, count 328217 
+Total write RT 582655 ns, count 210507 
+GC move count 420021 
+SUBREQ ep: 54 time:	309585916909771	0	0	0	0	0	0	0	0	0	
+lun ep: 54 (0,0): 62805	725709545	274148065	
+plane ep: 54 (0,0,0) 62805	725709545	274148065	
+lun ep: 54 (1,0): 54850	724360225	275612820	
+plane ep: 54 (1,0,0) 54850	724360225	275612820	
+lun ep: 54 (0,1): 13440	731781485	270549130	
+plane ep: 54 (0,1,0) 13440	731781485	270549130	
+lun ep: 54 (1,1): 14075	725034885	274908740	
+plane ep: 54 (1,1,0) 14075	725034885	274908740	
+Multiplane ep: 54 read 0 , write 0 , erase 0 
+epoch 55 , current_time 55000108837 
+Latency epoch: 55 
+RT 3762015 ns, count  8574
+read RT 6166764 ns, count 5230
+write RT 1000 ns, count 3344
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 143 , total 9701
+Total RT 3204027 ns, count 547298 
+Total read RT 4891039 ns, count 333447 
+Total write RT 573559 ns, count 213851 
+GC move count 427415 
+SUBREQ ep: 55 time:	363826824061535	0	0	0	0	0	0	0	0	0	
+lun ep: 55 (0,0): 81360	727702360	272187910	
+plane ep: 55 (0,0,0) 81360	727702360	272187910	
+lun ep: 55 (1,0): 3105	717644790	282302325	
+plane ep: 55 (1,0,0) 3105	717644790	282302325	
+lun ep: 55 (0,1): 41960	718656780	282485575	
+plane ep: 55 (0,1,0) 41960	718656780	282485575	
+lun ep: 55 (1,1): 43880	723317070	276840970	
+plane ep: 55 (1,1,0) 43880	723317070	276840970	
+Multiplane ep: 55 read 0 , write 0 , erase 0 
+epoch 56 , current_time 56000217500 
+Latency epoch: 56 
+RT 3171126 ns, count  10014
+read RT 5262129 ns, count 6034
+write RT 1000 ns, count 3980
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 150 , total 9903
+Total RT 3203435 ns, count 557312 
+Total read RT 4897634 ns, count 339481 
+Total write RT 563097 ns, count 217831 
+GC move count 436344 
+SUBREQ ep: 56 time:	432639402569752	0	0	0	0	0	0	0	0	0	
+lun ep: 56 (0,0): 41590	718904725	281099355	
+plane ep: 56 (0,0,0) 41590	718904725	281099355	
+lun ep: 56 (1,0): 11695	722890355	276703095	
+plane ep: 56 (1,0,0) 11695	722890355	276703095	
+lun ep: 56 (0,1): 64535	713871830	286428820	
+plane ep: 56 (0,1,0) 64535	713871830	286428820	
+lun ep: 56 (1,1): 11695	722246860	277528095	
+plane ep: 56 (1,1,0) 11695	722246860	277528095	
+Multiplane ep: 56 read 0 , write 0 , erase 0 
+epoch 57 , current_time 57000001962 
+Latency epoch: 57 
+RT 3394293 ns, count  9474
+read RT 5590997 ns, count 5751
+write RT 1000 ns, count 3723
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 139 , total 10093
+Total RT 3206625 ns, count 566786 
+Total read RT 4909184 ns, count 345232 
+Total write RT 553651 ns, count 221554 
+GC move count 444797 
+SUBREQ ep: 57 time:	416404634438084	0	0	0	0	0	0	0	0	0	
+lun ep: 57 (0,0): 43675	720281100	279586980	
+plane ep: 57 (0,0,0) 43675	720281100	279586980	
+lun ep: 57 (1,0): 3105	722704740	277718825	
+plane ep: 57 (1,0,0) 3105	722704740	277718825	
+lun ep: 57 (0,1): 56020	712495455	286980815	
+plane ep: 57 (0,1,0) 56020	712495455	286980815	
+lun ep: 57 (1,1): 14075	715958140	283961300	
+plane ep: 57 (1,1,0) 14075	715958140	283961300	
+Multiplane ep: 57 read 0 , write 0 , erase 0 
+epoch 58 , current_time 58000175070 
+Latency epoch: 58 
+RT 3863924 ns, count  8248
+read RT 6372007 ns, count 5001
+write RT 1000 ns, count 3247
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 101 , total 10259
+Total RT 3216052 ns, count 575034 
+Total read RT 4930071 ns, count 350233 
+Total write RT 545668 ns, count 224801 
+GC move count 452161 
+SUBREQ ep: 58 time:	369252195195559	0	0	0	0	0	0	0	0	0	
+lun ep: 58 (0,0): 52205	729668120	267139180	
+plane ep: 58 (0,0,0) 52205	729668120	267139180	
+lun ep: 58 (1,0): 3105	728377020	271592035	
+plane ep: 58 (1,0,0) 3105	728377020	271592035	
+lun ep: 58 (0,1): 23405	722642410	277759465	
+plane ep: 58 (0,1,0) 23405	722642410	277759465	
+lun ep: 58 (1,1): 11695	734448960	265633785	
+plane ep: 58 (1,1,0) 11695	734448960	265633785	
+Multiplane ep: 58 read 0 , write 0 , erase 0 
+epoch 59 , current_time 59000005672 
+Latency epoch: 59 
+RT 3047787 ns, count  10462
+read RT 5010508 ns, count 6363
+write RT 1000 ns, count 4099
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 111 , total 10464
+Total RT 3213045 ns, count 585496 
+Total read RT 4931506 ns, count 356596 
+Total write RT 535914 ns, count 228900 
+GC move count 461192 
+SUBREQ ep: 59 time:	476837733046599	0	0	0	0	0	0	0	0	0	
+lun ep: 59 (0,0): 127995	716632800	286483670	
+plane ep: 59 (0,0,0) 127995	716632800	286483670	
+lun ep: 59 (1,0): 41500	715531425	284452460	
+plane ep: 59 (1,0,0) 41500	715531425	284452460	
+lun ep: 59 (0,1): 154415	722246860	276637025	
+plane ep: 59 (0,1,0) 154415	722246860	276637025	
+lun ep: 59 (1,1): 0	718904725	281040515	
+plane ep: 59 (1,1,0) 0	718904725	281040515	
+Multiplane ep: 59 read 0 , write 0 , erase 0 
+epoch 60 , current_time 60000004035 
+Latency epoch: 60 
+RT 3095973 ns, count  10345
+read RT 5034406 ns, count 6361
+write RT 1000 ns, count 3984
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 116 , total 10664
+Total RT 3211012 ns, count 595841 
+Total read RT 4933309 ns, count 362957 
+Total write RT 526763 ns, count 232884 
+GC move count 469998 
+SUBREQ ep: 60 time:	479325886413743	0	0	0	0	0	0	0	0	0	
+lun ep: 60 (0,0): 138965	719885550	279902120	
+plane ep: 60 (0,0,0) 138965	719885550	279902120	
+lun ep: 60 (1,0): 0	715837590	283909690	
+plane ep: 60 (1,0,0) 0	715837590	283909690	
+lun ep: 60 (0,1): 139970	718962945	281687750	
+plane ep: 60 (0,1,0) 139970	718962945	281687750	
+lun ep: 60 (1,1): 36015	716849580	283139790	
+plane ep: 60 (1,1,0) 36015	716849580	283139790	
+Multiplane ep: 60 read 0 , write 0 , erase 0 
+epoch 61 , current_time 61000014940 
+Latency epoch: 61 
+RT 2934792 ns, count  10865
+read RT 4824069 ns, count 6609
+write RT 1000 ns, count 4256
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 132 , total 10876
+Total RT 3206065 ns, count 606706 
+Total read RT 4931355 ns, count 369566 
+Total write RT 517327 ns, count 237140 
+GC move count 479326 
+SUBREQ ep: 61 time:	511738669357330	0	0	0	0	0	0	0	0	0	
+lun ep: 61 (0,0): 129000	716818415	280085370	
+plane ep: 61 (0,0,0) 129000	716818415	280085370	
+lun ep: 61 (1,0): 28150	710498530	289572745	
+plane ep: 61 (1,0,0) 28150	710498530	289572745	
+lun ep: 61 (0,1): 166390	712801620	287042895	
+plane ep: 61 (0,1,0) 166390	712801620	287042895	
+lun ep: 61 (1,1): 8590	713197170	286714540	
+plane ep: 61 (1,1,0) 8590	713197170	286714540	
+Multiplane ep: 61 read 0 , write 0 , erase 0 
+epoch 62 , current_time 62000070035 
+Latency epoch: 62 
+RT 3020993 ns, count  10580
+read RT 4969361 ns, count 6431
+write RT 1000 ns, count 4149
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 142 , total 11084
+Total RT 3202892 ns, count 617286 
+Total read RT 4932005 ns, count 375997 
+Total write RT 508448 ns, count 241289 
+GC move count 488500 
+SUBREQ ep: 62 time:	506353475209452	0	0	0	0	0	0	0	0	0	
+lun ep: 62 (0,0): 148930	711541685	291450125	
+plane ep: 62 (0,0,0) 148930	711541685	291450125	
+lun ep: 62 (1,0): 28785	707772835	292207310	
+plane ep: 62 (1,0,0) 28785	707772835	292207310	
+lun ep: 62 (0,1): 149935	715500260	280888430	
+plane ep: 62 (0,1,0) 149935	715500260	280888430	
+lun ep: 62 (1,1): 8590	711483465	288599400	
+plane ep: 62 (1,1,0) 8590	711483465	288599400	
+Multiplane ep: 62 read 0 , write 0 , erase 0 
+epoch 63 , current_time 63000085465 
+Latency epoch: 63 
+RT 3158932 ns, count  10120
+read RT 5133212 ns, count 6227
+write RT 1000 ns, count 3893
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 145 , total 11281
+Total RT 3202182 ns, count 627406 
+Total read RT 4935282 ns, count 382224 
+Total write RT 500390 ns, count 245182 
+GC move count 497204 
+SUBREQ ep: 63 time:	492002630858312	0	0	0	0	0	0	0	0	0	
+lun ep: 63 (0,0): 167855	719916715	279792170	
+plane ep: 63 (0,0,0) 167855	719916715	279792170	
+lun ep: 63 (1,0): 19560	713782445	284659645	
+plane ep: 63 (1,0,0) 19560	713782445	284659645	
+lun ep: 63 (0,1): 156885	715252315	288122700	
+plane ep: 63 (0,1,0) 156885	715252315	288122700	
+lun ep: 63 (1,1): 3105	721878365	277680180	
+plane ep: 63 (1,1,0) 3105	721878365	277680180	
+Multiplane ep: 63 read 0 , write 0 , erase 0 
+epoch 64 , current_time 64000000647 
+Latency epoch: 64 
+RT 3595588 ns, count  8936
+read RT 5868965 ns, count 5474
+write RT 1000 ns, count 3462
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 124 , total 11455
+Total RT 3207706 ns, count 636342 
+Total read RT 4948464 ns, count 387698 
+Total write RT 493436 ns, count 248644 
+GC move count 504874 
+SUBREQ ep: 64 time:	441272376103784	0	0	0	0	0	0	0	0	0	
+lun ep: 64 (0,0): 77710	719637605	280223245	
+plane ep: 64 (0,0,0) 77710	719637605	280223245	
+lun ep: 64 (1,0): 25045	716601635	285044845	
+plane ep: 64 (1,0,0) 25045	716601635	285044845	
+lun ep: 64 (0,1): 83195	728745515	271084170	
+plane ep: 64 (0,1,0) 83195	728745515	271084170	
+lun ep: 64 (1,1): 33635	726078040	274415335	
+plane ep: 64 (1,1,0) 33635	726078040	274415335	
+Multiplane ep: 64 read 0 , write 0 , erase 0 
+epoch 65 , current_time 65000041807 
+Latency epoch: 65 
+RT 3010656 ns, count  10578
+read RT 4898870 ns, count 6500
+write RT 1000 ns, count 4078
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 134 , total 11659
+Total RT 3204483 ns, count 646920 
+Total read RT 4947646 ns, count 394198 
+Total write RT 485489 ns, count 252722 
+GC move count 513845 
+SUBREQ ep: 65 time:	531002939409000	0	0	0	0	0	0	0	0	0	
+lun ep: 65 (0,0): 157430	723596180	276119935	
+plane ep: 65 (0,0,0) 157430	723596180	276119935	
+lun ep: 65 (1,0): 3105	719579385	280173380	
+plane ep: 65 (1,0,0) 3105	719579385	280173380	
+lun ep: 65 (0,1): 140975	717555405	282234010	
+plane ep: 65 (0,1,0) 140975	717555405	282234010	
+lun ep: 65 (1,1): 8590	723565015	276473720	
+plane ep: 65 (1,1,0) 8590	723565015	276473720	
+Multiplane ep: 65 read 0 , write 0 , erase 0 
+epoch 66 , current_time 66000095830 
+Latency epoch: 66 
+RT 3552756 ns, count  8998
+read RT 5831817 ns, count 5481
+write RT 1000 ns, count 3517
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 114 , total 11834
+Total RT 3209260 ns, count 655918 
+Total read RT 4959771 ns, count 399679 
+Total write RT 478839 ns, count 256239 
+GC move count 521541 
+SUBREQ ep: 66 time:	458397035611291	0	0	0	0	0	0	0	0	0	
+lun ep: 66 (0,0): 74695	722979740	277282515	
+plane ep: 66 (0,0,0) 74695	722979740	277282515	
+lun ep: 66 (1,0): 25045	719974935	280056450	
+plane ep: 66 (1,0,0) 25045	719974935	280056450	
+lun ep: 66 (0,1): 112085	730986275	266231405	
+plane ep: 66 (0,1,0) 112085	730986275	266231405	
+lun ep: 66 (1,1): 3105	727764690	272138295	
+plane ep: 66 (1,1,0) 3105	727764690	272138295	
+Multiplane ep: 66 read 0 , write 0 , erase 0 
+epoch 67 , current_time 67000018177 
+Latency epoch: 67 
+RT 4493623 ns, count  7100
+read RT 7453716 ns, count 4280
+write RT 1000 ns, count 2820
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 60 , total 11976
+Total RT 3223013 ns, count 663018 
+Total read RT 4986194 ns, count 403959 
+Total write RT 473637 ns, count 259059 
+GC move count 527815 
+SUBREQ ep: 67 time:	367633267311086	0	0	0	0	0	0	0	0	0	
+lun ep: 67 (0,0): 40865	727427360	272342240	
+plane ep: 67 (0,0,0) 40865	727427360	272342240	
+lun ep: 67 (1,0): 0	727058865	273022385	
+plane ep: 67 (1,0,0) 0	727058865	273022385	
+lun ep: 67 (0,1): 40865	727733525	271823405	
+plane ep: 67 (0,1,0) 40865	727733525	271823405	
+lun ep: 67 (1,1): 16455	728039690	272014135	
+plane ep: 67 (1,1,0) 16455	728039690	272014135	
+Multiplane ep: 67 read 0 , write 0 , erase 0 
+epoch 68 , current_time 68000092197 
+Latency epoch: 68 
+RT 4824295 ns, count  6651
+read RT 8099899 ns, count 3961
+write RT 1000 ns, count 2690
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 138 , total 12114
+Total RT 3238916 ns, count 669669 
+Total read RT 5016428 ns, count 407920 
+Total write RT 468779 ns, count 261749 
+GC move count 533938 
+SUBREQ ep: 68 time:	350168123979974	0	0	0	0	0	0	0	0	0	
+lun ep: 68 (0,0): 18925	733468135	266407925	
+plane ep: 68 (0,0,0) 18925	733468135	266407925	
+lun ep: 68 (1,0): 0	734480125	265443555	
+plane ep: 68 (1,0,0) 0	734480125	265443555	
+lun ep: 68 (0,1): 14445	728497570	274545980	
+plane ep: 68 (0,1,0) 14445	728497570	274545980	
+lun ep: 68 (1,1): 27425	729082845	270963750	
+plane ep: 68 (1,1,0) 27425	729082845	270963750	
+Multiplane ep: 68 read 0 , write 0 , erase 0 
+epoch 69 , current_time 69000034552 
+Latency epoch: 69 
+RT 4066749 ns, count  7902
+read RT 6610249 ns, count 4861
+write RT 1000 ns, count 3041
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 148 , total 12267
+Total RT 3248570 ns, count 677571 
+Total read RT 5035197 ns, count 412781 
+Total write RT 463406 ns, count 264790 
+GC move count 540695 
+SUBREQ ep: 69 time:	422928094928478	0	0	0	0	0	0	0	0	0	
+lun ep: 69 (0,0): 26880	726690370	273275195	
+plane ep: 69 (0,0,0) 26880	726690370	273275195	
+lun ep: 69 (1,0): 50090	726721535	273264225	
+plane ep: 69 (1,0,0) 50090	726721535	273264225	
+lun ep: 69 (0,1): 65275	722673575	277227915	
+plane ep: 69 (0,1,0) 65275	722673575	277227915	
+lun ep: 69 (1,1): 11695	717950955	281979705	
+plane ep: 69 (1,1,0) 11695	717950955	281979705	
+Multiplane ep: 69 read 0 , write 0 , erase 0 
+epoch 70 , current_time 70000112537 
+Latency epoch: 70 
+RT 3843195 ns, count  8284
+read RT 6333819 ns, count 5026
+write RT 1000 ns, count 3258
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 115 , total 12430
+Total RT 3255752 ns, count 685855 
+Total read RT 5050818 ns, count 417807 
+Total write RT 457785 ns, count 268048 
+GC move count 547870 
+SUBREQ ep: 70 time:	449878707782563	0	0	0	0	0	0	0	0	0	
+lun ep: 70 (0,0): 20920	734053410	262856360	
+plane ep: 70 (0,0,0) 20920	734053410	262856360	
+lun ep: 70 (1,0): 6210	722642410	277460530	
+plane ep: 70 (1,0,0) 6210	722642410	277460530	
+lun ep: 70 (0,1): 42225	717524240	280731360	
+plane ep: 70 (0,1,0) 42225	717524240	280731360	
+lun ep: 70 (1,1): 22665	723685565	276369755	
+plane ep: 70 (1,1,0) 22665	723685565	276369755	
+Multiplane ep: 70 read 0 , write 0 , erase 0 
+epoch 71 , current_time 71000042880 
+Latency epoch: 71 
+RT 3430302 ns, count  9242
+read RT 5676792 ns, count 5584
+write RT 1000 ns, count 3658
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 101 , total 12613
+Total RT 3258072 ns, count 695097 
+Total read RT 5059073 ns, count 423391 
+Total write RT 451635 ns, count 271706 
+GC move count 555926 
+SUBREQ ep: 71 time:	509364118032054	0	0	0	0	0	0	0	0	0	
+lun ep: 71 (0,0): 30530	720006100	283140040	
+plane ep: 71 (0,0,0) 30530	720006100	283140040	
+lun ep: 71 (1,0): 14075	718198900	281391060	
+plane ep: 71 (1,0,0) 14075	718198900	281391060	
+lun ep: 71 (0,1): 36015	713565665	288262320	
+plane ep: 71 (0,1,0) 36015	713565665	288262320	
+lun ep: 71 (1,1): 42135	727337975	272330770	
+plane ep: 71 (1,1,0) 42135	727337975	272330770	
+Multiplane ep: 71 read 0 , write 0 , erase 0 
+epoch 72 , current_time 72000133150 
+Latency epoch: 72 
+RT 3846085 ns, count  8373
+read RT 4794999 ns, count 5075
+write RT 2385886 ns, count 3298
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 69 , total 12775
+Total RT 3265070 ns, count 703470 
+Total read RT 5055945 ns, count 428466 
+Total write RT 474831 ns, count 275004 
+GC move count 563032 
+SUBREQ ep: 72 time:	467988856298663	0	0	0	0	0	0	0	0	0	
+lun ep: 72 (0,0): 11695	728377020	271843350	
+plane ep: 72 (0,0,0) 11695	728377020	271843350	
+lun ep: 72 (1,0): 10970	722704740	277713590	
+plane ep: 72 (1,0,0) 10970	722704740	277713590	
+lun ep: 72 (0,1): 17180	723716730	276155340	
+plane ep: 72 (0,1,0) 17180	723716730	276155340	
+lun ep: 72 (1,1): 3105	728745515	271298835	
+plane ep: 72 (1,1,0) 3105	728745515	271298835	
+Multiplane ep: 72 read 0 , write 0 , erase 0 
+epoch 73 , current_time 73000012502 
+Latency epoch: 73 
+RT 3751067 ns, count  8556
+read RT 3349843 ns, count 5225
+write RT 4380427 ns, count 3331
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 37 , total 12927
+Total RT 3270909 ns, count 712026 
+Total read RT 5035390 ns, count 433691 
+Total write RT 521571 ns, count 278335 
+GC move count 569698 
+SUBREQ ep: 73 time:	485328280586357	0	0	0	0	0	0	0	0	0	
+lun ep: 73 (0,0): 17180	727090030	272485100	
+plane ep: 73 (0,0,0) 17180	727090030	272485100	
+lun ep: 73 (1,0): 6210	727702360	272320050	
+plane ep: 73 (1,0,0) 6210	727702360	272320050	
+lun ep: 73 (0,1): 14075	722979740	277006020	
+plane ep: 73 (0,1,0) 14075	722979740	277006020	
+lun ep: 73 (1,1): 6210	726384205	273711505	
+plane ep: 73 (1,1,0) 6210	726384205	273711505	
+Multiplane ep: 73 read 0 , write 0 , erase 0 
+epoch 74 , current_time 74000047915 
+Latency epoch: 74 
+RT 3547539 ns, count  9020
+read RT 4256587 ns, count 5432
+write RT 2474089 ns, count 3588
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 16 , total 13077
+Total RT 3274369 ns, count 721046 
+Total read RT 5025756 ns, count 439123 
+Total write RT 546420 ns, count 281923 
+GC move count 576234 
+SUBREQ ep: 74 time:	518978478716577	0	0	0	0	0	0	0	0	0	
+lun ep: 74 (0,0): 25045	728714350	271583060	
+plane ep: 74 (0,0,0) 25045	728714350	271583060	
+lun ep: 74 (1,0): 6210	727090030	272811460	
+plane ep: 74 (1,0,0) 6210	727090030	272811460	
+lun ep: 74 (0,1): 3105	729757505	270099855	
+plane ep: 74 (0,1,0) 3105	729757505	270099855	
+lun ep: 74 (1,1): 19560	726721535	273168985	
+plane ep: 74 (1,1,0) 19560	726721535	273168985	
+Multiplane ep: 74 read 0 , write 0 , erase 0 
+epoch 75 , current_time 75000003627 
+Latency epoch: 75 
+RT 3256088 ns, count  9808
+read RT 3899924 ns, count 6008
+write RT 2238149 ns, count 3800
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 15 , total 13229
+Total RT 3274123 ns, count 730854 
+Total read RT 5010560 ns, count 445131 
+Total write RT 568919 ns, count 285723 
+GC move count 582791 
+SUBREQ ep: 75 time:	572088351673368	0	0	0	0	0	0	0	0	0	
+lun ep: 75 (0,0): 25045	723010905	276793350	
+plane ep: 75 (0,0,0) 25045	723010905	276793350	
+lun ep: 75 (1,0): 3105	723991730	275819755	
+plane ep: 75 (1,0,0) 3105	723991730	275819755	
+lun ep: 75 (0,1): 17180	716174920	281261165	
+plane ep: 75 (0,1,0) 17180	716174920	281261165	
+lun ep: 75 (1,1): 14075	722305080	277801600	
+plane ep: 75 (1,1,0) 14075	722305080	277801600	
+Multiplane ep: 75 read 0 , write 0 , erase 0 
+epoch 76 , current_time 76000051762 
+Latency epoch: 76 
+RT 3121979 ns, count  10216
+read RT 2659858 ns, count 6201
+write RT 3835706 ns, count 4015
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 16 , total 13371
+Total RT 3272025 ns, count 741070 
+Total read RT 4978262 ns, count 451332 
+Total write RT 614188 ns, count 289738 
+GC move count 588795 
+SUBREQ ep: 76 time:	603771361697833	0	0	0	0	0	0	0	0	0	
+lun ep: 76 (0,0): 14075	727306810	270772770	
+plane ep: 76 (0,0,0) 14075	727306810	270772770	
+lun ep: 76 (1,0): 14075	730769495	269533400	
+plane ep: 76 (1,0,0) 14075	730769495	269533400	
+lun ep: 76 (0,1): 36015	721661585	280663545	
+plane ep: 76 (0,1,0) 36015	721661585	280663545	
+lun ep: 76 (1,1): 6210	723010905	276850195	
+plane ep: 76 (1,1,0) 6210	723010905	276850195	
+Multiplane ep: 76 read 0 , write 0 , erase 0 
+epoch 77 , current_time 77000230610 
+Latency epoch: 77 
+RT 2973839 ns, count  10599
+read RT 1994006 ns, count 6361
+write RT 4444515 ns, count 4238
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 21 , total 13508
+Total RT 3267820 ns, count 751669 
+Total read RT 4936786 ns, count 457693 
+Total write RT 669406 ns, count 293976 
+GC move count 594508 
+SUBREQ ep: 77 time:	634560823871895	0	0	0	0	0	0	0	0	0	
+lun ep: 77 (0,0): 8590	731444155	270231995	
+plane ep: 77 (0,0,0) 8590	731444155	270231995	
+lun ep: 77 (1,0): 36015	726294820	270076170	
+plane ep: 77 (1,0,0) 36015	726294820	270076170	
+lun ep: 77 (0,1): 16455	727733525	272873790	
+plane ep: 77 (0,1,0) 16455	727733525	272873790	
+lun ep: 77 (1,1): 21940	722246860	275163545	
+plane ep: 77 (1,1,0) 21940	722246860	275163545	
+Multiplane ep: 77 read 0 , write 0 , erase 0 
+epoch 78 , current_time 78000001320 
+Latency epoch: 78 
+RT 2884265 ns, count  11094
+read RT 2638257 ns, count 6681
+write RT 3256706 ns, count 4413
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 39 , total 13651
+Total RT 3262241 ns, count 762763 
+Total read RT 4903716 ns, count 464374 
+Total write RT 707670 ns, count 298389 
+GC move count 600557 
+SUBREQ ep: 78 time:	672481696496047	0	0	0	0	0	0	0	0	0	
+lun ep: 78 (0,0): 8590	727764690	272371410	
+plane ep: 78 (0,0,0) 8590	727764690	272371410	
+lun ep: 78 (1,0): 46985	729420175	270915880	
+plane ep: 78 (1,0,0) 46985	729420175	270915880	
+lun ep: 78 (0,1): 14075	733161970	266594665	
+plane ep: 78 (0,1,0) 14075	733161970	266594665	
+lun ep: 78 (1,1): 3105	732487310	270077915	
+plane ep: 78 (1,1,0) 3105	732487310	270077915	
+Multiplane ep: 78 read 0 , write 0 , erase 0 
+epoch 79 , current_time 79000092905 
+Latency epoch: 79 
+RT 2837899 ns, count  11263
+read RT 2805334 ns, count 6753
+write RT 2886661 ns, count 4510
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 57 , total 13805
+Total RT 3256066 ns, count 774026 
+Total read RT 4873638 ns, count 471127 
+Total write RT 740113 ns, count 302899 
+GC move count 607341 
+SUBREQ ep: 79 time:	691215650691581	0	0	0	0	0	0	0	0	0	
+lun ep: 79 (0,0): 47620	729757505	270200830	
+plane ep: 79 (0,0,0) 47620	729757505	270200830	
+lun ep: 79 (1,0): 52470	723685565	278021750	
+plane ep: 79 (1,0,0) 52470	723685565	278021750	
+lun ep: 79 (0,1): 3105	730063670	270024810	
+plane ep: 79 (0,1,0) 3105	730063670	270024810	
+lun ep: 79 (1,1): 8590	728070855	271993690	
+plane ep: 79 (1,1,0) 8590	728070855	271993690	
+Multiplane ep: 79 read 0 , write 0 , erase 0 
+epoch 80 , current_time 80000021185 
+Latency epoch: 80 
+RT 2717717 ns, count  11798
+read RT 3254128 ns, count 7258
+write RT 1860172 ns, count 4540
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 77 , total 13963
+Total RT 3247983 ns, count 785824 
+Total read RT 4849066 ns, count 478385 
+Total write RT 756653 ns, count 307439 
+GC move count 614347 
+SUBREQ ep: 80 time:	732882861427050	0	0	0	0	0	0	0	0	0	
+lun ep: 80 (0,0): 8590	726384205	273535485	
+plane ep: 80 (0,0,0) 8590	726384205	273535485	
+lun ep: 80 (1,0): 75785	720343430	280912865	
+plane ep: 80 (1,0,0) 75785	720343430	280912865	
+lun ep: 80 (0,1): 8590	722367410	277552280	
+plane ep: 80 (0,1,0) 8590	722367410	277552280	
+lun ep: 80 (1,1): 15450	722673575	277293735	
+plane ep: 80 (1,1,0) 15450	722673575	277293735	
+Multiplane ep: 80 read 0 , write 0 , erase 0 
+epoch 81 , current_time 81000013667 
+Latency epoch: 81 
+RT 2758910 ns, count  11606
+read RT 3548447 ns, count 7106
+write RT 1512143 ns, count 4500
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 105 , total 14120
+Total RT 3240864 ns, count 797430 
+Total read RT 4830029 ns, count 485491 
+Total write RT 767551 ns, count 311939 
+GC move count 621252 
+SUBREQ ep: 81 time:	729572222583934	0	0	0	0	0	0	0	0	0	
+lun ep: 81 (0,0): 8590	723685565	276560485	
+plane ep: 81 (0,0,0) 8590	723685565	276560485	
+lun ep: 81 (1,0): 37390	721661585	278381020	
+plane ep: 81 (1,0,0) 37390	721661585	278381020	
+lun ep: 81 (0,1): 25045	726384205	273377915	
+plane ep: 81 (0,1,0) 25045	726384205	273377915	
+lun ep: 81 (1,1): 14445	722642410	277203980	
+plane ep: 81 (1,1,0) 14445	722642410	277203980	
+Multiplane ep: 81 read 0 , write 0 , erase 0 
+epoch 82 , current_time 82000003040 
+Latency epoch: 82 
+RT 2754059 ns, count  11605
+read RT 3272559 ns, count 7105
+write RT 1935407 ns, count 4500
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 126 , total 14277
+Total RT 3233881 ns, count 809035 
+Total read RT 4807564 ns, count 492596 
+Total write RT 784158 ns, count 316439 
+GC move count 628181 
+SUBREQ ep: 82 time:	738151833414752	0	0	0	0	0	0	0	0	0	
+lun ep: 82 (0,0): 0	724666390	275086505	
+plane ep: 82 (0,0,0) 0	724666390	275086505	
+lun ep: 82 (1,0): 18925	722336245	277343350	
+plane ep: 82 (1,0,0) 18925	722336245	277343350	
+lun ep: 82 (0,1): 32910	716570470	283591310	
+plane ep: 82 (0,1,0) 32910	716570470	283591310	
+lun ep: 82 (1,1): 25415	728070855	272096410	
+plane ep: 82 (1,1,0) 25415	728070855	272096410	
+Multiplane ep: 82 read 0 , write 0 , erase 0 
+epoch 83 , current_time 83000142967 
+Latency epoch: 83 
+RT 2664048 ns, count  11946
+read RT 3458375 ns, count 7468
+write RT 1339343 ns, count 4478
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 13 , total 14432
+Total RT 3225589 ns, count 820981 
+Total read RT 4787415 ns, count 500064 
+Total write RT 791904 ns, count 320917 
+GC move count 635034 
+SUBREQ ep: 83 time:	768567562603100	0	0	0	0	0	0	0	0	0	
+lun ep: 83 (0,0): 25045	719548220	277453300	
+plane ep: 83 (0,0,0) 25045	719548220	277453300	
+lun ep: 83 (1,0): 19930	722642410	277768440	
+plane ep: 83 (1,0,0) 19930	722642410	277768440	
+lun ep: 83 (0,1): 10970	715162930	281954025	
+plane ep: 83 (0,1,0) 10970	715162930	281954025	
+lun ep: 83 (1,1): 51835	729668120	269529660	
+plane ep: 83 (1,1,0) 51835	729668120	269529660	
+Multiplane ep: 83 read 0 , write 0 , erase 0 
+epoch 84 , current_time 84000032205 
+Latency epoch: 84 
+RT 2658809 ns, count  11904
+read RT 3074823 ns, count 7344
+write RT 1988808 ns, count 4560
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 40 , total 14594
+Total RT 3217488 ns, count 832885 
+Total read RT 4762627 ns, count 507408 
+Total write RT 808672 ns, count 325477 
+GC move count 642243 
+SUBREQ ep: 84 time:	774620322390212	0	0	0	0	0	0	0	0	0	
+lun ep: 84 (0,0): 60335	722336245	280866990	
+plane ep: 84 (0,0,0) 60335	722336245	280866990	
+lun ep: 84 (1,0): 8960	721572200	275830725	
+plane ep: 84 (1,0,0) 8960	721572200	275830725	
+lun ep: 84 (0,1): 0	711235520	291498245	
+plane ep: 84 (0,1,0) 0	711235520	291498245	
+lun ep: 84 (1,1): 20935	724391390	276256065	
+plane ep: 84 (1,1,0) 20935	724391390	276256065	
+Multiplane ep: 84 read 0 , write 0 , erase 0 
+epoch 85 , current_time 85000036210 
+Latency epoch: 85 
+RT 2768290 ns, count  11583
+read RT 2969319 ns, count 7077
+write RT 2452561 ns, count 4506
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 63 , total 14756
+Total RT 3211326 ns, count 844468 
+Total read RT 4737959 ns, count 514485 
+Total write RT 831119 ns, count 329983 
+GC move count 649411 
+SUBREQ ep: 85 time:	762347060360886	0	0	0	0	0	0	0	0	0	
+lun ep: 85 (0,0): 14075	716295470	283428005	
+plane ep: 85 (0,0,0) 14075	716295470	283428005	
+lun ep: 85 (1,0): 14075	719668770	282504025	
+plane ep: 85 (1,0,0) 14075	719668770	282504025	
+lun ep: 85 (0,1): 72030	711847850	288251600	
+plane ep: 85 (0,1,0) 72030	711847850	288251600	
+lun ep: 85 (1,1): 35010	717950955	281963250	
+plane ep: 85 (1,1,0) 35010	717950955	281963250	
+Multiplane ep: 85 read 0 , write 0 , erase 0 
+epoch 86 , current_time 86000018910 
+Latency epoch: 86 
+RT 2687447 ns, count  11919
+read RT 2763980 ns, count 7254
+write RT 2568438 ns, count 4665
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 87 , total 14921
+Total RT 3204034 ns, count 856387 
+Total read RT 4710513 ns, count 521739 
+Total write RT 855337 ns, count 334648 
+GC move count 656696 
+SUBREQ ep: 86 time:	793395205387432	0	0	0	0	0	0	0	0	0	
+lun ep: 86 (0,0): 41500	705438580	294769075	
+plane ep: 86 (0,0,0) 41500	705438580	294769075	
+lun ep: 86 (1,0): 40865	713902995	286124900	
+plane ep: 86 (1,0,0) 40865	713902995	286124900	
+lun ep: 86 (0,1): 0	702802270	296961595	
+plane ep: 86 (0,1,0) 0	702802270	296961595	
+lun ep: 86 (1,1): 8960	704089260	295909215	
+plane ep: 86 (1,1,0) 8960	704089260	295909215	
+Multiplane ep: 86 read 0 , write 0 , erase 0 
+epoch 87 , current_time 87000004035 
+Latency epoch: 87 
+RT 2591946 ns, count  12354
+read RT 2759322 ns, count 7598
+write RT 2324553 ns, count 4756
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 119 , total 15094
+Total RT 3195329 ns, count 868741 
+Total read RT 4682505 ns, count 529337 
+Total write RT 875924 ns, count 339404 
+GC move count 664304 
+SUBREQ ep: 87 time:	831526208727319	0	0	0	0	0	0	0	0	0	
+lun ep: 87 (0,0): 0	696730330	303018825	
+plane ep: 87 (0,0,0) 0	696730330	303018825	
+lun ep: 87 (1,0): 29525	700378630	299759215	
+plane ep: 87 (1,0,0) 29525	700378630	299759215	
+lun ep: 87 (0,1): 25045	697679990	302492760	
+plane ep: 87 (0,1,0) 25045	697679990	302492760	
+lun ep: 87 (1,1): 38115	694337855	305613000	
+plane ep: 87 (1,1,0) 38115	694337855	305613000	
+Multiplane ep: 87 read 0 , write 0 , erase 0 
+epoch 88 , current_time 88000002510 
+Latency epoch: 88 
+RT 2601751 ns, count  12253
+read RT 2713851 ns, count 7498
+write RT 2424986 ns, count 4755
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 14 , total 15264
+Total RT 3187073 ns, count 880994 
+Total read RT 4655008 ns, count 536835 
+Total write RT 897326 ns, count 344159 
+GC move count 671810 
+SUBREQ ep: 88 time:	833327042633812	0	0	0	0	0	0	0	0	0	
+lun ep: 88 (0,0): 34270	698017320	302182855	
+plane ep: 88 (0,0,0) 34270	698017320	302182855	
+lun ep: 88 (1,0): 26140	691301885	308570185	
+plane ep: 88 (1,0,0) 26140	691301885	308570185	
+lun ep: 88 (0,1): 0	712553675	287252325	
+plane ep: 88 (0,1,0) 0	712553675	287252325	
+lun ep: 88 (1,1): 27515	694248470	304225285	
+plane ep: 88 (1,1,0) 27515	694248470	304225285	
+Multiplane ep: 88 read 0 , write 0 , erase 0 
+epoch 89 , current_time 89000178692 
+Latency epoch: 89 
+RT 2736269 ns, count  11616
+read RT 2865150 ns, count 7072
+write RT 2535687 ns, count 4544
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 36 , total 15423
+Total RT 3181206 ns, count 892610 
+Total read RT 4631735 ns, count 543907 
+Total write RT 918675 ns, count 348703 
+GC move count 678824 
+SUBREQ ep: 89 time:	798594983633531	0	0	0	0	0	0	0	0	0	
+lun ep: 89 (0,0): 16455	720897540	277478980	
+plane ep: 89 (0,0,0) 16455	720897540	277478980	
+lun ep: 89 (1,0): 14445	708843045	291445140	
+plane ep: 89 (1,0,0) 14445	708843045	291445140	
+lun ep: 89 (0,1): 25045	725620160	273201895	
+plane ep: 89 (0,1,0) 25045	725620160	273201895	
+lun ep: 89 (1,1): 41870	722367410	279154660	
+plane ep: 89 (1,1,0) 41870	722367410	279154660	
+Multiplane ep: 89 read 0 , write 0 , erase 0 
+epoch 90 , current_time 90000064835 
+Latency epoch: 90 
+RT 2803179 ns, count  11325
+read RT 1811007 ns, count 6982
+write RT 4398239 ns, count 4343
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 56 , total 15577
+Total RT 3176469 ns, count 903935 
+Total read RT 4595984 ns, count 550889 
+Total write RT 961478 ns, count 353046 
+GC move count 685601 
+SUBREQ ep: 90 time:	787072872316838	0	0	0	0	0	0	0	0	0	
+lun ep: 90 (0,0): 8590	731475320	269916605	
+plane ep: 90 (0,0,0) 8590	731475320	269916605	
+lun ep: 90 (1,0): 17180	727675305	271947815	
+plane ep: 90 (1,0,0) 17180	727675305	271947815	
+lun ep: 90 (0,1): 5485	724360225	277048155	
+plane ep: 90 (0,1,0) 5485	724360225	277048155	
+lun ep: 90 (1,1): 40125	728070855	271786505	
+plane ep: 90 (1,1,0) 40125	728070855	271786505	
+Multiplane ep: 90 read 0 , write 0 , erase 0 
+epoch 91 , current_time 91000175672 
+Latency epoch: 91 
+RT 2819252 ns, count  11351
+read RT 1739145 ns, count 6865
+write RT 4472160 ns, count 4486
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 72 , total 15733
+Total RT 3172038 ns, count 915286 
+Total read RT 4560821 ns, count 557754 
+Total write RT 1005526 ns, count 357532 
+GC move count 692450 
+SUBREQ ep: 91 time:	797492152530079	0	0	0	0	0	0	0	0	0	
+lun ep: 91 (0,0): 21940	722336245	277774175	
+plane ep: 91 (0,0,0) 21940	722336245	277774175	
+lun ep: 91 (1,0): 14710	726046875	274101940	
+plane ep: 91 (1,0,0) 14710	726046875	274101940	
+lun ep: 91 (0,1): 25045	723379400	276445050	
+plane ep: 91 (0,1,0) 25045	723379400	276445050	
+lun ep: 91 (1,1): 57955	722979740	277330635	
+plane ep: 91 (1,1,0) 57955	722979740	277330635	
+Multiplane ep: 91 read 0 , write 0 , erase 0 
+epoch 92 , current_time 92000010457 
+Latency epoch: 92 
+RT 2792342 ns, count  11471
+read RT 1513359 ns, count 6980
+write RT 4780164 ns, count 4491
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 91 , total 15888
+Total RT 3167338 ns, count 926757 
+Total read RT 4523154 ns, count 564734 
+Total write RT 1052351 ns, count 362023 
+GC move count 699283 
+SUBREQ ep: 92 time:	814466415650660	0	0	0	0	0	0	0	0	0	
+lun ep: 92 (0,0): 14075	719637605	280197815	
+plane ep: 92 (0,0,0) 14075	719637605	280197815	
+lun ep: 92 (1,0): 33635	729082845	270835100	
+plane ep: 92 (1,0,0) 33635	729082845	270835100	
+lun ep: 92 (0,1): 0	727396195	272600535	
+plane ep: 92 (0,1,0) 0	727396195	272600535	
+lun ep: 92 (1,1): 19560	725372215	274443010	
+plane ep: 92 (1,1,0) 19560	725372215	274443010	
+Multiplane ep: 92 read 0 , write 0 , erase 0 
+epoch 93 , current_time 93000046942 
+Latency epoch: 93 
+RT 2871712 ns, count  11144
+read RT 1523519 ns, count 6702
+write RT 4905840 ns, count 4442
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 109 , total 16041
+Total RT 3163825 ns, count 937901 
+Total read RT 4487973 ns, count 571436 
+Total write RT 1099059 ns, count 366465 
+GC move count 706007 
+SUBREQ ep: 93 time:	799532440679972	0	0	0	0	0	0	0	0	0	
+lun ep: 93 (0,0): 3105	726721535	273454955	
+plane ep: 93 (0,0,0) 3105	726721535	273454955	
+lun ep: 93 (1,0): 8590	725372215	274463205	
+plane ep: 93 (1,0,0) 8590	725372215	274463205	
+lun ep: 93 (0,1): 3105	729420175	270497770	
+plane ep: 93 (0,1,0) 3105	729420175	270497770	
+lun ep: 93 (1,1): 30530	728745515	271260440	
+plane ep: 93 (1,1,0) 30530	728745515	271260440	
+Multiplane ep: 93 read 0 , write 0 , erase 0 
+epoch 94 , current_time 94000080585 
+Latency epoch: 94 
+RT 2798755 ns, count  11419
+read RT 1840873 ns, count 7012
+write RT 4322846 ns, count 4407
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 125 , total 16195
+Total RT 3159433 ns, count 949320 
+Total read RT 4455884 ns, count 578448 
+Total write RT 1137366 ns, count 370872 
+GC move count 712813 
+SUBREQ ep: 94 time:	827792395233339	0	0	0	0	0	0	0	0	0	
+lun ep: 94 (0,0): 10970	722642410	277469755	
+plane ep: 94 (0,0,0) 10970	722642410	277469755	
+lun ep: 94 (1,0): 32910	729726340	270437185	
+plane ep: 94 (1,0,0) 32910	729726340	270437185	
+lun ep: 94 (0,1): 19560	728377020	271588545	
+plane ep: 94 (0,1,0) 19560	728377020	271588545	
+lun ep: 94 (1,1): 8590	736504105	263239565	
+plane ep: 94 (1,1,0) 8590	736504105	263239565	
+Multiplane ep: 94 read 0 , write 0 , erase 0 
+epoch 95 , current_time 95000058910 
+Latency epoch: 95 
+RT 2764356 ns, count  11427
+read RT 1765659 ns, count 7075
+write RT 4387929 ns, count 4352
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 10 , total 16348
+Total RT 3154734 ns, count 960747 
+Total read RT 4423377 ns, count 585523 
+Total write RT 1175067 ns, count 375224 
+GC move count 719602 
+SUBREQ ep: 95 time:	837007075437710	0	0	0	0	0	0	0	0	0	
+lun ep: 95 (0,0): 14075	726969480	269945775	
+plane ep: 95 (0,0,0) 14075	726969480	269945775	
+lun ep: 95 (1,0): 25045	731017440	266928255	
+plane ep: 95 (1,0,0) 25045	731017440	266928255	
+lun ep: 95 (0,1): 63440	725709545	274468690	
+plane ep: 95 (0,1,0) 63440	725709545	274468690	
+lun ep: 95 (1,1): 16455	732397925	267557040	
+plane ep: 95 (1,1,0) 16455	732397925	267557040	
+Multiplane ep: 95 read 0 , write 0 , erase 0 
+epoch 96 , current_time 96000005747 
+Latency epoch: 96 
+RT 2742985 ns, count  11613
+read RT 1641476 ns, count 7101
+write RT 4476544 ns, count 4512
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 33 , total 16505
+Total RT 3149816 ns, count 972360 
+Total read RT 4390043 ns, count 592624 
+Total write RT 1214294 ns, count 379736 
+GC move count 726546 
+SUBREQ ep: 96 time:	859106847272385	0	0	0	0	0	0	0	0	0	
+lun ep: 96 (0,0): 25045	728439350	274245050	
+plane ep: 96 (0,0,0) 25045	728439350	274245050	
+lun ep: 96 (1,0): 6845	725740710	276312910	
+plane ep: 96 (1,0,0) 6845	725740710	276312910	
+lun ep: 96 (0,1): 0	724639335	275227620	
+plane ep: 96 (0,1,0) 0	724639335	275227620	
+lun ep: 96 (1,1): 6210	729082845	270908400	
+plane ep: 96 (1,1,0) 6210	729082845	270908400	
+Multiplane ep: 96 read 0 , write 0 , erase 0 
+epoch 97 , current_time 97000005582 
+Latency epoch: 97 
+RT 2779553 ns, count  11532
+read RT 1545944 ns, count 7047
+write RT 4717847 ns, count 4485
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 55 , total 16663
+Total RT 3145476 ns, count 983892 
+Total read RT 4356620 ns, count 599671 
+Total write RT 1255190 ns, count 384221 
+GC move count 733539 
+SUBREQ ep: 97 time:	861743868409658	0	0	0	0	0	0	0	0	0	
+lun ep: 97 (0,0): 10970	723348235	276670435	
+plane ep: 97 (0,0,0) 10970	723348235	276670435	
+lun ep: 97 (1,0): 25045	727702360	272272430	
+plane ep: 97 (1,0,0) 25045	727702360	272272430	
+lun ep: 97 (0,1): 25045	718625615	281303300	
+plane ep: 97 (0,1,0) 25045	718625615	281303300	
+lun ep: 97 (1,1): 0	722336245	277770435	
+plane ep: 97 (1,1,0) 0	722336245	277770435	
+Multiplane ep: 97 read 0 , write 0 , erase 0 
+epoch 98 , current_time 98000023232 
+Latency epoch: 98 
+RT 2830197 ns, count  11314
+read RT 1496325 ns, count 6852
+write RT 4878539 ns, count 4462
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 71 , total 16819
+Total RT 3141891 ns, count 995206 
+Total read RT 4324306 ns, count 606523 
+Total write RT 1296785 ns, count 388683 
+GC move count 740432 
+SUBREQ ep: 98 time:	854004168025075	0	0	0	0	0	0	0	0	0	
+lun ep: 98 (0,0): 0	729082845	271126555	
+plane ep: 98 (0,0,0) 0	729082845	271126555	
+lun ep: 98 (1,0): 11695	724360225	275645730	
+plane ep: 98 (1,0,0) 11695	724360225	275645730	
+lun ep: 98 (0,1): 0	723010905	277079320	
+plane ep: 98 (0,1,0) 0	723010905	277079320	
+lun ep: 98 (1,1): 6210	722673575	277332380	
+plane ep: 98 (1,1,0) 6210	722673575	277332380	
+Multiplane ep: 98 read 0 , write 0 , erase 0 
+epoch 99 , current_time 99000016852 
+Latency epoch: 99 
+RT 3039358 ns, count  4795
+read RT 1381873 ns, count 2864
+write RT 5497690 ns, count 1931
+read worst case 19674033 ns
+write worst case 7074274861 ns
+erase(gc) count 0 , total 16887
+Total RT 3141399 ns, count 1000001 
+Total read RT 4310477 ns, count 609387 
+Total write RT 1317552 ns, count 390614 
+GC move count 743445 
+SUBREQ ep: 99 time:	364525515670014	0	0	0	0	0	0	0	0	0	
+lun ep: 99 (0,0): 0	743983585	255834015	
+plane ep: 99 (0,0,0) 0	743983585	255834015	
+lun ep: 99 (1,0): 16455	741009945	258967220	
+plane ep: 99 (1,0,0) 16455	741009945	258967220	
+lun ep: 99 (0,1): 5485	743983585	255828530	
+plane ep: 99 (0,1,0) 5485	743983585	255828530	
+lun ep: 99 (1,1): 0	742296935	257645325	
+plane ep: 99 (1,1,0) 0	742296935	257645325	
+Multiplane ep: 99 read 0 , write 0 , erase 0 
+epoch 100 , current_time 100000022115 
+epoch 101 , current_time 101000008635 
+epoch 102 , current_time 102000118517 
+epoch 103 , current_time 103000010167 
+epoch 104 , current_time 104000019230 
+epoch 105 , current_time 105000002027 
+epoch 106 , current_time 106000020685 
+epoch 107 , current_time 107000001040 
+epoch 108 , current_time 108000091330 
+epoch 633437444 , current_time 9223372036854775807 
+======== Application 1 , time 0 ============ 
+request average response time[1]: ( 3141399 ) , count 1000001 
+request average read response time[1]: ( 4310477 ) , count 609387 
+request average write response time[1]: ( 1317552 ) , count 390614 
+read IOPS and BW [1]: 6189.650971 , 12.089162  
+write IOPS and BW [1]: 3967.560395 , 7.749141  
+erase: ( 16887 )
+total gc move count: 743445 
+========================
+
+lun erase count 
+4774	4755	
+4769	4773	
+
+planes erase number: 
+(0,4222)	(0,4204)	
+(0,4229)	(0,4232)	

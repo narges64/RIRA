@@ -1,0 +1,126 @@
+-----------------------parameter file----------------------
+#parameter file
+dram capacity = 1;     #the unit is MB
+channel number = 2;   #the number of channel
+lun number = 4;
+plane number = 1;
+block number = 256; #1024
+page number = 64; #256
+subpage page = 4; # NARGES  subpage is the sector, and subpage page means how many sector a page has
+page capacity = 2048;
+subpage capacity = 512;
+t_PROG = 300000;             #the unit is ns
+t_DBSY = 50;
+t_BERS = 3800000;
+t_WC = 3;
+t_R = 25000;
+t_RC = 3;
+erase limit=100000;                          #record the erasure number of block
+address mapping=1;                    #mapping schemes��1��page��2��block��3��fast
+wear leveling=1;                      #record WL algorithm mode
+gc=1;                                 #record garbage collection mode
+overprovide=0.2;                     #reserved area percentage, unavailable to users
+gc up threshold=0.06;                    #GC operation stops reaching to this point
+gc down threshold=0.05;          #GC operation starts reaching to this point
+gc mplane threshold=0.5;		#if free pages in the twin-plane is less than this threshold, we are doing mplane gc
+scheduling algorithm=1;               #1:FCFS recordscheduling algorithm mode, 1 means FCFS
+
+advanced command=31;             #advanced command indicator, 0 for no advanced command, bin number 00001 for random, 00010 for copyback, 00100 for two-plane-program, 01000 for interleave, 10000 for two-plane-read, 11111 for using all��
+consolidation degree = 1;
+repeat trace=0; # how many times repeating the trace (for activating garbage collection)
+mplane gc = 0; # doing multiplane gc or not, 1:yes, 0:no
+pargc approach=0; # approaches: 0: BLIND, 1: PATTERN 2: COST_AWARE, 3: DYN_COST_AWARE, 4: PREEMPTIVE, 5:CACHE_INVOLVED 6:SIMILARITY
+gc algorithm = 0; # garbage collection algorithm, 0: greedy, 1: fifo, 2: windowed, 3: RGA, 4: RANDOM, 5: RANDOM+ 6: RANDOM++
+syn rd ratio = 1.0
+syn interarrival mean = 10000 # ns
+syn req size = 4 # request size (sector)
+syn req count = 1000000 # number of request generated
+time scale = 1
+queue length = 32
+plane level tech = 0 # BASE = 0, GCIO = 1, IOGC = 2, GCGC = 3 
+
+-----------------------simulation output----------------------
+epoch 1 , current_time 100000110652 
+Latency epoch: 1 
+RT 8561614 ns, count  373479
+read RT 4946022 ns, count 41090
+write RT 9008574 ns, count 332389
+read worst case 19317195 ns
+write worst case 386927122 ns
+erase(gc) count 154 , total 16157
+Total RT 8561614 ns, count 373479 
+Total read RT 4946022 ns, count 41090 
+Total write RT 9008574 ns, count 332389 
+GC move count 708072 
+SUBREQ ep: 1 time:	17058236248884505	0	0	0	0	0	0	0	0	0	
+lun ep: 1 (0,0): 426595	74820738890	25178704890	
+plane ep: 1 (0,0,0) 426595	74820738890	25178704890	
+lun ep: 1 (1,0): 347742	74815341610	25184421300	
+plane ep: 1 (1,0,0) 347742	74815341610	25184421300	
+lun ep: 1 (0,1): 433645	74828070765	25171015610	
+plane ep: 1 (0,1,0) 433645	74828070765	25171015610	
+lun ep: 1 (1,1): 358032	74796482295	25203014840	
+plane ep: 1 (1,1,0) 358032	74796482295	25203014840	
+Multiplane ep: 1 read 0 , write 0 , erase 0 
+epoch 2 , current_time 200000078030 
+Latency epoch: 2 
+RT 8584845 ns, count  372507
+read RT 6482044 ns, count 40713
+write RT 8842871 ns, count 331794
+read worst case 19317195 ns
+write worst case 386927122 ns
+erase(gc) count 257 , total 32262
+Total RT 8573214 ns, count 745986 
+Total read RT 5710493 ns, count 81803 
+Total write RT 8925796 ns, count 664183 
+GC move count 1413462 
+SUBREQ ep: 2 time:	51245615929305466	0	0	0	0	0	0	0	0	0	
+lun ep: 2 (0,0): 281260	74901271375	25097640975	
+plane ep: 2 (0,0,0) 281260	74901271375	25097640975	
+lun ep: 2 (1,0): 409795	74717547075	25281785510	
+plane ep: 2 (1,0,0) 409795	74717547075	25281785510	
+lun ep: 2 (0,1): 503765	74792155225	25207899020	
+plane ep: 2 (0,1,0) 503765	74792155225	25207899020	
+lun ep: 2 (1,1): 253835	74741803670	25258040020	
+plane ep: 2 (1,1,0) 253835	74741803670	25258040020	
+Multiplane ep: 2 read 0 , write 0 , erase 0 
+epoch 92233720 , current_time 9223372036854775807 
+Latency epoch: 92233720 
+RT 8575908 ns, count  254015
+read RT 6128510 ns, count 28083
+write RT 8880117 ns, count 225932
+read worst case 19317195 ns
+write worst case 386927122 ns
+erase(gc) count 0 , total 43229
+Total RT 8573898 ns, count 1000001 
+Total read RT 5817323 ns, count 109886 
+Total write RT 8914201 ns, count 890115 
+GC move count 1893781 
+SUBREQ ep: 92233720 time:	54515525681808554	0	0	0	0	0	0	0	0	0	
+lun ep: 92233720 (0,0): 240190	51320756735	17283667690	
+plane ep: 92233720 (0,0,0) 240190	51320756735	17283667690	
+lun ep: 92233720 (1,0): 218620	51117929610	17196537070	
+plane ep: 92233720 (1,0,0) 218620	51117929610	17196537070	
+lun ep: 92233720 (0,1): 326575	51078919880	17266573810	
+plane ep: 92233720 (0,1,0) 326575	51078919880	17266573810	
+lun ep: 92233720 (1,1): 224105	51168976035	17276605450	
+plane ep: 92233720 (1,1,0) 224105	51168976035	17276605450	
+Multiplane ep: 92233720 read 0 , write 0 , erase 0 
+epoch 92233720 , current_time 9223372036854775807 
+======== Application 1 , time 0 ============ 
+request average response time[1]: ( 8573898 ) , count 1000001 
+request average read response time[1]: ( 5817323 ) , count 109886 
+request average write response time[1]: ( 8914201 ) , count 890115 
+read IOPS and BW [1]: 409.848298 , 0.800485  
+write IOPS and BW [1]: 3319.880304 , 6.484141  
+erase: ( 43229 )
+total gc move count: 1893781 
+========================
+
+lun erase count 
+11353	11356	
+11348	11360	
+
+planes erase number: 
+(0,10814)	(0,10804)	
+(0,10803)	(0,10808)	
