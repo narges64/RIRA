@@ -205,9 +205,10 @@ dram_info::dram_info(parameter_value * parameters)
 	map->map_entry = new entry[page_num];
 
 	dram_capacity = parameters->dram_capacity;
-	int io_share = dram_capacity  - 1; 
+	gcb_capacity = parameters->gcb_capacity; 
+	int io_share = dram_capacity - gcb_capacity; 
 	buffer = new write_buffer(io_share, parameters->subpage_page);
-	gc_buffer = new write_buffer(1 , parameters->subpage_page);
+	gc_buffer = new write_buffer(gcb_capacity , parameters->subpage_page);
 }
 
 page_info::page_info(){
@@ -351,6 +352,8 @@ void parameter_value::load_parameters(char *parameter_file)
 			sscanf(buf + next_eql,"%d",&lun_num);
 		}else if((res_eql=strcmp(buf,"dram capacity")) ==0){
 			sscanf(buf + next_eql,"%d",&dram_capacity);
+		}else if((res_eql=strcmp(buf,"gcb capacity")) ==0){
+			sscanf(buf + next_eql,"%d",&gcb_capacity);
 		}else if((res_eql=strcmp(buf,"cpu sdram")) ==0){
 			sscanf(buf + next_eql,"%d",&cpu_sdram);
 		}else if((res_eql=strcmp(buf,"channel number")) ==0){
@@ -476,6 +479,8 @@ void parameter_value::load_inline_parameters(int argc, char ** argv)
 				sscanf(argv[i] + next_eql, "%d", &lun_num);
 			}else if((res_eql=strcmp(argv[i],"dram_capacity")) ==0){
 				sscanf(argv[i] + next_eql,"%d",&dram_capacity);
+			}else if((res_eql=strcmp(argv[i],"gcb_capacity")) ==0){
+				sscanf(argv[i] + next_eql,"%d",&gcb_capacity);
 			}else if((res_eql=strcmp(argv[i],"queue_length")) ==0){
 					sscanf(argv[i] + next_eql,"%d",&queue_length);
 			}else if((res_eql=strcmp(argv[i],"syn_rd_ratio")) == 0){

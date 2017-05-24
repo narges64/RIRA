@@ -124,6 +124,7 @@ public:
 	double time_scale;
 	unsigned int lun_num;
 	unsigned int dram_capacity;
+	unsigned int gcb_capacity;
 	unsigned int cpu_sdram;
 
 	unsigned int channel_number;
@@ -604,6 +605,7 @@ public:
 		delete map;
 	}
 	unsigned int dram_capacity;
+	unsigned int gcb_capacity; 
 	int64_t current_time;
 	map_info *map;
 	write_buffer * buffer;
