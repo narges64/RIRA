@@ -76,7 +76,6 @@ ssd_info *simulate(ssd_info *ssd){
 			while (ssd->current_time / (EPOCH_LENGTH) > second)
 				second++;
 		}
-
 //		if (!ssd->dram->buffer->check_buffer()) {
 //			cout << "BUFFER FAIL " << endl;
 //			break;
@@ -342,9 +341,10 @@ void collect_statistics(ssd_info * ssd, request * req){
 
 	if (req->operation==READ)
 	{
+
 		ssd->stats->read_request_size[req->app_id] += req->size;
 		ssd->stats->read_request_count[req->app_id]++;
-		ssd->stats->read_avg[req->app_id] += (req->response_time-req->begin_time); // begin_time);
+		ssd->stats->read_avg[req->app_id] += (req->response_time-req->begin_time);
 		ssd->stats->read_throughput.add_time(req->begin_time, req->response_time); // changed
 		ssd->stats->read_throughput.add_capacity(req->size);
 		ssd->stats->read_throughput.add_count(1);
@@ -608,9 +608,9 @@ void trace_output(ssd_info* ssd){
 
 	while(req != NULL)
 	{
-		if(req->response_time != 0)
+		if(req->response_time != 0 )
 		{
-
+	
 			collect_statistics(ssd, req);
 			remove_request(ssd, &req, &pre_node);
 		}
@@ -649,8 +649,8 @@ void trace_output(ssd_info* ssd){
 			{
 				req->response_time = end_time;
 				req->begin_time = start_time;
-				collect_statistics(ssd, req );
-				remove_request(ssd, &req, &pre_node);
+					collect_statistics(ssd, req );
+					remove_request(ssd, &req, &pre_node);
 
 			}
 			else

@@ -101,7 +101,9 @@ STATE service_in_buffer(ssd_info * ssd, sub_request * sub){
 			change_subrequest_state(ssd, sub,SR_MODE_ST_S,
 				ssd->current_time,SR_MODE_COMPLETE,sub->complete_time);
 		}else {
+			sub->buf_entry = NULL; 
 			service_in_flash(ssd, sub);
+			return SUCCESS; 
 		}
 	}
 	else if (sub->operation == WRITE){
@@ -343,7 +345,9 @@ int find_lun_io_requests(ssd_info * ssd, unsigned int channel,
 		}
 	}
 
-	if ((*operation) == READ) return subs_count;
+	if ((*operation) == READ) {
+		return subs_count;
+	}
 
 	for (unsigned plane = 0; plane < ssd->parameter->plane_lun; plane++){
 		if (subs[plane] != NULL ) continue;
