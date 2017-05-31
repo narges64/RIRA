@@ -558,12 +558,6 @@ int find_lun_gc_requests(ssd_info * ssd, unsigned int channel, unsigned int lun,
 			return subs_count; // NOT FOR GCGC
 	}
 
-	if ((subs_count < max_subs_count) &&
-			(ssd->channel_head[channel]->lun_head[lun]->GCMode == false))
-	{
-		cout << "here is the problem " << endl;
-	}
-
 	return subs_count;
 }
 

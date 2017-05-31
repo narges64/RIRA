@@ -127,10 +127,30 @@ int add_fetched_request(ssd_info * ssd, request * request1, uint64_t nearest_eve
 	return 1;
 }
 
-double expo_dist(double const exp_dist_mean ) {
-	double uniform = (rand() % 100) / 100.0;
-	double time_int = -1 * (log(uniform) / 0.434294) / (1.0/exp_dist_mean);
-	return time_int;
+double norm_dist(double mu, double sigma ) {
+	const double epsilon = std::numeric_limits<double>::min(); 
+	const double two_pi = 2.0 * 3.14159265358979323846; 
+	
+	static double z0, z1 = 0; 
+	static bool generate = false; 
+	generate = !generate; 
+	
+	if (!generate) 
+		return z1 * sigma + mu; 
+
+	double u1, u2; 
+	do 
+	{
+		u1 = rand() / (1.0 / RAND_MAX); 
+		u2 = rand() / (1.0 / RAND_MAX); 
+
+	}while (u1 <= epsilon); 
+
+	z0 = sqrt(-2.0 * log(u1)) * cos(two_pi * u2); 
+	z1 = sqrt(-2.0 * log(u1)) * sin(two_pi * u2); 
+	
+	return z0 * sigma + mu; 
+
 }
 
 request * generate_next_request(ssd_info * ssd, int64_t nearest_event_time){
@@ -150,7 +170,7 @@ request * generate_next_request(ssd_info * ssd, int64_t nearest_event_time){
 
 	// Time
  	uint64_t new_time = 0;
- 	uint64_t time_interval = expo_dist(avg_time);
+ 	uint64_t time_interval = norm_dist(avg_time, 1);
  	new_time = previous_time  + time_interval;
 	if (new_time < ssd->current_time) new_time = ssd->current_time;
 
@@ -345,12 +365,12 @@ void collect_statistics(ssd_info * ssd, request * req){
 	{
 		ssd->stats->read_request_size[req->app_id] += req->size;
 		ssd->stats->read_request_count[req->app_id]++;
-		ssd->stats->read_avg[req->app_id] += (req->response_time-req->begin_time); // begin_time);
-		ssd->stats->read_throughput.add_time(req->begin_time, req->response_time); // changed 
+		ssd->stats->read_avg[req->app_id] += (req->response_time-req->time); // begin_time);
+		ssd->stats->read_throughput.add_time(req->time, req->response_time); // changed 
 		ssd->stats->read_throughput.add_capacity(req->size);
 		ssd->stats->read_throughput.add_count(1);
-		if (req->response_time - req->begin_time > ssd->stats->read_worst_case_rt){
-			ssd->stats->read_worst_case_rt = req->response_time - req->begin_time; // begin_time;
+		if (req->response_time - req->time > ssd->stats->read_worst_case_rt){
+			ssd->stats->read_worst_case_rt = req->response_time - req->time; // begin_time;
 		}
 	}
 	else
@@ -362,7 +382,7 @@ void collect_statistics(ssd_info * ssd, request * req){
 		ssd->stats->write_throughput.add_capacity(req->size);
 		ssd->stats->write_throughput.add_count(1);
 		if (req->response_time - req->begin_time > ssd->stats->write_worst_case_rt){
-			ssd->stats->write_worst_case_rt = req->response_time - req->time; // begin_time;
+			ssd->stats->write_worst_case_rt = req->response_time - req->begin_time; // begin_time;
 		}
 	}
 

@@ -1,11 +1,13 @@
 #include <fstream>
-#include <math.h>
 #include <iostream>
 #include <stdlib.h>
+#include <cstdlib>
+#include <cmath>
 #include <stdio.h>
 #include <math.h>
 #include <time.h>
 #include <string.h>
+#include <limits>
 #include <sys/types.h>
 #include "ftl.hh"
 
