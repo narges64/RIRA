@@ -141,8 +141,8 @@ double norm_dist(double mu, double sigma ) {
 	double u1, u2; 
 	do 
 	{
-		u1 = rand() / (1.0 / RAND_MAX); 
-		u2 = rand() / (1.0 / RAND_MAX); 
+		u1 = rand() * (1.0 / RAND_MAX); 
+		u2 = rand() * (1.0 / RAND_MAX); 
 
 	}while (u1 <= epsilon); 
 
