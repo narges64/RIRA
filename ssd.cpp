@@ -93,7 +93,7 @@ int add_fetched_request(ssd_info * ssd, request * request1, uint64_t nearest_eve
 		if (ssd->current_time <= nearest_event_time){
 			if ((ssd->request_queue_length >= ssd->parameter->queue_length) &&
 			 	(nearest_event_time == MAX_INT64)){
-				printf("2. HERE %d \n", ssd->request_queue_length);
+			// 	printf("2. HERE %d \n", ssd->request_queue_length);
 			}
 			else {
 				ssd->current_time = nearest_event_time;
@@ -153,6 +153,15 @@ double norm_dist(double mu, double sigma ) {
 
 }
 
+double expo_dist(double mu){
+
+	double u1 = rand() * (1.0 / RAND_MAX); 
+		
+	double time = (-1 * log(u1) / 0.43429) * mu; 
+	return time;  
+
+}
+
 request * generate_next_request(ssd_info * ssd, int64_t nearest_event_time){
 	if (ssd->request_queue_length >= ssd->parameter->queue_length){
 		return NULL;
@@ -170,7 +179,7 @@ request * generate_next_request(ssd_info * ssd, int64_t nearest_event_time){
 
 	// Time
  	uint64_t new_time = 0;
- 	uint64_t time_interval = norm_dist(avg_time, 1);
+ 	uint64_t time_interval = expo_dist(avg_time);//, 1);
  	new_time = previous_time  + time_interval;
 	if (new_time < ssd->current_time) new_time = ssd->current_time;
 

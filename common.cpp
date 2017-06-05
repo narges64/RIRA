@@ -398,8 +398,8 @@ void parameter_value::load_parameters(char *parameter_file)
 			sscanf(buf + next_eql,"%f",&gc_threshold);
 		}else if((res_eql=strcmp(buf,"scheduling algorithm")) ==0){
 			sscanf(buf + next_eql,"%d",&scheduling_algorithm);
-		}else if((res_eql=strcmp(buf,"quick table radio")) ==0){
-			sscanf(buf + next_eql,"%f",&quick_radio);
+		}else if((res_eql=strcmp(buf,"gc time ratio")) ==0){
+			sscanf(buf + next_eql,"%f",&gc_time_ratio);
 		}else if((res_eql=strcmp(buf,"related mapping")) ==0){
 			sscanf(buf + next_eql,"%d",&related_mapping);
 		}else if((res_eql=strcmp(buf,"striping")) ==0){
@@ -493,6 +493,8 @@ void parameter_value::load_inline_parameters(int argc, char ** argv)
 					sscanf(argv[i] + next_eql, "%d",&syn_req_count);
 			}else if((res_eql=strcmp(argv[i],"time_scale")) == 0){
 					sscanf(argv[i] + next_eql,"%lf",&time_scale);
+			}else if((res_eql=strcmp(argv[i],"gc_time_ratio")) == 0){
+					sscanf(argv[i] + next_eql,"%f",&gc_time_ratio);
 			}else{
 					printf("don't match\t %s\n",argv[i]);
 			}

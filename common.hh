@@ -171,7 +171,7 @@ public:
 	int syn_interarrival_mean;
 
 	int plane_level_tech;
-
+	float gc_time_ratio; 
 };
 
 class local{

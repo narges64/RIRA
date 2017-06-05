@@ -91,7 +91,7 @@ STATE service_in_buffer(ssd_info * ssd, sub_request * sub){
 	// check mapping table and find the request
 	if (sub->operation == READ){
 		buffer_entry * buf_ent = NULL;
-		if (ssd->parameter->dram_capacity == 0) {
+		if (ssd->dram->buffer->buffer_capacity == 0) {
 			sub->buf_entry = NULL;
 			service_in_flash(ssd, sub);
 			return SUCCESS;
@@ -109,7 +109,7 @@ STATE service_in_buffer(ssd_info * ssd, sub_request * sub){
 		}
 	}
 	else if (sub->operation == WRITE){
-		if (ssd->parameter->dram_capacity == 0) {
+		if (ssd->dram->buffer->buffer_capacity == 0) {
 			sub->buf_entry = NULL;
 			service_in_flash(ssd, sub);
 			return SUCCESS;
@@ -397,7 +397,7 @@ void services_2_gc(ssd_info * ssd, unsigned int channel,unsigned int * channel_b
 	int64_t write_transfer_time = 7 * ssd->parameter->time_characteristics.tWC +
 					(ssd->parameter->subpage_page * ssd->parameter->subpage_capacity) *
 					ssd->parameter->time_characteristics.tWC;
-	int64_t write_time = ssd->parameter->time_characteristics.tPROG;
+	int64_t write_time = ssd->parameter->gc_time_ratio * ssd->parameter->time_characteristics.tPROG;
 	int64_t erase_transfer_time = 5 * ssd->parameter->time_characteristics.tWC;
 	int64_t erase_time = ssd->parameter->time_characteristics.tBERS;
 
@@ -427,24 +427,24 @@ void services_2_gc(ssd_info * ssd, unsigned int channel,unsigned int * channel_b
 		// find the total latency to service all sub-requests
 		switch(operation){
 			case READ:
-               	if (subs_count > 1) ssd->stats->read_multiplane_count++;
-				channel_busy_time = read_transfer_time * subs_count;
+               			if (subs_count > 1) ssd->stats->read_multiplane_count++;
+				channel_busy_time =  read_transfer_time * subs_count;
 				lun_busy_time = channel_busy_time + read_time;
 				break;
 			case WRITE:
-                if (subs_count > 1) ssd->stats->write_multiplane_count++;
+                		if (subs_count > 1) ssd->stats->write_multiplane_count++;
 				channel_busy_time = write_transfer_time * subs_count;
 				lun_busy_time = channel_busy_time + write_time;
 				break;
 			case ERASE:
-                if (subs_count > 1) ssd->stats->erase_multiplane_count++;
-				channel_busy_time = erase_transfer_time * subs_count;
-				lun_busy_time = channel_busy_time + erase_time;
+                		if (subs_count > 1) ssd->stats->erase_multiplane_count++;
+				channel_busy_time =  erase_transfer_time * subs_count;
+				lun_busy_time =  channel_busy_time + erase_time;
 				break;
 			default:
 				cout << "Error in the operation: " << operation << endl;
 		}
-
+	
 		// service all sub_requests
 		for (int i = 0; i < ssd->parameter->plane_lun; i++){
 			if (subs[i] == NULL) continue;
@@ -522,7 +522,7 @@ int find_lun_gc_requests(ssd_info * ssd, unsigned int channel, unsigned int lun,
 		}
 		// If it's write
 
-		if (temp->buf_entry != NULL){
+		if ((temp->buf_entry != NULL) || (ssd->dram->gc_buffer->buffer_capacity== 0)){
 			subs[i] = temp;
 			(*operation) = subs[i]->operation;
 			subs_count++;
@@ -532,7 +532,10 @@ int find_lun_gc_requests(ssd_info * ssd, unsigned int channel, unsigned int lun,
 		int lpn = temp->lpn;
 		buffer_entry * buf_ent = ssd->dram->map->map_entry[lpn].buf_ent;
 		if (buf_ent != NULL) {
-			ssd->dram->buffer->hit_write(buf_ent);
+			if (buf_ent->gc) 
+				ssd->dram->gc_buffer->hit_write(buf_ent); 
+			else 
+				ssd->dram->buffer->hit_write(buf_ent);  
 			i--;
 			continue;
 		}else {
