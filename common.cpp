@@ -1,6 +1,7 @@
 #include "common.hh"
 
 parameter_value::parameter_value(int argc, char ** argv){
+		trace_filename = NULL; 
 		strcpy(filename, argv[1]);
 		load_parameters(argv[1]);
 
@@ -449,6 +450,8 @@ void parameter_value::load_parameters(char *parameter_file)
 			sscanf(buf + next_eql,"%lf",&time_scale);
 		}else if((res_eql=strcmp(buf,"plane level tech")) == 0){
 			sscanf(buf + next_eql,"%d",&plane_level_tech); 
+		}else if((res_eql=strcmp(buf,"trace file")) == 0){
+			sscanf(buf + next_eql,"%s",trace_filename); 
 		}else{
 			printf("don't match\t %s\n",buf);
 		}
@@ -495,6 +498,8 @@ void parameter_value::load_inline_parameters(int argc, char ** argv)
 					sscanf(argv[i] + next_eql,"%lf",&time_scale);
 			}else if((res_eql=strcmp(argv[i],"gc_time_ratio")) == 0){
 					sscanf(argv[i] + next_eql,"%f",&gc_time_ratio);
+			}else if((res_eql=strcmp(argv[i],"trace file")) == 0){
+					sscanf(argv[i] + next_eql,"%s",trace_filename); 			   
 			}else{
 					printf("don't match\t %s\n",argv[i]);
 			}

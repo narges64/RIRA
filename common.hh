@@ -172,6 +172,7 @@ public:
 
 	int plane_level_tech;
 	float gc_time_ratio; 
+	char * trace_filename; 
 };
 
 class local{

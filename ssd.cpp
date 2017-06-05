@@ -9,11 +9,14 @@ int  main(int argc, char * argv[]){
 	}
 	parameter_value * parameters = new parameter_value(argc, argv);
 	ssd_info * ssd = new ssd_info(parameters, argv[2]); 
-	
+
 	char trace_filename[50]; 
 	sprintf(trace_filename, "trace_%.1f_%d_%d_%d", ssd->parameter->syn_rd_ratio , 
 							ssd->parameter->syn_req_size , ssd->parameter->syn_req_count ,
 							ssd->parameter->syn_interarrival_mean);
+
+	if (parameters->trace_filename != NULL) 
+		strcpy(trace_filename, parameters->trace_filename);  
 	
 	ssd->tracefile = fopen(trace_filename, "r"); 
 	if (ssd->tracefile == NULL) 
