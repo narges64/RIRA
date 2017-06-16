@@ -1,12 +1,20 @@
 #include "common.hh"
 
 parameter_value::parameter_value(int argc, char ** argv){
-		trace_filename = NULL; 
+		trace_filename = new char[100]; 		 
+		synthetic = false; 
+
 		strcpy(filename, argv[1]);
 		load_parameters(argv[1]);
-
+	
 		load_inline_parameters(argc, argv);
-
+	
+		if (synthetic) {	
+			sprintf(trace_filename, "trace_%.1f_%d_%d_%d", syn_rd_ratio , 
+							syn_req_size , syn_req_count ,
+							syn_interarrival_mean);
+		}
+	
 		// distribute luns between channels
 		for (int i = 0; i < channel_number; i++){
 				lun_channel[i] = 0;
@@ -45,7 +53,7 @@ ssd_info::ssd_info(parameter_value * parameters, char * statistics_filename)
 	// repeat_times = new int[parameters->consolidation_degree];
 	last_times = 0; // new int64_t [parameters->consolidation_degree];
 	// for (int cd = 0; cd < parameters->consolidation_degree; cd++){
-	//	repeat_times[cd]=0; // do not repeat the trace (just once)
+	repeat_times=0; 
 	//	last_times[cd]=0;
 	//	tracefile[cd] = NULL;
 	// }
@@ -413,8 +421,7 @@ void parameter_value::load_parameters(char *parameter_file)
 			sscanf(buf + next_eql,"%d",&time_step);
 		}else if((res_eql=strcmp(buf,"small large write")) ==0){
 			sscanf(buf + next_eql,"%d",&small_large_write);
-		}
-		else if((res_eql=strcmp(buf,"active write")) ==0){
+		}else if((res_eql=strcmp(buf,"active write")) ==0){
 			sscanf(buf + next_eql,"%d",&active_write);
 		}else if((res_eql=strcmp(buf,"gc down threshold")) ==0){
 			sscanf(buf + next_eql,"%f",&gc_down_threshold);
@@ -452,6 +459,8 @@ void parameter_value::load_parameters(char *parameter_file)
 			sscanf(buf + next_eql,"%d",&plane_level_tech); 
 		}else if((res_eql=strcmp(buf,"trace file")) == 0){
 			sscanf(buf + next_eql,"%s",trace_filename); 
+		}else if((res_eql=strcmp(buf,"synthetic")) == 0) {
+			sscanf(buf + next_eql,"%d",&synthetic); // 0 or 1 
 		}else{
 			printf("don't match\t %s\n",buf);
 		}
@@ -498,14 +507,14 @@ void parameter_value::load_inline_parameters(int argc, char ** argv)
 					sscanf(argv[i] + next_eql,"%lf",&time_scale);
 			}else if((res_eql=strcmp(argv[i],"gc_time_ratio")) == 0){
 					sscanf(argv[i] + next_eql,"%f",&gc_time_ratio);
-			}else if((res_eql=strcmp(argv[i],"trace file")) == 0){
-					sscanf(argv[i] + next_eql,"%s",trace_filename); 			   
+			}else if((res_eql=strcmp(argv[i],"trace_file")) == 0){
+					sscanf(argv[i] + next_eql,"%s",trace_filename); 
+			}else if((res_eql=strcmp(argv[i],"synthetic")) == 0){
+					sscanf(argv[i] + next_eql,"%d",&synthetic); 
 			}else{
 					printf("don't match\t %s\n",argv[i]);
 			}
-
 	}
-
 }
 
 

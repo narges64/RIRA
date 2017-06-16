@@ -10,17 +10,11 @@ int  main(int argc, char * argv[]){
 	parameter_value * parameters = new parameter_value(argc, argv);
 	ssd_info * ssd = new ssd_info(parameters, argv[2]); 
 
-	char trace_filename[50]; 
-	sprintf(trace_filename, "trace_%.1f_%d_%d_%d", ssd->parameter->syn_rd_ratio , 
-							ssd->parameter->syn_req_size , ssd->parameter->syn_req_count ,
-							ssd->parameter->syn_interarrival_mean);
-
-	if (parameters->trace_filename != NULL) 
-		strcpy(trace_filename, parameters->trace_filename);  
-	
-	ssd->tracefile = fopen(trace_filename, "r"); 
-	if (ssd->tracefile == NULL) 
-		generate_trace_file(ssd, trace_filename); 
+	ssd->tracefile = fopen(ssd->parameter->trace_filename, "r"); 
+	if (ssd->tracefile == NULL){
+		generate_trace_file(ssd, ssd->parameter->trace_filename); 
+		ssd->tracefile = fopen(ssd->parameter->trace_filename, "r"); 
+	}
 	if (ssd->tracefile == NULL) {
 		cout << "still trace file is null " << endl; 
 		return 1; 
@@ -30,7 +24,7 @@ int  main(int argc, char * argv[]){
 
 	cerr << "start pre-conditioning " << endl;
 	full_write_preconditioning(ssd, true);   // sequential 
-	full_write_preconditioning(ssd, false);  // random 
+//	full_write_preconditioning(ssd, false);  // random 
 
 	ssd->stats->print_all(); // does nothing now 
 	ssd->stats->reset_all();
@@ -39,9 +33,9 @@ int  main(int argc, char * argv[]){
 
 	simulate(ssd);
 
-	collect_gc_statistics(ssd, 1);
-	print_epoch_statistics(ssd, 1);
-	print_statistics(ssd, 1);
+	collect_gc_statistics(ssd, 0);
+	print_epoch_statistics(ssd, 0);
+	print_statistics(ssd, 0);
 
 	close_files(ssd);
 				
@@ -125,7 +119,10 @@ int add_fetched_request(ssd_info * ssd, request * request1, uint64_t nearest_eve
 		cout << ssd->current_time << " fetching io request number: " << request1->io_num ;
 		cout << "\terase: " << ssd->stats->total_flash_erase_count ;
 		cout << "\tq length: " << ssd->request_queue_length  << "  " << ssd->parameter->queue_length;
-		cout << "\tmove count: " << ssd->stats->gc_moved_page << endl;
+		cout << "\tmove count: " << ssd->stats->gc_moved_page;
+		int64_t gc_time = ssd->stats->gc_moved_page * (ssd->parameter->time_characteristics.tR/100000 + ssd->parameter->time_characteristics.tPROG/100000) + ssd->stats->total_flash_erase_count * ssd->parameter->time_characteristics.tBERS/100000; 
+		int64_t total_time = ssd->current_time; 
+		cout << "\tgc contribution: " << (gc_time / 16.0 )/ (ssd->current_time/100000) << endl;  
 	}
 	return 1;
 }
@@ -205,7 +202,7 @@ request * generate_next_request(ssd_info * ssd, int64_t nearest_event_time){
 
  	// Address
 	int align = ssd->parameter->subpage_page; 
- 	uint64_t address = (((rand() % (max_sector_address - min_sector_address)) + min_sector_address ) / align) * align;
+ 	uint64_t address = (rand() % (max_sector_address - min_sector_address)) + min_sector_address ;
 	request1->lsn = address;
 
  	// Size
@@ -238,7 +235,6 @@ void generate_trace_file(ssd_info * ssd, char * trace_filename){
 	
 	fclose(ssd->tracefile); 		
 
-	ssd->tracefile = fopen(trace_filename, "r"); 
 }
 
 int get_requests_consolidation(ssd_info *ssd)  {
@@ -264,15 +260,21 @@ int get_requests_consolidation(ssd_info *ssd)  {
 }
 request * read_request_from_file(ssd_info * ssd, int64_t nearest_event_time){
 
+	static int64_t last_request_time = 0; 
+
+	unsigned int total_size = ssd->parameter->lun_num * ssd->parameter->plane_lun *
+						ssd->parameter->block_plane * ssd->parameter->page_block;
+	total_size = total_size * (1-ssd->parameter->overprovide);
+
 	if (ssd->request_queue_length >= ssd->parameter->queue_length){
 		return NULL;
 	}	
 
-	int io_num = 0;
+	static int io_num = 0;
 	int64_t time_tt = MAX_INT64;
 	int unused;
 	char * type = new char[5];
-	unsigned int lsn=0;
+	int64_t lsn=0;
 	long int size = 0; 
 	int app_id = 0;
 	
@@ -281,15 +283,23 @@ request * read_request_from_file(ssd_info * ssd, int64_t nearest_event_time){
 	
 	char buffer[200];
 	fgets(buffer, 200, ssd->tracefile);
-	sscanf(buffer,"%d %lld %d %d %s %d %ld %d",&io_num,&time_tt,&unused,&unused,type,&lsn,&size,&app_id);
+	// sscanf(buffer,"%d %lld %d %d %s %d %ld %d",&io_num,&time_tt,&unused,&unused,type,&lsn,&size,&app_id);
+	sscanf(buffer,"%lld %s %d %ld ",&time_tt,type,&lsn,&size);
 	
 	if (time_tt != MAX_INT64){
 		if (time_tt > MAX_INT64 || time_tt < 0)
 			time_tt = MAX_INT64;
 	}
+	
 
 	if ((lsn < 0) || (size <= 0))
 	{
+		ssd->last_times = last_request_time; 
+		if (ssd->repeat_times < ssd->parameter->repeat_trace){	 
+			ssd->repeat_times++; 
+			fseek(ssd->tracefile,0, SEEK_SET);
+		}
+		
 		return NULL;
 	}
 
@@ -309,12 +319,14 @@ request * read_request_from_file(ssd_info * ssd, int64_t nearest_event_time){
 	request * request1 = new request();
 
 	request1->app_id = app_id;
-	request1->time = time_tt;
-	request1->lsn = lsn;
+	request1->time = ssd->last_times + time_tt;
+	request1->lsn = (int64_t)((lsn % total_size) / ssd->parameter->subpage_page ) * ssd->parameter->subpage_page;
 	request1->size = size;
-	request1->io_num = io_num;
+	request1->io_num = io_num++;
 	request1->operation = ope;
-	request1->begin_time = ssd->current_time;
+	request1->begin_time = ssd->current_time; 
+
+	last_request_time = request1->time; 
 
 	return request1;
 
@@ -377,12 +389,12 @@ void collect_statistics(ssd_info * ssd, request * req){
 	{
 		ssd->stats->read_request_size[req->app_id] += req->size;
 		ssd->stats->read_request_count[req->app_id]++;
-		ssd->stats->read_avg[req->app_id] += (req->response_time-req->time); // begin_time);
-		ssd->stats->read_throughput.add_time(req->time, req->response_time); // changed 
+		ssd->stats->read_avg[req->app_id] += (req->response_time-req->begin_time); // begin_time);
+		ssd->stats->read_throughput.add_time(req->begin_time, req->response_time); // changed 
 		ssd->stats->read_throughput.add_capacity(req->size);
 		ssd->stats->read_throughput.add_count(1);
-		if (req->response_time - req->time > ssd->stats->read_worst_case_rt){
-			ssd->stats->read_worst_case_rt = req->response_time - req->time; // begin_time;
+		if (req->response_time - req->begin_time > ssd->stats->read_worst_case_rt){
+			ssd->stats->read_worst_case_rt = req->response_time - req->begin_time; // begin_time;
 		}
 	}
 	else

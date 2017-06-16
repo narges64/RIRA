@@ -10,7 +10,7 @@ using namespace std;
 
 #define BUFSIZE 200
 #define PG_SUB 0xffffffff
-#define EPOCH_LENGTH (int64_t) 1000000000
+#define EPOCH_LENGTH (int64_t) 10000000000
 #define MAX(A,B) (A>B)?A:B;
 #define NSEC 1000000000
 
@@ -98,12 +98,12 @@ public:
 	void add_count (int64_t count){ total_count += count; }
 
 	double get_IOPS(){ // per second
-		if (active_time == 0) return 0;
-		return (double)total_count * NSEC / last_time; // active_time;
+		if (active_time == 0) return 0; 
+		return (double)total_count * NSEC / active_time;
 	}
 	double get_BW(){ // MB/s
 		if (active_time == 0) return 0;
-		return (double)total_capacity * NSEC / (last_time /*active_time*/ * 2 * 1024);
+		return (double)total_capacity * NSEC / (active_time * 2 * 1024);
 	}
 
 };
@@ -173,6 +173,7 @@ public:
 	int plane_level_tech;
 	float gc_time_ratio; 
 	char * trace_filename; 
+	bool synthetic; 
 };
 
 class local{
@@ -709,9 +710,11 @@ public:
 	}
 	void print_to_file(FILE * tracefile) {
 		if (operation == 0) 
-			fprintf(tracefile, "%d\t%lld\t0\t0\tWrite\t%d\t%d\t1\n" , io_num , time, lsn, size ); 
+			//fprintf(tracefile, "%d\t%lld\t0\t0\tWrite\t%d\t%d\t1\n" , io_num , time, lsn, size ); 
+			fprintf(tracefile, "%lld\tWrite\t%d\t%d\n" , time, lsn, size ); 
 		else
-			fprintf(tracefile, "%d\t%lld\t0\t0\tRead\t%d\t%d\t1\n" , io_num , time, lsn, size ); 
+			//fprintf(tracefile, "%d\t%lld\t0\t0\tRead\t%d\t%d\t1\n" , io_num , time, lsn, size ); 
+			fprintf(tracefile, "%lld\tRead\t%d\t%d\n" , time, lsn, size ); 
 	}
 	unsigned int app_id;
 	unsigned int io_num;
@@ -972,7 +975,6 @@ class ssd_info{
 public:
 	ssd_info(parameter_value *, char * statistics_filename);
 	~ssd_info(){
-		delete repeat_times;
 		for (int i=0;i<parameter->channel_number;i++)
 		{
 			delete channel_head[i];
@@ -993,7 +995,7 @@ public:
 	int max_lsn; 
 	int64_t total_execution_time;
 
-	int * repeat_times; // repeate trace for each application
+	int  repeat_times; // repeate trace for each application
 	int64_t last_times; // last time of each trace
 	int steady_state_counter;
 	int steady_state;

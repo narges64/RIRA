@@ -251,7 +251,7 @@ void services_2_io(ssd_info * ssd, unsigned int channel, unsigned int * channel_
 				change_subrequest_state (ssd, subs[i],
 						SR_MODE_ST_S, ssd->current_time,
 						SR_MODE_COMPLETE , subs[i]->complete_time);
-				change_plane_state(ssd, subs[i]->location->channel,
+				change_plane_state(ssd, subs[i]->location->channel,  
 						subs[i]->location->lun, subs[i]->location->plane,
 						PLANE_MODE_IO, ssd->current_time,
 						PLANE_MODE_IDLE, subs[i]->complete_time);
@@ -393,11 +393,11 @@ void services_2_gc(ssd_info * ssd, unsigned int channel,unsigned int * channel_b
 	int64_t read_transfer_time = 7 * ssd->parameter->time_characteristics.tWC +
 					(ssd->parameter->subpage_page * ssd->parameter->subpage_capacity) *
 					ssd->parameter->time_characteristics.tRC;
-	int64_t read_time = ssd->parameter->time_characteristics.tR;
+	int64_t read_time =  ssd->parameter->time_characteristics.tR;
 	int64_t write_transfer_time = 7 * ssd->parameter->time_characteristics.tWC +
 					(ssd->parameter->subpage_page * ssd->parameter->subpage_capacity) *
 					ssd->parameter->time_characteristics.tWC;
-	int64_t write_time = ssd->parameter->gc_time_ratio * ssd->parameter->time_characteristics.tPROG;
+	int64_t write_time =  ssd->parameter->gc_time_ratio * ssd->parameter->time_characteristics.tPROG;
 	int64_t erase_transfer_time = 5 * ssd->parameter->time_characteristics.tWC;
 	int64_t erase_time = ssd->parameter->time_characteristics.tBERS;
 
@@ -492,7 +492,7 @@ int find_lun_gc_requests(ssd_info * ssd, unsigned int channel, unsigned int lun,
 	unsigned int page_offset = -1;
 	int subs_count = 0;
 	(*operation) = -1;
-
+	static int k = 0; 
 	for (int i = 0; i < max_subs_count; i++){
 		if (subs[i] != NULL) {
 			subs_count++;
