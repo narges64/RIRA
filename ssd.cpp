@@ -24,7 +24,7 @@ int  main(int argc, char * argv[]){
 
 	cerr << "start pre-conditioning " << endl;
 	full_write_preconditioning(ssd, true);   // sequential 
-//	full_write_preconditioning(ssd, false);  // random 
+	full_write_preconditioning(ssd, false);  // random 
 
 	ssd->stats->print_all(); // does nothing now 
 	ssd->stats->reset_all();

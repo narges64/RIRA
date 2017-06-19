@@ -12,15 +12,21 @@ void full_write_preconditioning(ssd_info * ssd, bool seq){
 	local * location = new local(0,0,0,0,0);
 	for (int i = 0; i <  total_size; i++){
 		if (!seq){
-			if ((invalid_old_page(ssd, lpn, location) != SUCCESS))
+			if ((invalid_old_page(ssd, lpn, location) != SUCCESS)){
+				#if DEBUG
 				cout << "fail in invalid old page" << endl;
+				#endif 
+			}
 			ppn = get_new_ppn (ssd, lpn, location);
 			if (ppn == -1) {
 				cout << "fail in precondition " << endl;
 			}
 		}else {
-			if ((invalid_old_page(ssd, lpn, location) == SUCCESS))
+			if ((invalid_old_page(ssd, lpn, location) == SUCCESS)){
+				#if DEBUG 
 				cout << "seqential should not see the old page " << endl;
+				#endif 
+			}
 			ppn = get_new_ppn(ssd, lpn, NULL);
 			if (ppn == -1)
 				cout << "fail in precondition 2" << endl;
@@ -169,7 +175,9 @@ void service_in_flash(ssd_info * ssd, sub_request * sub){
 		}
 	} else if (sub->operation == WRITE){
 		if(invalid_old_page(ssd, sub) == FAIL) {
+			#if DEBUG 
 			cout << "error in invaliding the old page " << endl;
+			#endif 
 		}
 		sub->ppn = get_new_ppn(ssd, sub->lpn, sub->location);
 
@@ -692,8 +700,11 @@ uint64_t set_entry_state(ssd_info *ssd, int lsn,unsigned int size){
 
 STATE invalid_old_page(ssd_info * ssd, const int lpn, local * location){
 	if (ssd->dram->map->map_entry[lpn].state == false) {
-		if (ssd->current_time > 0) 
+		if (ssd->current_time > 0){
+			#if DEBUG 
 			cout << "error in invalid old page error 1 " << endl;
+			#endif 
+		}
 		return FAIL;
 	}
 	int old_ppn = ssd->dram->map->map_entry[lpn].pn;
@@ -712,7 +723,9 @@ STATE invalid_old_page(ssd_info * ssd, const int lpn, local * location){
 STATE invalid_old_page(ssd_info * ssd, sub_request * sub){ // const int lpn){
 	int lpn = sub->lpn;
 	if (ssd->dram->map->map_entry[lpn].state == false){
+		#if DUBG 
 		cout << "error 1 " << sub->lpn  << endl; 	
+		#endif 
 		 return FAIL;
 	}
 	int old_ppn = ssd->dram->map->map_entry[lpn].pn;
