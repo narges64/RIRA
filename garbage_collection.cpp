@@ -1,5 +1,6 @@
 #include "garbage_collection.hh"
-
+#include <chrono>
+using namespace std::chrono; 
 
 void gc_for_plane(ssd_info * ssd, gc_operation * gc_node){
 	unsigned int page_move_count = 0;
@@ -29,7 +30,7 @@ void gc_for_plane(ssd_info * ssd, gc_operation * gc_node){
 }
 
 STATE find_victim_block(ssd_info * ssd, local * location){
-
+	high_resolution_clock::time_point t1 = high_resolution_clock::now();
 	switch (ssd->parameter->gc_algorithm) {
 		case GREEDY:
 				greedy_algorithm(ssd, location);
@@ -44,7 +45,7 @@ STATE find_victim_block(ssd_info * ssd, local * location){
 
 				break;
 		case RGA:
-				RGA_algorithm(ssd, location, -1); // select the best one based on valid number
+				RGA_algorithm(ssd, location); // select the best one based on valid number
 
 				break;
 		case RANDOM:
@@ -67,8 +68,13 @@ STATE find_victim_block(ssd_info * ssd, local * location){
 		}
 
 	}
+
+  	high_resolution_clock::time_point t2 = high_resolution_clock::now();
+  	double dif = duration_cast<nanoseconds>( t2 - t1 ).count();
+  	// printf ("Elasped time is %lf nanoseconds.\n", dif );
+
 	if (location->block == -1){
-		printf("Error: Problem in finding the victim block \n");
+		printf("Error: Problem in finding the victim block, time: %lld    gc alg %d \n", ssd->current_time , ssd->parameter->gc_algorithm );
 		return FAIL;
 
 	}
@@ -142,7 +148,7 @@ STATE move_page(ssd_info * ssd,  const local * location, gc_operation * gc_node)
 	sub_request * wsub = create_gc_sub_request(ssd, location, WRITE, gc_node);
 	wsub->location = new local(location->channel, location->lun, location->plane);
 	invalid_old_page(ssd, wsub);
-	wsub->ppn = get_new_ppn(ssd, wsub->lpn, wsub->location);
+	wsub->ppn = get_new_ppn(ssd, wsub->lpn, wsub->location, false); // false---> cold block 
 	if( wsub->ppn == -1 || write_page(ssd, wsub->lpn, wsub->ppn) == FAIL) {
 		cout << "error in move page " << endl; 
 		return FAIL; 
@@ -248,7 +254,7 @@ void pre_process_gc(ssd_info * ssd, const local * location){
 			int lpn = ssd->channel_head[gc_location->channel]->lun_head[gc_location->lun]->plane_head[gc_location->plane]->blk_head[gc_location->block]->page_head[gc_location->page]->lpn;
 			local * location = new local(0,0,0,0,0); 
 			invalid_old_page(ssd, lpn, location);
-			int ppn = get_new_ppn(ssd, lpn, location);
+			int ppn = get_new_ppn(ssd, lpn, location, false); // false indicate we want cold active block 
 			if (ppn ==-1 || write_page(ssd, lpn, ppn) == FAIL) {
 				cout << "error in pre-process " << endl; 
 				return; 
@@ -281,11 +287,11 @@ STATE delete_gc_node(ssd_info * ssd, gc_operation * gc_node){
 	return SUCCESS;
 }
 // =============== GC ALGORITHMS ================================
-unsigned int best_cost(ssd_info * ssd, plane_info * the_plane, int active_block){
+unsigned int best_cost(ssd_info * ssd, plane_info * the_plane, int active_block, int cold_active_block){
 	int max_invalid = -1; // ssd->parameter->page_block; 
 	int selected_block = -1; 
 	for (int i = 0; i < ssd->parameter->block_plane; i++){
-		if (i == active_block) continue; 
+		if ((i == active_block) || (i == cold_active_block)) continue; 
 		int free_count = the_plane->blk_head[i]->free_page_num; 
 		int invalid_count = the_plane->blk_head[i]->invalid_page_num; 
 		
@@ -299,20 +305,23 @@ unsigned int best_cost(ssd_info * ssd, plane_info * the_plane, int active_block)
 }
 STATE greedy_algorithm(ssd_info * ssd,  local * location){
 	int active_block = get_active_block(ssd,location);
-	location->block = best_cost(ssd, ssd->channel_head[location->channel]->lun_head[location->lun]->plane_head[location->plane], active_block);
+	int cold_active_block = get_cold_active_block(ssd, location); 
+	location->block = best_cost(ssd, ssd->channel_head[location->channel]->lun_head[location->lun]->plane_head[location->plane], active_block, cold_active_block);
 	return SUCCESS;
 }
 STATE fifo_algorithm(ssd_info * ssd,  local * location){
 	int block = -1;
-	int64_t min_time = 0;
-
+	int64_t min_time = 10000000000000;
+	plane_info * the_plane = ssd->channel_head[location->channel]->lun_head[location->lun]->plane_head[location->plane]; 
 	int active_block = get_active_block(ssd,location);
-
+	int cold_active_block = get_cold_active_block(ssd, location); 
 	for (int i = 0; i < ssd->parameter->block_plane; i++){
-		if (i == active_block) continue;
+		if ((i == active_block) || (i == cold_active_block)) continue;
+		if(the_plane->blk_head[i]->free_page_num > 0) continue; 
+		if(the_plane->blk_head[i]->invalid_page_num == 0) continue; 
 
-		if (ssd->channel_head[location->channel]->lun_head[location->lun]->plane_head[location->plane]->blk_head[i]->last_write_time <= min_time){
-			min_time = ssd->channel_head[location->channel]->lun_head[location->lun]->plane_head[location->plane]->blk_head[i]->last_write_time;
+		if (the_plane->blk_head[i]->last_write_time <= min_time){
+			min_time = the_plane->blk_head[i]->last_write_time;
 			block = i;
 		}
 	}
@@ -320,6 +329,7 @@ STATE fifo_algorithm(ssd_info * ssd,  local * location){
 	return SUCCESS;
 }
 STATE windowed_algorithm(ssd_info * ssd, local * location){
+/*
 	unsigned int window_size = 100; // FIXME make it parameter
 
 	int * blocks = new int[window_size];
@@ -330,13 +340,15 @@ STATE windowed_algorithm(ssd_info * ssd, local * location){
 	plane_info *the_plane = ssd->channel_head[location->channel]->lun_head[location->lun]->plane_head[location->plane];
 
 	int active_block = get_active_block(ssd,location);
-
+	int cold_active_block = get_cold_active_block(ssd, location); 
 	for (int i = 0; i < ssd->parameter->block_plane; i++){
-		if (i == active_block) continue;
+		if ((i == active_block) || (i == cold_active_block)) continue;
+		if(the_plane->blk_head[i]->free_page_num > 0) continue; 
+		
 		int64_t time_i = the_plane->blk_head[i]->last_write_time;
 		for (int j = 0; j < window_size; j++){
 			if (blocks[j] == -1) {blocks[j] = i; break;}
-
+			
 			int64_t time_j = the_plane->blk_head[blocks[j]]->last_write_time;
 
 			if (time_j > time_i){
@@ -356,14 +368,14 @@ STATE windowed_algorithm(ssd_info * ssd, local * location){
 
 	unsigned int block = -1;
 
-	block= 1; // FIXME best_cost(ssd, the_plane, blocks, temp+1, 0 /*which best, first best, second best, etc. */, active_block);
-
-	location->block = block;
-
+	block= best_cost(ssd, the_plane, active_block, cold_active_block);
 	delete blocks;
+*/
+	location->block = 1; // block;
+
 	return SUCCESS;
 }
-STATE RGA_algorithm(ssd_info * ssd, local * location, int valid_number){
+STATE RGA_algorithm(ssd_info * ssd, local * location){
 	unsigned int window_size = 200; // FIXME
 	unsigned int total_size = ssd->parameter->block_plane;
 
@@ -373,13 +385,19 @@ STATE RGA_algorithm(ssd_info * ssd, local * location, int valid_number){
 	}
 
 	int active_block = get_active_block(ssd, location);
+	int cold_active_block = get_cold_active_block(ssd, location); 
 	plane_info * p = ssd->channel_head[location->channel]->lun_head[location->lun]->plane_head[location->plane];
 
 	blocks[active_block] = blocks[total_size - 1];
 	total_size--;
+	blocks[cold_active_block] = blocks[total_size -1]; 
+	total_size--; 
 
 	for (int i = 0; i < window_size; i++){
 		int j = rand() % (total_size - i);
+		while ((p->blk_head[j]->free_page_num >0) || (j ==active_block) || (j == cold_active_block)) {
+			j = rand() % (total_size - i); 
+		}
 		if (j != 0){
 			int temp = blocks[i];
 			blocks[i] = blocks[i+j];
@@ -387,27 +405,22 @@ STATE RGA_algorithm(ssd_info * ssd, local * location, int valid_number){
 		}
 	}
 
-	unsigned int selected = 0;
-
-	if (valid_number != -1){
-		int most_similar_diff = ssd->parameter->page_block;
-
-		for (int i = 0; i < window_size; i++){
-			unsigned int temp = blocks[i];
-			int temp_valid = ssd->parameter->page_block - p->blk_head[temp]->invalid_page_num ;
-			if (((temp_valid - valid_number) <= most_similar_diff)  && ((valid_number - temp_valid) <= most_similar_diff) ){
-				most_similar_diff = temp_valid - valid_number;
-				if (most_similar_diff < 0) most_similar_diff = -1 * most_similar_diff;
-				selected = i;
-			}
+	int block = -1;
+	int max_invalid = 0; 
+	for (int i = 0; i < window_size; i++){
+		int temp = blocks[i]; 
+		if (temp == active_block || temp == cold_active_block) continue; 
+		if (p->blk_head[temp]->free_page_num > 0) continue; 
+		if (p->blk_head[temp]->invalid_page_num > max_invalid) {
+			block = temp; 
+			max_invalid = p->blk_head[temp]->invalid_page_num; 
 		}
-		location->block = blocks[selected];
-	} else {
-		int block = -1;
-
-		block = 1; // best_cost(ssd, p, blocks, window_size, 0, active_block); // which best, first best, second best, etc.
-		location->block = block;
+		
 	}
+	if (block == -1) 
+			greedy_algorithm(ssd, location); 
+	
+	location->block = block;
 	delete blocks;
 
 	return SUCCESS;
@@ -415,9 +428,10 @@ STATE RGA_algorithm(ssd_info * ssd, local * location, int valid_number){
 STATE RANDOM_algorithm(ssd_info * ssd, local * location){
 	unsigned int block = -1;
 	int active_block = get_active_block(ssd,location);
-
+	int cold_active_block = get_cold_active_block(ssd, location); 
 	unsigned int rand_block = rand() % ssd->parameter->block_plane;
-	while (rand_block == active_block)
+	plane_info * the_plane = ssd->channel_head[location->channel]->lun_head[location->lun]->plane_head[location->plane]; 
+	while ((rand_block == active_block) || (rand_block == cold_active_block) || (the_plane->blk_head[rand_block]->free_page_num > 0))
 		rand_block = rand() % ssd->parameter->block_plane;
 
 	location->block = rand_block;
@@ -426,9 +440,10 @@ STATE RANDOM_algorithm(ssd_info * ssd, local * location){
 STATE RANDOM_p_algorithm(ssd_info * ssd, local * location){
 	unsigned int block = -1;
 	int active_block = get_active_block(ssd,location);
+	int cold_active_block = get_cold_active_block(ssd, location); 
 
 	unsigned int rand_block = rand() % ssd->parameter->block_plane;
-	while (rand_block == active_block || ssd->channel_head[location->channel]->lun_head[location->lun]->plane_head[location->plane]->blk_head[rand_block]->invalid_page_num == 0)
+	while ((rand_block == active_block) || (rand_block == cold_active_block) || ssd->channel_head[location->channel]->lun_head[location->lun]->plane_head[location->plane]->blk_head[rand_block]->invalid_page_num == 0)
 		rand_block = rand() % ssd->parameter->block_plane;
 
 	location->block = rand_block;
@@ -440,10 +455,12 @@ STATE RANDOM_pp_algorithm(ssd_info * ssd, local * location){
 
 	unsigned int block = -1;
 	int active_block = get_active_block(ssd,location);
-
+	int cold_active_block = get_cold_active_block(ssd, location); 
 	unsigned int rand_block = rand() % ssd->parameter->block_plane;
+	plane_info * the_plane = ssd->channel_head[location->channel]->lun_head[location->lun]->plane_head[location->plane]; 
 	int counter = 0;
-	while (rand_block == active_block || (ssd->channel_head[location->channel]->lun_head[location->lun]->plane_head[location->plane]->blk_head[rand_block]->invalid_page_num < least_invalid && counter <= ssd->parameter->block_plane)){
+	while ((rand_block == active_block) || (rand_block == cold_active_block )||(the_plane->blk_head[rand_block]->invalid_page_num < least_invalid && counter <= ssd->parameter->block_plane)
+				|| (the_plane->blk_head[rand_block]->free_page_num > 0)){
 		rand_block = rand() % ssd->parameter->block_plane;
 		counter++;
 	}

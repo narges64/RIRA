@@ -8,12 +8,12 @@ STATE find_victim_block( ssd_info *ssd,local * location);
 STATE greedy_algorithm(ssd_info * ssd, local * location);
 STATE fifo_algorithm(ssd_info * ssd, local * location);
 STATE windowed_algorithm(ssd_info * ssd, local * location);
-STATE RGA_algorithm(ssd_info * ssd, local * location, int order);
+STATE RGA_algorithm(ssd_info * ssd, local * location);
 STATE RANDOM_algorithm(ssd_info * ssd, local * location);
 STATE RANDOM_p_algorithm(ssd_info * ssd, local * location);
 STATE RANDOM_pp_algorithm(ssd_info * ssd, local * location);
 
-unsigned int best_cost( ssd_info * ssd,  plane_info * the_plane, int active_block );
+unsigned int best_cost( ssd_info * ssd,  plane_info * the_plane, int active_block , int cold_active_block);
 int64_t compute_moving_cost(ssd_info * ssd, const local * location, const local * twin_location, int approach); 
 int erase_block(ssd_info * ssd,const local * location);
 bool update_priority(ssd_info * ssd, unsigned int channel, unsigned int lun); 

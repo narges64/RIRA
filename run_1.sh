@@ -1,12 +1,22 @@
 #!/bin/bash 
 
-name=gcb_results
-for dram_cap in 32
-do
-	for trace in `cat ../../Traces/tlist` 
-	do 
-		./ssd page.parameters_MLC Results/${name}/cachedGC_result_${dram_cap}_gcb1_$trace  dram_capacity=${dram_cap} gcb_capacity=1 synthetic=0 trace_file=../../Traces/${trace} > Results/${name}/cachedGC_out_${dram_cap}_gcb1_$trace 
-		./ssd page.parameters_MLC Results/${name}/cachedGC_result_${dram_cap}_gcb0_$trace  dram_capacity=${dram_cap} gcb_capacity=0 synthetic=0 trace_file=../../Traces/${trace} > Results/${name}/cachedGC_out_${dram_cap}_gcb0_$trace 
-	done 
+name=Synthetic
+
+for gc_cap in 0 32 64 96  
+do 
+	for rd in 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 
+	do 	 
+		./ssd page.parameters_MLC Results/$name/cachedGC_result_128_${gc_cap}_${rd}_alg0 dram_capacity=128 synthetic=1 syn_rd_ratio=${rd} gcb_capacity=${gc_cap}  gc_algorithm=0 > Results/$name/cachedGC_out_128_${gc_cap}_${rd}_alg0  
+		./ssd page.parameters_MLC Results/$name/cachedGC_result_128_${gc_cap}_${rd}_alg3 dram_capacity=128 synthetic=1 syn_rd_ratio=${rd} gcb_capacity=${gc_cap}  gc_algorithm=3 > Results/$name/cachedGC_out_128_${gc_cap}_${rd}_alg3  
+	done
 done
 
+
+for gc_cap in 0 8 16 24
+do 
+	for rd in 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 
+	do 	 
+		./ssd page.parameters_MLC Results/$name/cachedGC_result_32_${gc_cap}_${rd}_alg0 dram_capacity=32 synthetic=1 syn_rd_ratio=${rd} gcb_capacity=${gc_cap}  gc_algorithm=0 > Results/$name/cachedGC_out_32_${gc_cap}_${rd}_alg0  
+		./ssd page.parameters_MLC Results/$name/cachedGC_result_32_${gc_cap}_${rd}_alg3 dram_capacity=32 synthetic=1 syn_rd_ratio=${rd} gcb_capacity=${gc_cap}  gc_algorithm=3 > Results/$name/cachedGC_out_32_${gc_cap}_${rd}_alg3  
+	done
+done 

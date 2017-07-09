@@ -17,7 +17,7 @@ void full_write_preconditioning(ssd_info * ssd, bool seq){
 				cout << "fail in invalid old page" << endl;
 				#endif 
 			}
-			ppn = get_new_ppn (ssd, lpn, location);
+			ppn = get_new_ppn (ssd, lpn, location, true);
 			if (ppn == -1) {
 				cout << "fail in precondition " << endl;
 			}
@@ -27,7 +27,7 @@ void full_write_preconditioning(ssd_info * ssd, bool seq){
 				cout << "seqential should not see the old page " << endl;
 				#endif 
 			}
-			ppn = get_new_ppn(ssd, lpn, NULL);
+			ppn = get_new_ppn(ssd, lpn, NULL, true);
 			if (ppn == -1)
 				cout << "fail in precondition 2" << endl;
 		}
@@ -179,7 +179,7 @@ void service_in_flash(ssd_info * ssd, sub_request * sub){
 			cout << "error in invaliding the old page " << endl;
 			#endif 
 		}
-		sub->ppn = get_new_ppn(ssd, sub->lpn, sub->location);
+		sub->ppn = get_new_ppn(ssd, sub->lpn, sub->location, true);
 
 		if(sub->ppn == -1 || write_page(ssd, sub->lpn, sub->ppn) == FAIL) {
 			cout << "there is problem "<< sub->ppn << endl;
@@ -741,7 +741,7 @@ STATE invalid_old_page(ssd_info * ssd, sub_request * sub){ // const int lpn){
 	return SUCCESS;
 }
 
-int get_new_ppn(ssd_info *ssd, int lpn, const local * location){
+int get_new_ppn(ssd_info *ssd, int lpn, const local * location, bool hot){ // hot specify if we need a page in hot or cold active block 
 	local * new_location;
 	if (location != NULL) {
 		new_location = new local(location->channel, location->lun, location->plane);
@@ -749,7 +749,7 @@ int get_new_ppn(ssd_info *ssd, int lpn, const local * location){
 		new_location = new local(0,0,0);
 		allocate_plane(ssd, new_location);
 	}
-	if (allocate_page_in_plane(ssd, new_location) != SUCCESS){
+	if (allocate_page_in_plane(ssd, new_location, hot) != SUCCESS){
 		delete new_location;
 		return -1;
 	}
@@ -790,10 +790,13 @@ int get_active_block(ssd_info *ssd, local * location){
 	int active_block = ssd->channel_head[channel]->lun_head[lun]->plane_head[plane]->active_block;
 	int free_page_num = ssd->channel_head[channel]->lun_head[lun]->
 					plane_head[plane]->blk_head[active_block]->free_page_num;
+	int cold_active_block = ssd->channel_head[channel]->lun_head[lun]->plane_head[plane]->cold_active_block; 
 	int count=0;
 	while(((free_page_num==0))&&(count<ssd->parameter->block_plane))
 	{
 		active_block=(active_block+1)%ssd->parameter->block_plane;
+		if (active_block == cold_active_block) 
+			active_block=(active_block+1)%ssd->parameter->block_plane;
 		free_page_num=ssd->channel_head[channel]->lun_head[lun]->
 					plane_head[plane]->blk_head[active_block]->free_page_num;
 		count++;
@@ -806,11 +809,45 @@ int get_active_block(ssd_info *ssd, local * location){
 
 	return active_block;
 }
-STATE allocate_page_in_plane( ssd_info *ssd, local * location){
+
+int get_cold_active_block(ssd_info *ssd, local * location){
 	int channel = location->channel;
 	int lun = location->lun;
 	int plane = location->plane;
-	int active_block=get_active_block(ssd, location);
+
+	int cold_active_block = ssd->channel_head[channel]->lun_head[lun]->plane_head[plane]->cold_active_block;
+	int free_page_num = ssd->channel_head[channel]->lun_head[lun]->
+					plane_head[plane]->blk_head[cold_active_block]->free_page_num;
+	int active_block = ssd->channel_head[channel]->lun_head[lun]->plane_head[plane]->active_block; 
+	int count=0;
+	while(((free_page_num==0))&&(count<ssd->parameter->block_plane))
+	{
+		cold_active_block=(cold_active_block+1)%ssd->parameter->block_plane;
+		if (cold_active_block == active_block) 
+			cold_active_block=(cold_active_block+1)%ssd->parameter->block_plane;
+		free_page_num=ssd->channel_head[channel]->lun_head[lun]->
+					plane_head[plane]->blk_head[cold_active_block]->free_page_num;
+		count++;
+	}
+	if (count == ssd->parameter->block_plane) {
+		cout << "could not find cold active_block " << endl;
+		return -1;
+	}
+	ssd->channel_head[channel]->lun_head[lun]->plane_head[plane]->cold_active_block=cold_active_block;
+
+	return cold_active_block;
+}
+
+STATE allocate_page_in_plane( ssd_info *ssd, local * location, bool hot){
+	int channel = location->channel;
+	int lun = location->lun;
+	int plane = location->plane;
+	int active_block= -1; 
+	if (hot) 
+		active_block = get_active_block(ssd, location);
+	else 
+		active_block = get_cold_active_block(ssd, location); 
+
 	if (active_block == -1) return FAIL;
 	int active_page = ssd->channel_head[channel]->lun_head[lun]->plane_head[plane]->
 					blk_head[active_block]->last_write_page + 1;

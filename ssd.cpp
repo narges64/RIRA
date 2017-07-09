@@ -347,20 +347,6 @@ void add_to_request_queue(ssd_info * ssd, request * req){
 		ssd->request_queue_length++;
 	}
 
-	if (req->operation==1)
-	{
-		ssd->stats->read_request_size[req->app_id]=
-			(ssd->stats->read_request_size[req->app_id]*
-			ssd->stats->read_request_count[req->app_id]+req->size)/
-			(ssd->stats->read_request_count[req->app_id]+1);
-	}
-	else
-	{
-		ssd->stats->write_request_size[req->app_id]=
-			(ssd->stats->write_request_size[req->app_id]*
-			ssd->stats->write_request_count[req->app_id]+req->size)/
-			(ssd->stats->write_request_count[req->app_id]+1);
-	}
 
 }
 void collect_statistics(ssd_info * ssd, request * req){
@@ -388,26 +374,18 @@ void collect_statistics(ssd_info * ssd, request * req){
 	if (req->operation==READ)
 	{
 		ssd->stats->read_request_size[req->app_id] += req->size;
-		ssd->stats->read_request_count[req->app_id]++;
-		ssd->stats->read_avg[req->app_id] += (req->response_time-req->begin_time); // begin_time);
+		ssd->stats->read_RT.update(req->response_time - req->begin_time); 
 		ssd->stats->read_throughput.add_time(req->begin_time, req->response_time); // changed 
 		ssd->stats->read_throughput.add_capacity(req->size);
 		ssd->stats->read_throughput.add_count(1);
-		if (req->response_time - req->begin_time > ssd->stats->read_worst_case_rt){
-			ssd->stats->read_worst_case_rt = req->response_time - req->begin_time; // begin_time;
-		}
 	}
 	else
 	{
 		ssd->stats->write_request_size[req->app_id] += req->size; 
-		ssd->stats->write_request_count[req->app_id]++; 
-		ssd->stats->write_avg[req->app_id]+=(req->response_time - req->begin_time);
+		ssd->stats->write_RT.update(req->response_time - req->begin_time); 
 		ssd->stats->write_throughput.add_time(req->begin_time, req->response_time); 
 		ssd->stats->write_throughput.add_capacity(req->size);
 		ssd->stats->write_throughput.add_count(1);
-		if (req->response_time - req->begin_time > ssd->stats->write_worst_case_rt){
-			ssd->stats->write_worst_case_rt = req->response_time - req->begin_time; // begin_time;
-		}
 	}
 
 }
@@ -415,48 +393,13 @@ void print_epoch_statistics(ssd_info * ssd, int app_id){
 	int epoch_num = ssd->current_time / EPOCH_LENGTH;
 	fprintf(ssd->statisticfile, "epoch %d , current_time %lld \n", epoch_num, ssd->current_time);
 	// =================== LATENCY ================================================================
-	int64_t rw_count = ssd->stats->write_request_count[app_id] + ssd->stats->read_request_count[app_id]; if(rw_count == 0) return;
-	int64_t RT = ((ssd->stats->write_avg[app_id] / rw_count) + (ssd->stats->read_avg[app_id] / rw_count));
-	int64_t read_RT = (ssd->stats->read_request_count[app_id] > 0) ? ssd->stats->read_avg[app_id] / ssd->stats->read_request_count[app_id] : 0;
-	int64_t write_RT=(ssd->stats->write_request_count[app_id] > 0)?ssd->stats->write_avg[app_id] / ssd->stats->write_request_count[app_id] : 0;
-	int64_t prev_total_rw = ssd->stats->total_read_request_count[app_id] + ssd->stats->total_write_request_count[app_id];
-	int64_t prev_total_r = ssd->stats->total_read_request_count[app_id];
-	int64_t prev_total_w = ssd->stats->total_write_request_count[app_id];
-	ssd->stats->total_read_request_count[app_id] += ssd->stats->read_request_count[app_id];
-	ssd->stats->total_write_request_count[app_id] += ssd->stats->write_request_count[app_id];
-	int64_t next_total_rw = ssd->stats->total_read_request_count[app_id] + ssd->stats->total_write_request_count[app_id];
-	int64_t next_total_r = ssd->stats->total_read_request_count[app_id];
-	int64_t next_total_w = ssd->stats->total_write_request_count[app_id];
 	ssd->stats->total_flash_erase_count += ssd->stats->flash_erase_count;
-	if (next_total_rw != 0)
-		ssd->stats->total_RT[app_id] = ((ssd->stats->total_RT[app_id] * (double)prev_total_rw) + ssd->stats->read_avg[app_id] + ssd->stats->write_avg[app_id]) / (next_total_rw);
-	else
-		ssd->stats->total_RT[app_id] = 0;
 
-	if (next_total_r != 0)
-		ssd->stats->total_read_RT[app_id] = ((ssd->stats->total_read_RT[app_id] * (double)prev_total_r ) + ssd->stats->read_avg[app_id]) / next_total_r;
-	else
-		ssd->stats->total_read_RT[app_id] = 0;
-
-	if (next_total_w != 0)
-		ssd->stats->total_write_RT[app_id] = ((ssd->stats->total_write_RT[app_id] * (double)prev_total_w ) + ssd->stats->write_avg[app_id]) / next_total_w;
-	else
-		ssd->stats->total_write_RT[app_id] = 0;
 	fprintf(ssd->statisticfile, "Latency epoch: %d \n", epoch_num);
-	fprintf(ssd->statisticfile, "RT %lld ns, count  %lld\n", RT, rw_count);
-	fprintf(ssd->statisticfile, "read RT %lld ns, count %lld\n", read_RT, ssd->stats->read_request_count[app_id]);
-	fprintf(ssd->statisticfile, "write RT %lld ns, count %lld\n", write_RT, ssd->stats->write_request_count[app_id]);
-	fprintf(ssd->statisticfile, "read worst case %lld ns\n", ssd->stats->read_worst_case_rt);
-	fprintf(ssd->statisticfile, "write worst case %lld ns\n", ssd->stats->write_worst_case_rt);
+	fprintf(ssd->statisticfile, "read RT avg %lld us , var %lld ms2, count %lld , max %lld us\n", ssd->stats->read_RT.get_average() , ssd->stats->read_RT.get_variance(), ssd->stats->read_RT.get_count(), ssd->stats->read_RT.get_max());
+	fprintf(ssd->statisticfile, "write RT avg %lld us , var %lld ms2, count %lld , max %lld us \n", ssd->stats->write_RT.get_average(),ssd->stats->write_RT.get_variance(), ssd->stats->write_RT.get_count(), ssd->stats->write_RT.get_max());
 	fprintf(ssd->statisticfile, "erase(gc) count %lld , total %lld\n", ssd->stats->flash_erase_count, ssd->stats->total_flash_erase_count);
-	fprintf(ssd->statisticfile, "Total RT %lld ns, count %lld \n", ssd->stats->total_RT[app_id], next_total_rw);
-	fprintf(ssd->statisticfile, "Total read RT %lld ns, count %lld \n", ssd->stats->total_read_RT[app_id], next_total_r);
-	fprintf(ssd->statisticfile, "Total write RT %lld ns, count %lld \n", ssd->stats->total_write_RT[app_id], next_total_w);
 	fprintf(ssd->statisticfile, "GC move count %d \n" , ssd->stats->gc_moved_page);
-	ssd->stats->read_request_count[app_id] = 0;
-	ssd->stats->write_request_count[app_id] = 0;
-	ssd->stats->read_avg[app_id] = 0;
-	ssd->stats->write_avg[app_id] = 0;
 	ssd->stats->flash_erase_count = 0;
 
 	// =================== SUBREQ STATES ===========================================================
@@ -495,36 +438,29 @@ void print_epoch_statistics(ssd_info * ssd, int app_id){
 }
 void print_statistics(ssd_info *ssd, int app){
 
-	//ssd->total_read_request_count[app] += ssd->read_request_count[app];
-	//ssd->total_write_request_count[app] += ssd->write_request_count[app];
-	//ssd->total_read_avg[app] += ssd->read_avg[app];
-	//ssd->total_write_avg[app] += ssd->write_avg[app];
-	//ssd->total_flash_erase_count += ssd->flash_erase_count;
-
 	fprintf(ssd->statisticfile, "======== Application %d , time %lld ============ \n", app, ssd->total_execution_time);
 
-	int64_t rw_count = ssd->stats->total_read_request_count[app] + ssd->stats->total_write_request_count[app];
-	int64_t r_count = ssd->stats->total_read_request_count[app];
-	int64_t w_count = ssd->stats->total_write_request_count[app];
+	fprintf(ssd->statisticfile, "request read RT avg %lld us , var %lld ms2 , count %lld , max %lld us\n", 
+									ssd->stats->read_RT.get_average(), ssd->stats->read_RT.get_variance(), 
+									ssd->stats->read_RT.get_count() , ssd->stats->read_RT.get_max());
 
-	fprintf(ssd->statisticfile, "request average response time[%d]: ( %lld ) , count %lld \n", app, ssd->stats->total_RT[app] ,rw_count);
-	fprintf(ssd->statisticfile, "request average read response time[%d]: ( %lld ) , count %lld \n", app, ssd->stats->total_read_RT[app] ,r_count);
-	fprintf(ssd->statisticfile, "request average write response time[%d]: ( %lld ) , count %lld \n", app, ssd->stats->total_write_RT[app] ,w_count);
-
+	fprintf(ssd->statisticfile, "request write RT avg %lld us , var %lld ms2, count %lld , max %lld us \n", 
+									ssd->stats->write_RT.get_average(), ssd->stats->write_RT.get_variance(), 
+									ssd->stats->write_RT.get_count() , ssd->stats->write_RT.get_max());
+	
 	fprintf(ssd->statisticfile, "read IOPS and BW [%d]: %f , %f  \n", app, ssd->stats->read_throughput.get_IOPS() , ssd->stats->read_throughput.get_BW());
 	fprintf(ssd->statisticfile, "write IOPS and BW [%d]: %f , %f  \n", app, ssd->stats->write_throughput.get_IOPS() , ssd->stats->write_throughput.get_BW());
 
 	fprintf(ssd->statisticfile,"erase: ( %lld )\n", ssd->stats->total_flash_erase_count);
 	fprintf(ssd->statisticfile,"total gc move count: %d \n", ssd->stats->gc_moved_page);
+	fprintf(ssd->statisticfile, "buffer read hit %d , write hit %d , gc buffer read hit %d , write hit %d \n ", 
+								ssd->dram->buffer->read_hit , ssd->dram->buffer->write_hit , 
+								ssd->dram->gc_buffer->read_hit , ssd->dram->gc_buffer->write_hit); 
 
-
+	fprintf(ssd->statisticfile, "flash program count %d , WAF %f\n" , ssd->stats->flash_prog_count , (ssd->stats->flash_prog_count)/(double)(ssd->stats->flash_prog_count - ssd->stats->gc_moved_page));  
 
 	fprintf(ssd->statisticfile, "========================\n");
 
-	ssd->stats->read_request_count[app] = 0;
-	ssd->stats->write_request_count[app] = 0;
-	ssd->stats->read_avg[app] = 0;
-	ssd->stats->write_avg[app] = 0;
 	ssd->stats->flash_erase_count = 0;
 
 	// Print lun statistic output

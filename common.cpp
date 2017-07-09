@@ -99,16 +99,6 @@ void ssd_info::reset_ssd_stats(){
 
 statistics::statistics(int cons_deg){
 	consolidation_degree = cons_deg;
-	read_request_count = new int64_t[cons_deg];
-	total_read_request_count = new int64_t[cons_deg];
-	write_request_count = new int64_t[cons_deg];
-	total_write_request_count = new int64_t[cons_deg];
-
-	read_avg = new int64_t[cons_deg];
-	write_avg = new int64_t[cons_deg];
-	total_RT = new int64_t[cons_deg];
-	total_read_RT = new int64_t[cons_deg];
-	total_write_RT = new int64_t[cons_deg];
 
 	read_request_size = new int64_t[cons_deg];
 	total_read_request_size = new int64_t[cons_deg];
@@ -120,15 +110,6 @@ statistics::statistics(int cons_deg){
 	reset_all();
 }
 statistics::~statistics(){
-	delete read_request_count;
-	delete total_read_request_count;
-	delete write_request_count;
-	delete total_write_request_count;
-	delete read_avg;
-	delete write_avg;
-	delete total_RT;
-	delete total_read_RT;
-	delete total_write_RT;
 	delete read_request_size;
 	delete total_read_request_size;
 	delete write_request_size;
@@ -138,15 +119,6 @@ statistics::~statistics(){
 
 void statistics::reset_all(){
 	for (int i = 0; i < consolidation_degree; i++){
-		read_request_count[i] = 0;
-		total_read_request_count[i] = 0;
-
-		write_request_count[i] = 0;
-		total_write_request_count[i] = 0;
-
-		write_avg[i] = 0;
-		read_avg[i] = 0;
-		total_RT[i] = 0;
 
 		read_request_size[i] = 0;
 		total_read_request_size[i] = 0;
@@ -189,8 +161,6 @@ void statistics::reset_all(){
 	update_read_count = 0;
 	total_update_read_count = 0;
 
-	write_worst_case_rt = 0;
-	read_worst_case_rt = 0;
 
 	gc_moved_page = 0;
 
@@ -229,6 +199,7 @@ blk_info::blk_info(parameter_value * parameters)
 {
 	free_page_num = parameters->page_block;	// all pages are free
 	last_write_page = -1;	// no page has been programmed
+	last_write_time = 0; 
 	page_num = parameters->page_block;
 	invalid_page_num = 0;
 
@@ -250,6 +221,7 @@ plane_info::plane_info(parameter_value  * parameters)
 	}
 	block_num = parameters->block_plane;
 	active_block = 0;
+	cold_active_block = 1; 
 	erase_count = 0;
 	program_count = 0;
 	GCMode = false;
@@ -511,6 +483,8 @@ void parameter_value::load_inline_parameters(int argc, char ** argv)
 					sscanf(argv[i] + next_eql,"%s",trace_filename); 
 			}else if((res_eql=strcmp(argv[i],"synthetic")) == 0){
 					sscanf(argv[i] + next_eql,"%d",&synthetic); 
+			}else if((res_eql=strcmp(argv[i],"gc_algorithm")) == 0){
+					sscanf(argv[i] + next_eql,"%d",&gc_algorithm); 
 			}else{
 					printf("don't match\t %s\n",argv[i]);
 			}

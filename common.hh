@@ -69,6 +69,44 @@ public:
 	int tRST;      //device resetting time
 };
 
+class Stat {
+	int count; 
+	int64_t sum; 
+	int64_t squared_sum; 
+	int64_t max; 
+	int64_t min; 
+public:
+	Stat(){
+		count = 0; 	
+		sum = 0; 
+		squared_sum = 0; 
+		min = INT64_MAX; 
+		max = 0; 
+	}
+	void update(int64_t value){
+		int64_t temp_value = value / 1000; // convert ns to us 
+		if (temp_value > max) max = temp_value; 
+		if (temp_value < min) min = temp_value; 
+		count++; 
+		sum += temp_value; 
+		squared_sum += (temp_value / 1000) * (temp_value / 1000); 
+	}
+	
+	int64_t get_average(){
+		if (count == 0) return 0; 
+		return sum/count; 
+	}
+
+	int64_t get_variance(){ // use different unit for variance
+		if (count == 0) return 0; 
+		int64_t avg = get_average(); 
+		return (squared_sum / count) - ( (avg / 1000) * (avg / 1000)); 
+	}
+	int get_count(){return count; }
+	int64_t get_max(){return max; }
+	int64_t get_min(){return min; }
+
+}; 
 
 class Tuple {
 public:
@@ -213,16 +251,12 @@ public:
 	bool modified;
 	bool evicted;
 	int lpn;
-	int read_hit;
-	int write_hit;
 	bool outlier; 
 	sub_request * sub; // if it has a waiting sub request 
 	buffer_entry(){
 		modified = false;
 		evicted = false;
 		lpn = -1;
-		read_hit = 0;
-		write_hit = 0;
 		next_entry = NULL;
 		prev_entry = NULL;
 		outlier = false;
@@ -231,8 +265,6 @@ public:
 	}
 	buffer_entry(int l){
 		buffer_entry();
-		read_hit = 0; 
-		write_hit = 0; 
 		modified = false; 
 		evicted = false ;
 		next_entry = NULL; 
@@ -291,6 +323,8 @@ public:
 };
 class write_buffer{
 public:
+	int read_hit; 
+	int write_hit; 
 	int buffer_capacity;
 	int entry_count;
 	buffer_entry * buffer_head;
@@ -302,6 +336,8 @@ public:
 		buffer_head = NULL;
 		buffer_tail = NULL;
 		buffer_first_outlier = NULL; 
+		read_hit = 0; 
+		write_hit = 0; 
 	}
 	bool check_buffer(){
 		if (buffer_capacity == 0) return true;
@@ -572,7 +608,7 @@ public:
 			cout << "Error in hit read " << endl;
 			return;
 		}
-		entry->read_hit++;
+		read_hit++;
 		if (entry->outlier) 
 			cout << "outlier shouldn't get a hit in read " << endl; 
 	}
@@ -581,7 +617,7 @@ public:
 		//	cout << "Error in hit write " << endl;
 			return;
 		}
-		entry->write_hit++;
+		write_hit++;
 		entry->modified = true;
 		if (entry->outlier) 
 			cout << "outlier shouldn't get a hit in write " << endl; 
@@ -801,6 +837,7 @@ public:
 	int64_t free_page;
 	int64_t invalid_page;
 	int64_t active_block;
+	int64_t cold_active_block; 
 	blk_info **blk_head;
 	int64_t block_num;
 	int64_t erase_count;
@@ -927,15 +964,8 @@ public:
 	void print_all(){}
 
 	int consolidation_degree;
-	int64_t * read_request_count;
-	int64_t * total_read_request_count;
-	int64_t * write_request_count;
-	int64_t * total_write_request_count;
-	int64_t * write_avg;
-	int64_t * read_avg;
-	int64_t * total_RT;
-	int64_t * total_read_RT;
-	int64_t * total_write_RT;
+	Stat read_RT; 
+	Stat write_RT; 
 	int64_t * read_request_size;
 	int64_t * total_read_request_size;
 	int64_t * write_request_size;
@@ -959,8 +989,6 @@ public:
 	int64_t gc_copy_back, total_gc_copy_back;
 	int64_t waste_page_count, total_waste_page_count;
 	int64_t update_read_count, total_update_read_count;
-	int64_t write_worst_case_rt;
-	int64_t read_worst_case_rt;
 	int64_t * subreq_state_time;
 	Tuple read_throughput;
 	Tuple write_throughput;
