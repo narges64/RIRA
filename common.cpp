@@ -184,10 +184,10 @@ dram_info::dram_info(parameter_value * parameters)
 	map->map_entry = new entry[page_num];
 
 	dram_capacity = parameters->dram_capacity;
-	gcb_capacity = parameters->gcb_capacity; 
+	gcb_capacity = 0; // parameters->gcb_capacity; 
 	int io_share = dram_capacity - gcb_capacity; 
 	buffer = new write_buffer(io_share, parameters->subpage_page);
-	gc_buffer = new write_buffer(gcb_capacity , parameters->subpage_page);
+	gc_buffer = buffer; // new write_buffer(gcb_capacity , parameters->subpage_page);
 }
 
 page_info::page_info(){
